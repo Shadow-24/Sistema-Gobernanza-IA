@@ -1,0 +1,1876 @@
+
+
+
+
+
+
+
+
+<html>
+<head>
+	<title>Excel</title>
+</head>
+<body bottommargin="0" topmargin="0" leftmargin="0" rightmargin="0">
+<img alt="Logo Osinergmin" src="http://srvtest03.osinerg.gob.pe:23314/msfh5/images/logo_Home.JPG">
+<br/>
+<center>
+<font face="Calibri" size="13.5px"><b>LISTADO DE REGISTROS H&Aacute;BILES DE CDCL Y OPDH CON INSTALACIONES MÓVILES OTORGADOS POR EL OSINERGMIN (Actualizado al 27 DE DICIEMBRE DE 2016)</b></font>
+</center>
+<br/>
+<br/>
+<br/>
+<table width="100%" border="1" bordercolor="#000080" cellpadding="0" cellspacing="0" align="center">
+<tr>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>No</b></font></th>
+	<th bgcolor="#000080" width=98 style='border-left:none;width:74pt'><font face="Calibri" size="11px" color="white"><b>EXPEDIENTE</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>REGISTRO</b></font></th>
+	<!--<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ITF</b></font></th>-->
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>RUC</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>RAZON SOCIAL</b></font></th>
+	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DIRECCION OPERATIVA</b></font></th>
+	
+	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DEPARTAMENTO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PROVINCIA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DISTRITO</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 1</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 2</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 3</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 4</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 5</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 6</b></font></th>
+	
+		<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>ALMACENAMIENTO 7</b></font></th>
+	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>CAP.TOTAL CL (gl)</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. EMISION</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. FIRMA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. VIGENCIA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>REPRESENTANTE</b></font></th>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">1</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600027693"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">120147-704-160316</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560050560</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR DUCTOS DEL SUR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SECTOR TUPAC AMARU - PREDIO RUSTICO MANDARINA I</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">30000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/03/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/03/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/03/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALEXANDRE WILTON LEDA REGO </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">2</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600068741"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121359-704-170516</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20544263642</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ODEBRECHT PERU OPERACIONES Y SERVICIOS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO DE LA SEGUNDA CALZADA PIURA-PAITA UBICADO EN EL KM43 +450 DE LA CARRETERA PIURA-PAITA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PIURA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PAITA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PAITA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10625:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8244:ASFALTO SOLIDO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8200:ASFALTO SOLIDO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8327:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:267:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5323:ASFALTO LÍQUIDO MC-30</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5323:ASFALTO LÍQUIDO MC-30</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">46309</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">23/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/05/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GERMAN VANEGAS VARGAS</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">3</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600103237"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122712-704-290716</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20556871371</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO VIAL SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PROLONGACION SAN MARTIN S/N TERCER PISO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BELLAVISTA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BELLAVISTA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">10000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">29/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">29/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARLOS ALBERTO CARBAJAL OLMOS</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">4</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600077472"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121667-704-210716</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20546301312</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SCIM S.P.A. SUCURSAL DEL PERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE UBICADA 86+500 EN LA COMUNIDAD MONTE CARMELO S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">17644.5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">RENATO SBARDELLA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600152322"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">119713-704-091116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20509586986</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONALVIAS CONSTRUCCIONES S.A.S.  SUCURSAL PERÚ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">KM. 22+950 DE LA RUTA DEPARTAMENTAL MOQUEGUA-MARISCAL NIETO MO-107</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MOQUEGUA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MARISCAL NIETO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MOQUEGUA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5000:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">15000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/11/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">FRANCISCO JOSÉ ARBOLEDA GOENAGA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">6</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600153226"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">117354-704-111116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560050560</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR DUCTOS DEL SUR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE K.P. 28, UBICADO EN EL SECTOR PISPITA PARCELA 83</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:7800:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">27800</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">11/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">14/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/11/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALEXANDRE WILTON LEDA REGO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">7</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600007057"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">118498-704-260116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20256265916</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ELECNOR PERU SAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO ACCHAHUATA UBICADO EN LA CARRETERA CALCA-AMPARAES EN EL CC PP ACCHAHUATA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LARES</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">16000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">26/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">26/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">26/01/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OSCAR LEON GARCIA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">8</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500166312"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">112756-704-181215</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20562626523</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO VIAL HUAYLLAY</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. 26 DE MAYO S/N (CUADRA 1 – HUAROS ALBERGUE C.P. SAN FELIPE) CULLHUAY</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CANTA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUAROS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10522:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20522</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">18/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">18/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ANDRES ARAY JIMENEZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">9</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600122030"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">110933-704-200916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20330546612</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCTORES Y MINEROS CONTRATISTAS GENERALES S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OLLACHEA, SISTEMA DE COORDENADAS UTM WGS 84 (E: 8489264.13; N: 339829.85)</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUNO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARABAYA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OLLACHEA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10482:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">10482</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/09/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/09/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JAVIER LEI SIUCHO </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">10</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600046185"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">120245-704-080416</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20109565017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCCION Y ADMINISTRACION S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA NUEVO SAN JUAN - YARINA N° S/N (TRAMO NUEVO SAN JUAN - YARINA)</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EL PORVENIR</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:6000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">6000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LEONARDO JUVENAL MOLINA MONTERO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">11</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600105440"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121337-704-040816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20102177925</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SERV ESP Y LOGISTICA EN GENERAL SA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECTOR TAMBOYACU, ALT. KM. 464 DE LA CARR. FERNANDO BELAUNDE TERRY COORDENADAS UTM N: 9331137 E: 251816</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">RIOJA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">RIOJA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:TURBO A-1</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">10000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">04/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">05/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JESUS WALTER PARRA OTAROLA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">12</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600075132"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121594-704-290516</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20501439020</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OBRAS DE INGENIERIA S.A</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO DE OBRAINSA - REF: KM 26 CARR. CONDORCOCHA - VILCASHUAMAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AYACUCHO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VILCAS HUAMAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VISCHONGO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:13000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">13000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">29/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">29/05/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LUCIANO HUACHACA MARTINO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">13</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600115396"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">116693-704-120816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20100079501</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">COMPAÑIA DE MINAS BUENAVENTURA S.A.A</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUNACHICA S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAYLLOMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAPAY</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">12/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">11/09/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/03/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">FELIX SANTIAGO GUERRA RIVAS</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">14</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500172417"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">115667-704-140116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20512864644</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONDUTO PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE TICUMPINIA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:25000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">400000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">14/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PATRICIO ALEJANDRO RICAURTE QUINTERO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">15</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600004774"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">115134-704-250116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560050560</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR DUCTOS DEL SUR </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO INDUSTRIAL OF KITENI - AV JHOJAN WIESE S/N CENTRO POBLADO KITENI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10199:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10199:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20398</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">26/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/01/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALEXANDER WILTON LEDA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">16</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500168971"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">117200-704-030216</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20517553914</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"> PACIFIC STRATUS ENERGY S.A. SUCURSAL DEL PERU </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">N° S/N LOTE 192</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LORETO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DATEM DEL MARAÑON</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ANDOAS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:4200:TURBO A-1</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:4200:TURBO A-1</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">33625</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/09/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/02/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JAIME VALENZUELA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">17</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600063463"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">114910-704-060516</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20492982777</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GCZ CONSTRUCCION S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA TARMA KM. 82 LA MERCED ANEXO SAN JOSE UTCUYACU </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JUNIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CHANCHAMAYO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN RAMON</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:7800:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">7800</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">06/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARLOS MEDINA DE LA CRUZ </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">18</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600099607"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122086-704-060716</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20527029920</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MADERERA INDUSTRIAL ISABELITA SAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">KM 21.1 CARRETERA INTEROCEANICA IBERIA - IÑAPARI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MADRE DE DIOS</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAHUAMANU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">IÑAPARI</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5981:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">5981</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">06/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">06/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">XIAODONG JI WU</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">19</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600088699"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">115451-704-230616</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20492982777</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GCZ CONSTRUCCION S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PZA. PRINCIPAL DEL ANEXO V. ANASHIRONI NRO S/N </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JUNIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CHANCHAMAYO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERENE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:7800:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:7800:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">15600</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">23/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">27/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LUIS ERNESTO PEDRAZA LORES</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">20</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600052273"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">120833-704-120516</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20527030421</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MADERERA RIO ACRE SAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA IÑAPARI - SANTA MARTA KM 3.5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MADRE DE DIOS</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAHUAMANU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">IÑAPARI</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">10330</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">12/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">12/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">12/05/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JOSE LUIS CANCHAYA TOLEDO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">21</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600118179"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">123278-704-240816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20506363480</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LUMINA COPPER S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO EL GALENO - SANTA ROSA DE MILPO (ALTURA LAGUNA MILPO)</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAJAMARCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CELENDIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOROCHUCO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3500:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">8500</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">24/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">24/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">24/08/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MANUEL ALEJANDRO CHUNG CHU</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">22</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600093912"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">107723-704-210616</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20129646099</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ELECTROCENTRO S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. DEL DEPORTE N° 400</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AYACUCHO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUAMANGA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AYACUCHO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5548:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5548:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5548:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5548:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">22192</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/06/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ROMEO GRACIANO ROJAS BRAVO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">23</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600143720"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121668-704-171016</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20546301312</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SCIM S.P.A. SUCURSAL DEL PERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE 136+000 EN LA COMUNIDAD PALMA REAL S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3528.9:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">17644.5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">RENATO SBARDELLA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">24</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600121829"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">115926-704-220816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20566464773</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO VIAL JAYLLI </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA HUANCAVELICA – LIRCAY KM. 29+500, C.P. PACHACCLLA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANCAVELICA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANCAVELICA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">YAULI</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/03/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JORGE ROMAN IQUIRA ARROSPIDE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">25</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600049748"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">113372-704-250416</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20513037504</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUNT OIL EXPLORATION AND PRODUCTION COMPANY OF PERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE QUINCEMIL, CARRETERA INTEROCEÁNICA KM .190, FUNDO SAN LUIS (SECTOR QUINCEMIL VALLE ARAZA RUTA P30C) 2.5 KM ANTES DE LA LOCALIDAD DE QU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">QUISPICANCHI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMANTI</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:60000:Diesel B5 S-50,TURBO A-1</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">120000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">24/04/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JORGE ENRIQUE PAULINO LA TORRE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">26</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600142863"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">124235-704-151116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20600891953</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSERVACION VIAL SANTA ROSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">KM 226 +540 DE LA RUTA PE-38</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUNO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EL COLLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SANTA ROSA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8222:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8222:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">16444</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MARIA ELENA HERNANDEZ PASTOR</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">27</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600049033"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">115532-704-080416</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20557321081</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO TUNEL CALLAO </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"> AV. NESTOR GAMBETTA KM. 20 </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">18000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LEONARDO AUGUSTO GUIMARAES </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">28</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600076034"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121612-704-030616</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560050560</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR DUCTOS DEL SUR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO MEDIA LUNA UBICADO EN TERRENO RUSTIO LA PLAYA S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SANTA ANA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/06/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">29</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600112258"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">123081-704-021116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20102502001</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ENERGOPROJEKT NISKOGRADNJA S.A. SUC PERU </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA KM 152+400 LADO DERECHO S/N FUNDO MIS DOS ENCANTOS (LADO DERECHO CARRETERA DIV. DIST. PICHANAQUI) </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PASCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OXAPAMPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUERTO BERMUDEZ</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">05/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">23/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ZORAN MILOSAVLJEVIC </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">30</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600022105"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">119960-704-220216</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560050560</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR DUCTOS DEL SUR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE CUSCO UBICADO EN A.P.V. HUAYNA CAPAC S/N -CP CHIMPAHUAYLLA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN JERONIMO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/02/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALEXANDRE WILTON LEDA REGO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">31</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600134710"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">123894-704-200916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560000465</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR CHAVIMOCHIC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PALO REDONDO KM. 486 PANAMERICANA NORTE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA LIBERTAD</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VIRU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CHAO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:40000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">40000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/09/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JOSE LUIS CRUZADO VELARDE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">32</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600011821"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">119631-704-210716</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20109565017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCCION Y ADMINISTRACION S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA FEDERICO BASADRE KM. 28.5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UCAYALI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CORONEL PORTILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPOVERDE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8155:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8155:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">16310</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">11/02/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JAIME EDUARDO SANCHEZ BERNAL</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">33</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600113543"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">123103-704-070916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20109565017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCCION Y ADMINISTRACION S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA FERNANDO BELAUNDE TERRY KM. 26 - SECTOR PAMPA HERMOSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANUCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUERTO INCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">YUYAPICHIS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:14231:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:14231:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">28462</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JAIME EDUARDO SANCHEZ BERNAL</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">34</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600107975"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122938-704-081116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20509586986</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONALVIAS CONSTRUCCIONES S.A.S SUCURSAL PERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">QUINTA ETAPA DEL FUNDO BORIS CARRERTERA A MAYRO S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PASCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OXAPAMPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTITUCION</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">26/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/11/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ANDRES ARAY JIMENEZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">35</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600136713"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">123081-704-021116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20102502001</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ENERGOPROJEKT NISKOGRADNJA S.A. SUC PERU </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA KM 152+400 LADO DERECHO S/N FUNDO MIS DOS ENCANTOS (LADO DERECHO CARRETERA DIV. DIST. PICHANAQUI) </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PASCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OXAPAMPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUERTO BERMUDEZ</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">18/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">23/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ZORAN MILOSAVLJEVIC </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">36</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600170602"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">125097-704-301116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20506363480</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCTORA MALAGA HNOS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. SALOMON VILCHEZ MURGA S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAJAMARCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUTERVO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUTERVO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MOISES ALBERTO MALAGA MALAGA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">37</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600161054"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122938-704-081116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20509586986</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONALVIAS CONSTRUCCIONES S.A.S SUCURSAL PERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">QUINTA ETAPA DEL FUNDO BORIS CARRERTERA A MAYRO S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PASCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OXAPAMPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTITUCION</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/11/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ANDRES ARAY JIMENEZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">38</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600004075"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">94875-704-080616</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20477815236</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PACIFIC STRATUS ENERGY DEL PERÚ S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE NUEVA ITALIA, CON COORDENADAS UTM E: 615124 Y N: 8913350, LOTE 126</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UCAYALI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ATALAYA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAHUANIA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:4200:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:2500:GASOLINA 90</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">266700</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/02/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/06/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MARIA DEL ROSARIO MILAGROS SILVA SANTISTEBAN CONCHA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">39</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500163683"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">113195-704-250116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20516908930</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CEPSA PERUANA S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALTURA DEL KM 10 DEL CERRO POBLADO VON HUMBOLDT, CARRETERA FEDERICO BASADRE UTM WGS84 E: 492422.747 Y N: 9013726.454</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANUCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUERTO INCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TOURNAVISTA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:20000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/01/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JUAN ANTONIO MASÍAS ECHEGARAY</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">40</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600111180"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121634-704-070916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20600882121</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO SAN MARTIN - JOHESA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA PUERTO SUNGARO AV SAN ALEJANDRO KM 49 +225 LADO IZQUIERDO, CMP DE MACUYA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANUCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PUERTO INCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TOURNAVISTA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8100:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:6700:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:2500:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">17300</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">12/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">12/06/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JORGE ALFREDO HEIGHES SOUSA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">41</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600096990"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122515-704-060916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20556607517</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO 8 DE AGOSTO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CASERIO AUCANTAHUA S/N CENTRO POBLADO CAUNARAPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANUCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUAMALIES</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MONZON</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:5000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">5000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">06/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DANIEL PEÑA ESCUDERO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">42</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600159963"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">109640-704-021116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20545722471</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO RIO MANTARO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BASE  DE OPERACIONES C5 (REFENTE PRESA)</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANCAVELICA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAYACAJA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">COLCABAMBA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">70000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">RICARDO ANSELMO CANTURIN CANO / MATTEO BORDIN  </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">43</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600160324"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">124761-704-091216</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20109565017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCCION Y ADMINISTRACION S.A.C</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA FERNANDO BELAUNDE TERRY KM 237 + 400 CASERIO NUEVO PORVENIR </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AMAZONAS</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UTCUBAMBA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BAGUA GRANDE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:9145:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:9145:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">18290</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">26/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/12/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JUAN PABLO CAÑIZARES SANCHEZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">44</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600041906"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">119400-704-280316</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20566492394</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO VIAL EL ARENAL - PUNTA DE BOMBON</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">KM 8 DE LA CARRETERA MOLLENDO-MEJIA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ISLAY</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MOLLENDO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">16000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">28/03/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">28/03/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">29/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ROSARIO ARTURO DIAZ NUÑEZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">45</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600101461"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122620-704-020816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20514608041</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">COMPAÑIA MINERA CHUNGAR S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MARGEN IZQUIERDA DEL RIO LURIN A 4.3 KM DEL POBLADO DE PALMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUAROCHIRI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ANTIOQUIA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:6000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">6000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/08/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">OTTO JUAN NORBERTO ELESPURU NESANOVICH</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">46</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600141551"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">121920-704-021216</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20510890222</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCTORA KAPALA S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MZ "D3" LOTE 6 PARTE DEL DENOMINADO LOTE 1 REF. QUEBRADA DE HUAYCOLORO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUAROCHIRI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN ANTONIO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:8982:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">8982</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">19/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JOSE LUIS CASTAÑEDA NEYRA</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">47</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600022092"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">119959-704-270216</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20560050560</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO CONSTRUCTOR DUCTOS DEL SUR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE CALCA, UBICADO EN EL SECTOR CCAYTO ( VALLE DEL VILCANOTA)</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALCA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">20000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">27/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/03/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">27/02/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALEXANDRE WILTON LEDA REGO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">48</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500175627"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">119246-704-070116</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20512864644</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONDUTO PERU S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE TICUMPINIA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:25000:TURBO A-1</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">25000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/01/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">49</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600085125"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">93766-704-050716</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU -  PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO BASE SARGENTO PUÑO, MARGEN IZQUIERDA DEL RIO MORONA COORDENADAS UTMWGS84: E210595 Y N 9643410</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LORETO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DATEM DEL MARAÑON</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MORONA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:100000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:100000:TURBO A-1</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">200000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">05/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">05/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JESUS ANGULO ROMERO </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">50</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500167130"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">110751-704-080216</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20550878659</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ODEBRECHT LATINVEST OPERACIONES Y MANTENIMIENTO S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMPAMENTO DE OBRA YURACMAYO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">QUISPICANCHI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CCATCA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:Diesel B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">10000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/02/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BIAGGIO SERGIO CAROLLO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">51</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600127779"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122545-704-090916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20102297581</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSTRUCTURA MALAGA HNOS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">C.F.B KM.86.500</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UCAYALI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PADRE ABAD</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALEXANDER VON HUMBOLD</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:9000:DIESEL B5</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">9000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/09/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CESAR DAVID VASQUEZ CAICEDO MUÑOZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">52</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600088582"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">122076-704-100816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20600600258</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO NEGROMAYO </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">KM 48+000 - CARRETERA DV. NEGROMAYO - OCCORURO - PALLPATA - DV ESPINAR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ESPINAR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PALLPATA</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:10000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">10000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">11/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/08/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JUNIOR RODNEY RODRIGUES DE CARVALHO </font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">53</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600126852"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">123637-704-280916</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20600875346</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO VIAL VIZCACHANE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">Z.I. ACHOMA – CARRETERA VIZCACHANE – CHIVAY KM 93.6</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAYLLOMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">YANQUE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:12176:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">12176</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">28/09/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">27/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAURO MENDOZA JUAREZ</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">54</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600015748"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">111192-704-080816</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20356476434</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CNPC PERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BASE LOTE 58, CAMPAMENTO LA PERUANITA, COORDENADAS N:8707316.40 E:715841.76</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA CONVENCION</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ECHARATE</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:1000:GASOHOL 90 PLUS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:1000:GASOHOL 90 PLUS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:1000:GASOHOL 90 PLUS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:1000:GASOHOL 90 PLUS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:1000:GASOHOL 90 PLUS</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">555000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/07/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/08/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GUILLERMO EDGARDO RAMOS MARIÑO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">55</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600048692"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">120718-704-190416</font></td>
+	<!--<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>-->
+	<td bgcolor="white"><font face="Calibri" size="11px">20297543653</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UNION DE CONCRETERAS S.A </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CANTERA YERBABUENA S/N</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARABAYLLO</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;1:3000:DIESEL B5 S-50</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+		<td bgcolor="white"><font face="Calibri" size="11px">&nbsp;</font></td>
+	
+	<td bgcolor="white"><font face="Calibri" size="11px">3000</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">19/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">19/04/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">19/04/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AXEL FELIPE VAZQUEZ NYCANDER</font></td>
+</tr>
+
+</table>
+</body>
+</html>

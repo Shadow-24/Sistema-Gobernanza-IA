@@ -1,0 +1,13 @@
+,,,,,
+Nombre del Dataset :,"Lista de Precios de combustibles, diaria. Reconstruida a partir de los precios actualizados diariamente  - [Organismo Supervisor de la Inversión en Energía y Minería - OSINERGMIN]",,,,
+,,,,,
+VARIABLE,DESCRIPCION,TIPO_DATO,TAMAÑO,RECURSO RELACIONADO,INFORMACION ADICIONAL
+FE_EVAL,Fecha en que el precio estuvo vigente,Numerico ,8,,Formato aaaammdd
+ANON_LOCAL_VENTA,Nombre anonimizado del local de venta,Texto,64,,
+G_PREMIUM,Gasolina o gasohol premium,Numerico ,10,,Con 2 decimales
+G_REGULAR,Gasolina o gasohol regular,Numerico ,10,,Con 2 decimales
+DIESEL,Diesel DB5-S,Numerico ,10,,Con 2 decimales
+GNV,Gas natural vehicular,Numerico ,10,,Con 2 decimales
+GLP_G,Gas Licuado de Petroleo  a granel,Numerico ,10,,Con 2 decimales
+GLP_E,Gas Licuado de Petroleo envasado ( Balones 10kg),Numerico ,10,,Con 2 decimales
+FECHA_CORTE,Fecha de generación del dataset,Numerico ,8,,Formato aaaammdd

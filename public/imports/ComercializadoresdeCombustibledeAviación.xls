@@ -1,0 +1,365 @@
+
+
+
+
+
+
+
+
+<html>
+<head>
+	<title>Excel</title>
+</head>
+<body bottommargin="0" topmargin="0" leftmargin="0" rightmargin="0">
+<img alt="Logo Osinergmin" src="http://srvtest03.osinerg.gob.pe:23314/msfh5/images/logo_Home.JPG">
+<br/>
+<center>
+<font face="Calibri" size="13.5px"><b>LISTADO DE REGISTROS H&Aacute;BILES DE COMERCIALIZADORES DE COMBUSTIBLE DE AVIACIÓN OTORGADOS POR EL OSINERGMIN (Actualizado al 27 DE DICIEMBRE DE 2016)</b></font>
+</center>
+<br/>
+<br/>
+<br/>
+<table width="100%" border="1" bordercolor="#000080" cellpadding="0" cellspacing="0" align="center">
+<tr>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>No</b></font></th>
+	<th bgcolor="#000080" width=98 style='border-left:none;width:74pt'><font face="Calibri" size="11px" color="white"><b>EXPEDIENTE</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>REGISTRO</b></font></th>	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>RUC</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>RAZON SOCIAL</b></font></th>	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DOMICILIO LEGAL</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>AEROPUERTO U OTRO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PLANTA ABASTECIMIENTO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>OPERADOR</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DEPARTAMENTO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PROVINCIA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DISTRITO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>CONTRATO DE SUMINISTRO SUSCRITO CON</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. EMISIÓN</b></font></th>	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. DE INICIO DE ACTIVIDADES Y/O INSCRIPCIÓN</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>VIGENCIA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PRODUCTOS QUE COMERCIALIZA DESCRITO EN LA CONSTANCIA</b></font></th>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">1</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500177087"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34708-605-190216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. - PLANTA AEROPUERTO TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPÚBLICA 3361</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN ISIDRO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">2</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201400068928"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34848-605-050614</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20259880603</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EXXONMOBIL DEL PERU SRL</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CAMINO REAL 456 TORRE REAL PISO 14</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO INTERNACIONAL JORGE CHAVEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO JORGE CHAVEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EXXON-MOBIL AVIACION PERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">REFINERIA LA PAMPILLA S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">27/05/2014</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-03-14</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">3</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600074024"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34710-605-140616</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. CANAVAL Y MOREYRA NRO 150 </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO DE CUSCO ALEJANDRO VELASCO ASTETE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CUSCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">WANCHAQ</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-06-14</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/06/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">4</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600169753"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">125071-605-141216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20601509416</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AIR BP PBF DEL PERU SAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN ISIDRO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600097971"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34702-605-290816 </font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A. - PLANTA AEROPUERTO AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. ENRIQUE CANAVAL Y MOREYRA NRO 150 </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO DE AREQUIPA ALFREDO RODRIGUEZ BALLON</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CERRO COLORADO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-08-29</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">6</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600007027"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">92872-605-270116</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20501458164</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PANAMERICANA SUR KM. 33.50</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AERÓDROMO MARIA REICHE NEWMAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AERODROMO MARIA REICHE NEWMAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ICA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">NAZCA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VISTA ALEGRE</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A. / REFINERIA LA PAMPILLA S.A.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">18/01/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-01-27</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/03/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GASOLINA 100 LL,TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">7</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500177037"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34703-605-190216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. - PLANTA AEROPUERTO TRUJILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPÚBLICA 3361</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO TRUJILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO EN AEROPUERTO TRUJILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LA LIBERTAD</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TRUJILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HUANCHACO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-02-19</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">8</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600097991"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34701-605-290816 </font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. - PLANTA AEROPUERTO TACNA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPÚBLICA 3361</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO CAP. FAP. CARLOS CIRIANI SANTA ROSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO EN AEROPUERTO TACNA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TACNA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TACNA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TACNA</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">01/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-08-29</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">9</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500177113"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34706-605-180216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A. - PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPÚBLICA 3361</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO DE IQUITOS CORONEL FAP FRANCISCO SECADA VIGNETA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO IQUITOS</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LORETO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAYNAS</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN JUAN BAUTISTA</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-02-18</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">10</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500177056"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34707-605-190216 </font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. - PLANTA AEROPUERTO CHICLAYO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPÚBLICA 3361</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO DE CHICLAYO CAPITAN FAP JOSÉ ABELARDO QUIÑONEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO CHICLAYO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LAMBAYEQUE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CHICLAYO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CHICLAYO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-02-19</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">11</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600090216"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">88247-605-170716</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20513320753</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">REPSOL MARKETING S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VICTOR ANDRES BELAUNDE 147, TORRE V, PISO 4 </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO INTERNACIONAL JORGE CHAVEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO JORGE CHAVEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EXXON-MOBIL AVIACION PERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN ISIDRO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">REFINERIA LA PAMPILLA S.A.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">14/06/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-07-17</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">12</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500177071"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">34709-605-190216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A. - PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPÚBLICA 3361</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO DE PISCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO PISCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ICA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PISCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN ANDRES</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-02-19</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GASOLINA 100 LL,TURBO JP-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">13</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500177022"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">43676-605-190216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A. - PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPUBLICA N° 3361, SAN ISIDRO, LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO TARAPOTO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO GUILLERMO DEL CASTILLO PAREDES</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN MARTIN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TARAPOTO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-02-19</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TURBO A-1</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">14</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600083001"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">113809-605-060616</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20501458164</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO INTERNACIONAL PADRE ALDAMIZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA ABASTECIMIENTO AEROPUERTO INTERNACIONAL PADRE ALDAMIZ - PUERTO MALDONADO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MADRE DE DIOS</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAMBOPATA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TAMBOPATA</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A. / REFINERIA LA PAMPILLA S.A.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-06-06</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">06/06/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">15</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600172143"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">63007-605-231215</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20195923753</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERU S.R.L.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. VICTOR ANDRES BELAUNDE No 147 VIA PRINCIPAL 140, EDIFICIO REAL 6, OF. 201</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">COMERCIALIZADOR DE COMBUSTIBLE DE AVIACIÓN </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERU S.R.L.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UCAYALI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CORONEL PORTILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">YARINACOCHA</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">16</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600112162"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">112209-605-220916</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20513251506</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"> PURE BIOFUELS DEL PERU S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AEROPUERTO INTERNACIONAL JORGE CHAVEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO AEROPUERTO INTERNACIONAL JORGE CHAVEZ</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EXXONMOBIL AVIACIÓN PERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAN ISIDRO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PURE BIOFUELS DEL PERU S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">27/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-09-22</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">22/10/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+</table>
+</body>
+</html>

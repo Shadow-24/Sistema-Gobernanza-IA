@@ -1,0 +1,615 @@
+
+
+
+
+
+
+
+
+<html>
+<head>
+	<title>Excel</title>
+</head>
+<body bottommargin="0" topmargin="0" leftmargin="0" rightmargin="0">
+<img alt="Logo Osinergmin" src="http://srvtest03.osinerg.gob.pe:23314/msfh5/images/logo_Home.JPG">
+<br/>
+<center>
+<font face="Calibri" size="13.5px"><b>LISTADO DE REGISTROS H&Aacute;BILES DE DISTRIBUIDORES MAYORISTAS OPDH OTORGADOS POR EL OSINERGMIN (Actualizado al 27 DE DICIEMBRE DE 2016)</b></font>
+</center>
+<br/>
+<br/>
+<br/>
+<table width="100%" border="1" bordercolor="#000080" cellpadding="0" cellspacing="0" align="center">
+<tr>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>No</b></font></th>
+	<th bgcolor="#000080" width=98 style='border-left:none;width:74pt'><font face="Calibri" size="11px" color="white"><b>EXPEDIENTE</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>REGISTRO</b></font></th>	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>RUC</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>RAZON SOCIAL</b></font></th>	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DOMICILIO LEGAL</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PLANTA ABASTECIMIENTO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>OPERADOR</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DEPARTAMENTO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PROVINCIA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>DISTRITO</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>CONTRATO DE SUMINISTRO Y/O DOCUMENTO QUE ACREDITE ABASTECIMIENTO CONTINUO DE LOS PRODUCTOS QUE COMERCIALIZA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. EMISIÓN</b></font></th>	
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>FEC. DE INICIO DE ACTIVIDADES Y/O INSCRIPCIÓN</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>VIGENCIA</b></font></th>
+	<th bgcolor="#000080"><font face="Calibri" size="11px" color="white"><b>PRODUCTOS QUE COMERCIALIZA DESCRITO EN LA CONSTANCIA</b></font></th>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">1</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001528"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0008-DMAY-15-2010</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20125516140</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AGRO & QUIMICOS LA MOLINA E.I.R.L. - PLANTA REFINERIA CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE LA MILLA  218, URB. INDUSTRIAL LA MILLA SAN MARTIN DE PORRES </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERÍA CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/04/2010</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2010-04-09</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">2</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201400035363"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">62417-118-240314</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20195923753</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERU S.R.L.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. VICTOR ANDRES BELAUNDE 147, VIA PRINCIPAL 140, EDIFICIO REAL 6 OF. 201, SAN ISIDRO, LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO DQM</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DEPÓSITOS QUÍMICOS MINEROS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PRODUCTOR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">24/03/2014</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-02-16</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">3</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201400122261"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">94416-118-011014</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20203058781</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAVIA PERU SA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. RIVERA NAVARRETE Nº 501 PISO 11</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO PGP</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PROCESADORA DE GAS PARIÑAS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PIURA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PARIÑAS</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">SAVIA PERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">01/10/2014</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2012-01-04</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2019</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">4</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600149785"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">43941-118-021116</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20513320753</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">REPSOL MARKETING S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. VÍCTOR ANDRES BELAUNDE N° 147., EDIFICIO REAL CINCO, OF. 301 </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERIA LA PAMPILLA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">REFINERIA LA PAMPILLA S.A.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MI PERÚ</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">REFINERIA LA PAMPILLA S.A.A.
+</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2017-12-31</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/12/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">5</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500161452"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">84054-118-301215</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20262520243</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERUQUIMICOS S.A.C. - PLANTA PACHACAMAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA PANAMERICANA SUR 25050, PACHACAMAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO PACHACAMAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERUQUIMICOS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PACHACAMAC</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERÚ S.R.L. Y PETRÓLEOS DEL PERÚ - PETROPERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-12-30</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">6</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201300160846"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">60613-118-100114</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20501458164</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.-PLANTA DE ABASTECIMIENTOS PGP</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AUTOPISTA PANAMERICANA SUR KM.33.5 PARCELA C14A</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO PGP</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PROCESADORA DE GAS PARIÑAS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PIURA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PARIÑAS</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PROCESADORA DE GAS PARIÑAS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">10/01/2014</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2007-05-16</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">7</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600144765"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">90905-118-201216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20462604735</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"> CORPORACION GTM DEL PERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. REPUBLICA DE PANAMA 3535 OF. 502</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO DQM</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DEPÓSITOS QUÍMICOS MINEROS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,HEXANO,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">8</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600050613"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">116301-118-160516</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20555737514</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"> GM & G HIDROCARBUROS S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. AURELIO MIROQUESADA N° 282, DPTO 701</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TERMINAL PORTUARIO TRALSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TRALSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">GRA¿A Y MONTERO PETROLERA S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/05/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-05-16</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">29/01/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">9</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001530"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0008-DMAY-15-2006</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20102077467</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ALGISA REPRESENTACIONES S.A.C. - PTA CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. TOMÁS MARSANO Nº 2813, OFICINA 410, SURCO, LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">28/02/2006</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-03-01</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO,ASFALTO SOLIDO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">10</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001534"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0010-DMAY-15-2005</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100008239</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EMPRESA COMERCIALIZADORA DE PETROLEO S.A.C. - EMCOPESA - PLANTA CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE EDWIN WHITE 127-133, URB. IND. LA CHALACA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">13/12/2005</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2005-08-01</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO,ASFALTO SOLIDO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">11</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600144755"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">58137-118-201216</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20462604735</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CORPORACION GTM DEL PERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. REPUBLICA DE PANAMA N°3535 TORRE A, OF, 502</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">GRAÑA Y MONTERO PETROLERA S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CORPORACION GTM DEL PERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,HEXANO,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">12</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500159838"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">60617-118-301215</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20262520243</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERUQUIMICOS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA PANAMERICANA SUR 25050, PACHACAMAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO TRALSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TRANSPORTE Y ALMACENAMIENTO DE LÍQUIDOS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERÚ S.R.L. Y PETRÓLEOS DEL PERÚ - PETROPERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2015-12-30</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">13</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001535"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0008-DMAY-15-2008</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20195923753</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERU S.R.L.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV VICTOR ANDRÉS BELAÚNDE N° 147 EDIFICIO REAL VI OFICINA 201</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE VENTAS REFINERIA PUCALLPA MAPLE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERÚ S.R.L. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">UCAYALI</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CORONEL PORTILLO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLERIA</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PRODUCTOR</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">17/04/2008</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">1998-11-17</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">14</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600102037"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">57166-118-040816</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100334624</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BRENNTAG PERU S.A.C </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE LOS PLASTICOS N° 277,URB. VULCANO - ATE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO BRENNTAG</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BRENNTAG PERÜ S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ATE</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">GRA¿A Y MONTERO PETROLERA S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">04/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-08-04</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,HEXANO,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">15</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001533"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0002-DMAY-15-2006</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100008239</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">EMPRESA COMERCIALIZADORA DE PETROLEO S.A.C. - EMCOPESA - PLANTA REFINERIA TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE EDWIN WHITE 127-133, URB. IND. LA CHALACA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERIA TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PIURA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PARIÑAS</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">03/02/2006</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-02-03</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO,ASFALTO SOLIDO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">16</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001538"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0014-DMAY-15-2006</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. - MOLLENDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPUBLICA N° 3361 SAN ISIDRO LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TERMINAL MOLENDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CONSORCIO TERMINALES - GMT</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AREQUIPA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ISLAY</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">MOLLENDO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PRODUCTOR / IMPORTACION DIRECTA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">07/03/2006</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">1997-04-30</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO RC-250</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">17</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001539"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0020-DMAY-15-2006</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. - PLANTA TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPUBLICA N° 3361 SAN ISIDRO LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERÍA TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PIURA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PARIÑAS</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PRODUCTOR/ IMPORTACION DIRECTA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/06/2006</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-06-15</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO,ASFALTO SOLIDO,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">18</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600102034"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">57168-118-040816</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100334624</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BRENNTAG PERU S.A.C </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE LOS PLASTICOS N° 277, URB. VULCANO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO TRALSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TRANSPORTES Y ALMACENAMIENTO DE LÍQUIDOS S.A</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px"> BRENNTAG PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">04/08/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-08-04</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">16/07/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,HEXANO,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">19</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001536"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0001-DMAY-15-2009</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20262520243</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERUQUIMICOS S.A.C - PLANTA CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PANAMERICANA SUR 25050 PACHACAMAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TERMINAL CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VOPAK PERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2009</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2009-04-08</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">20</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001537"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0002-DMAY-15-2009</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20262520243</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERUQUIMICOS S.A.C. - PLANTA REFINERIA CONCHAN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PANAMERICANA SUR 25050, PACHACAMAC </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERÍA CONCHÁN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/04/2009</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2009-04-08</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">21</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600071596"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">117726-118-080716</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20547565267</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">IGAMAS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JR. SAN LORENZO 373</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO TRALSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TRALSA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">BRENNTAG PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">08/07/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-07-08</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">04/01/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">22</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500067937"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">57167-118-250615</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100334624</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">BRENNTAG PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE LOS PLASTICOS N°277,URB.VULCANO- ATE</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO DQM</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DEPÓSITOS QUÍMICOS MINEROS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">BRENNTAG PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">25/06/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-06-25</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">14/05/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HEXANO,SOLVENTE 1,SOLVENTE 3,TOLUENO,XILENO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">23</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600152565"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">43112-118-311016</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20501458164</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PANAMERICANA SUR KM-33,5 ,PARCELA C-14A, LURIN LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO HERCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-10-31</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">06/11/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">24</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600152566"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">43121-118-211016</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20504428967</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLAIR S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO HERCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO HERCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERU S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">21/10/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-10-21</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/11/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">25</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201600149474"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">88800-118-021116</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20525573134</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JEBICORP S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLE LOS CALIBRADORES MZ. 01 LOTE 5 Y 7 PARQUE INDUSTRIAL ACOMPIA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO JEBICORP</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">JEBICORP S.A.C. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ANCON</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">GRA¿A Y MONTERO PETROLERA S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">02/11/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2016-11-02</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/10/2017</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">26</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201500161447"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">60609-118-301215</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20262520243</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PERUQUIMICOS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CARRETERA PANAMERICANA SUR 25050, PACHACAMAC</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO DQM</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">DEPÓSITOS QUÍMICOS MINEROS S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">MAPLE GAS CORPORATION DEL PERÚ S.R.L. Y PETRÓLEOS DEL PERÚ - PETROPERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/12/2015</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px"></font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">31/12/2016</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">27</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201300168302"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">100184-118-200214</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20203058781</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SAVIA PERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV RIVERA NAVARRETE 501 PISO 11, SAN ISIDRO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO HERCO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HERCO COMBUSTIBLES S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">SAVIA PERÚ S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">20/02/2014</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2011-10-28</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CGN SOLVENTE</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">28</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="1472913"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">90974-118-040411</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20262463771</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">FERUSH S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. SAN BORJA NORTE Nº 1045</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERIA LA PAMPILLA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">RELAPASA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">CALLAO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">VENTANILLA</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">REPSOL YPF MARKETING S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">09/03/2011</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-09-20</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO,ASFALTO SOLIDO</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">29</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001541"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0003-DMAY-15-2008</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20504428967</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">SOLAIR S.A.C.- PLANTA DE ABASTECIMIENTOS PGP</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AUTOPISTA PANAMERICANA SUR KM.33.5 PARCELA C14A</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO PGP</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PROCESADORA DE GAS PARIÑAS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PIURA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">TALARA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PARIÑAS</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PROCESADORA DE GAS PARIÑAS S.A.C.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">30/01/2008</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2008-01-30</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">HIDROCARBURO ALIFÁTICO LIVIANO - HAL</font></td>
+</tr>
+
+<tr>
+	<td bgcolor="white"><font face="Calibri" size="11px">30</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">="201000001540"</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">0023-DMAY-15-2006</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">20100128218</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROLEOS DEL PERU - PETROPERU S.A. </font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">AV. PASEO DE LA REPUBLICA N° 3361, SAN ISIDRO, LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PLANTA DE ABASTECIMIENTO REFINERÍA CONCHÁN</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">PETROPERU S.A.</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LIMA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">LURIN</font></td>	
+	<td bgcolor="white"><font face="Calibri" size="11px">PRODUCTOR/ IMPORTACION DIRECTA</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">15/06/2006</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">2006-06-15</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">INDEFINIDO</font></td>
+	<td bgcolor="white"><font face="Calibri" size="11px">ASFALTO LÍQUIDO,ASFALTO SOLIDO,SOLVENTE 1,SOLVENTE 3</font></td>
+</tr>
+
+</table>
+</body>
+</html>
