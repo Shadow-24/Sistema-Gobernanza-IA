@@ -238,9 +238,11 @@ FastAPI abre el puerto inmediatamente y sincroniza los archivos fuente con
 PostgreSQL en segundo plano. La ruta `/api/health/database` comprueba solo la
 conexión con PostgreSQL para que Render no mantenga el despliegue pendiente
 durante la importación inicial. Mientras los datos se preparan, las demás rutas
-`/api/*` responden HTTP 503; `/api/health/ready` indica cuándo terminó la
-importación. Revisa los logs hasta ver `Fuentes sincronizadas` antes de usar la
-aplicación por primera vez.
+`/api/*` responden HTTP 503; el login y las rutas de sesión quedan disponibles
+apenas estén listos el esquema y el supervisor inicial. `/api/health/auth`
+indica cuándo ya se puede iniciar sesión y `/api/health/ready` cuándo terminó
+la importación. Revisa los logs hasta ver `Fuentes sincronizadas` antes de usar
+los módulos de datos por primera vez.
 
 Agrega como variables de entorno `DATABASE_URL` (la **Internal Database URL** de
 la instancia PostgreSQL de Render), `SEED_ADMIN_USERNAME`,

@@ -50,20 +50,30 @@ LAG_MONTHS = 3
 logger = logging.getLogger(__name__)
 app = FastAPI(title="Gobernanza de datos sectoriales")
 database_initialized = threading.Event()
-INITIALIZATION_EXEMPT_PATHS = {"/api/health/database", "/api/health/ready"}
+authentication_initialized = threading.Event()
+AUTHENTICATION_PATHS = {
+    "/api/auth/login",
+    "/api/auth/session",
+    "/api/auth/logout",
+    "/api/access-events",
+}
+HEALTH_PATHS = {"/api/health/database", "/api/health/ready", "/api/health/auth"}
 
 
 @app.middleware("http")
 async def require_initialized_database(request: Request, call_next: Any) -> Response:
-    if (
-        request.url.path.startswith("/api/")
-        and request.url.path not in INITIALIZATION_EXEMPT_PATHS
-        and not database_initialized.is_set()
-    ):
-        return JSONResponse(
-            status_code=503,
-            content={"detail": "Los datos iniciales todavía se están preparando. Intenta de nuevo en unos minutos."},
-        )
+    path = request.url.path
+    if path.startswith("/api/") and path not in HEALTH_PATHS:
+        if not authentication_initialized.is_set():
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "La autenticación todavía se está preparando. Intenta de nuevo en unos minutos."},
+            )
+        if path not in AUTHENTICATION_PATHS and not database_initialized.is_set():
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Los datos iniciales todavía se están preparando. Intenta de nuevo en unos minutos."},
+            )
     return await call_next(request)
 
 
@@ -103,13 +113,14 @@ def _load_demand_model_sources() -> tuple[
 @app.on_event("startup")
 def initialize_postgresql() -> None:
     database_initialized.clear()
+    authentication_initialized.clear()
     if not os.environ.get("DATABASE_URL", "").strip():
         logger.warning("PostgreSQL no está configurado; endpoints de datos y operación responderán con HTTP 503.")
         return
 
     def initialize_in_background() -> None:
         try:
-            database.initialize_database()
+            database.initialize_database(on_authentication_ready=authentication_initialized.set)
         except Exception:
             logger.exception("No se pudo inicializar PostgreSQL ni importar las fuentes sectoriales.")
         else:
@@ -799,6 +810,13 @@ def get_database_health() -> dict[str, str]:
 def get_application_readiness() -> dict[str, str]:
     if not database_initialized.is_set():
         raise HTTPException(status_code=503, detail="Los datos iniciales todavía se están preparando.")
+    return {"status": "ready"}
+
+
+@app.get("/api/health/auth")
+def get_authentication_readiness() -> dict[str, str]:
+    if not authentication_initialized.is_set():
+        raise HTTPException(status_code=503, detail="El esquema y el usuario inicial todavía se están preparando.")
     return {"status": "ready"}
 
 

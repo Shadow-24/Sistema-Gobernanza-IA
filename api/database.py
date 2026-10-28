@@ -13,7 +13,7 @@ import mimetypes
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 import psycopg
 from psycopg.rows import dict_row
@@ -101,7 +101,7 @@ def wait_for_connection(max_attempts: int = 30) -> None:
             time.sleep(1)
 
 
-def initialize_database() -> None:
+def initialize_database(on_authentication_ready: Callable[[], None] | None = None) -> None:
     startup_started = time.perf_counter()
     logger.info("Esperando conexión con PostgreSQL.")
     wait_for_connection()
@@ -269,6 +269,16 @@ def initialize_database() -> None:
 
     initialize_demand_model_schema()
     initialize_ai_governance_schema()
+    with connection() as conn:
+        conn.execute(
+            "UPDATE managed_users SET permissions = permissions || %s WHERE NOT (permissions ? %s)",
+            (Jsonb(["fuentes"]), "fuentes"),
+        )
+    seed_initial_supervisor()
+    logger.info("Esquema y usuario inicial listos; autenticación disponible.")
+    if on_authentication_ready is not None:
+        on_authentication_ready()
+
     REPORTS_PATH.mkdir(parents=True, exist_ok=True)
     source_sync_started = time.perf_counter()
     logger.info("Iniciando sincronización del catálogo de fuentes.")
@@ -286,12 +296,6 @@ def initialize_database() -> None:
         connection_ready - startup_started,
         time.perf_counter() - source_sync_started,
     )
-    with connection() as conn:
-        conn.execute(
-            "UPDATE managed_users SET permissions = permissions || %s WHERE NOT (permissions ? %s)",
-            (Jsonb(["fuentes"]), "fuentes"),
-        )
-    seed_initial_supervisor()
     migrate_legacy_reports()
 
 
