@@ -3,6 +3,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Building2 } from "lucide-react";
 import { useAuth } from "../AuthContext";
 import { UserStoryRefs } from "./UserStoryRefs";
+import { ModelGovernancePanel } from "./ModelGovernancePanel";
 import { csvValue, groupCount, useSectorData } from "../SectorDataContext";
 import {
   loadDemandGovernanceMetrics,
@@ -740,7 +741,7 @@ export function ExecutiveDashboard() {
                     {[
                       { label: "Trazabilidad", metric: demandGovernance.governanceAndSystem.predictionTraceability },
                       { label: "Cobertura SHAP", metric: demandGovernance.governanceAndSystem.explainabilityCoverage },
-                      { label: "Controles cumplidos", metric: demandGovernance.governanceAndSystem.governanceControlsCompliance },
+                      { label: "Controles con evidencia conforme", metric: demandGovernance.governanceAndSystem.governanceControlsCompliance },
                       { label: "Detección de riesgos", metric: demandGovernance.governanceAndSystem.riskDetectionTime },
                       { label: "Éxito de operaciones", metric: demandGovernance.governanceAndSystem.systemOperations },
                       { label: "Pruebas de seguridad", metric: demandGovernance.governanceAndSystem.securityTestPassRate },
@@ -765,6 +766,7 @@ export function ExecutiveDashboard() {
                 )}
               </div>
             </div>
+            <ModelGovernancePanel scope="demanda" modelName="XGBoost · Predicción de demanda de combustibles líquidos" />
             {demandModelStatus.warnings?.map((warning) => (
               <p key={warning} className="text-[9px]" style={{ color: "#8a8886" }}>{warning}</p>
             ))}

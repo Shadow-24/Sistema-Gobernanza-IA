@@ -42,7 +42,8 @@ En el primer arranque, la API crea el esquema e importa los datasets sectoriales
 y almacena todos los archivos de `public/imports` en PostgreSQL, incluidos los
 CSV, libros Excel y PDF originales; debe haber al menos una cuenta inicial configurada con
 `SEED_ADMIN_USERNAME` y `SEED_ADMIN_PASSWORD`. Los siguientes cambios de fuente
-se sincronizan al iniciar la API mediante checksum. Los reportes se guardan en
+se detectan por tamaño y fecha de modificación; solo los archivos que cambian se
+vuelven a hashear e importar. Los reportes se guardan en
 `reportes_generados/files`; los datos de PostgreSQL persisten en el volumen
 `postgres_data`. En el primer arranque, los archivos legados asociados a
 `reportes_generados/metadata.json` se copian al nuevo almacenamiento y aparecen
@@ -128,11 +129,26 @@ Endpoints autenticados:
 - `GET /api/demand-model/history`: historial de entrenamientos y predicciones.
 - `GET /api/demand-model/governance-metrics`: métricas predictivas, trazabilidad y métricas de operación disponibles.
 
-Los controles de gobernanza, tiempos de detección de riesgos, pruebas de
-seguridad, detección de riesgos de IA y utilidad percibida permanecen como
-pendientes/no disponibles hasta que existan registros verificables. La
-comparación AS-IS/TO-BE no se declara validada sin datos AS-IS. SHAP solo se
-reporta como disponible cuando la explicación se calcula correctamente.
+### AI TRiSM y evaluación de riesgos de IA
+
+AI TRiSM no se implementa como otro modelo. Sus revisiones se presentan junto a cada evaluación de XGBoost; Cumplimiento conserva la matriz central de evidencias y responsables:
+
+- La pantalla Demanda muestra trazabilidad, cobertura SHAP y controles con alcance de demanda; Gestión de Riesgos muestra los controles asociados al modelo vial junto a su evaluación y limitaciones.
+- La matriz de Cumplimiento registra objetivos alineados por tema con ISO/IEC 27001:2022, ISO/IEC 38507:2022 e ISO 9001:2026. Cada control identifica si aplica a demanda, al modelo vial o a ambos; guarda estado, evidencia, usuario y fecha.
+- Cada control permite adjuntar PDF, Word, Excel, CSV, TXT o im?genes de hasta 10 MB. Los archivos se almacenan en PostgreSQL, se asocian al control, se registran con una huella SHA-256 y pueden descargarse con autenticaci?n. La carga queda restringida al Supervisor de Cumplimiento.
+- El registro de riesgos de IA guarda sistema afectado, categoría, procedencia (observada, sintética o conceptual), evidencia, probabilidad, impacto, responsable y tratamiento. No precarga riesgos ficticios.
+- Los usuarios con permiso de Riesgos pueden registrar riesgos; el Supervisor de Cumplimiento actualiza estado y tratamiento. Solo este rol puede evaluar controles y marcarlos conformes, y el servidor exige evidencia para hacerlo.
+
+Endpoints autenticados: `GET /api/ai-governance/controls?scope=demanda|vial|todos` (scope opcional), `PATCH /api/ai-governance/controls/{control_id}`, `GET /api/ai-governance/risks`, `POST /api/ai-governance/risks` y `PATCH /api/ai-governance/risks/{risk_id}`. PostgreSQL crea las tablas al iniciar, sin borrar datos existentes.
+
+Las relaciones con ISO son una matriz temática académica, no una transcripción oficial de cláusulas ni evidencia de conformidad organizacional, certificación o auditoría independiente. “Conforme” es una autoevaluación del supervisor con evidencia referenciada. XGBoost vial no estima accidentes por viaje ni riesgos genéricos y no elige mitigaciones. La métrica de controles representa la proporción marcada conforme con evidencia; el tiempo de detección sigue no disponible porque aún no hay marcas de tiempo verificables.
+
+La cobertura de controles se obtiene ahora del registro de autoevaluación
+descrito arriba. El tiempo de detección de riesgos, las pruebas de seguridad,
+la detección de riesgos de IA y la utilidad percibida siguen pendientes o no
+disponibles hasta contar con registros verificables. La comparación
+AS-IS/TO-BE no se declara validada sin datos AS-IS. SHAP solo se reporta como
+disponible cuando la explicación se calcula correctamente.
 Inspecciona los avisos de cobertura: los datos de ventas del repositorio llegan
 a mayo de 2025 y no representan demanda actual en 2026. Instala las nuevas
 dependencias del backend con `python -m pip install -r requirements.txt`. Las

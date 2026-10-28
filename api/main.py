@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+import hashlib
 import logging
 import os
 import time
@@ -9,11 +12,10 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from psycopg.types.json import Jsonb
-from xgboost import XGBRegressor
 
 from api import database, demand_model, risk_model
 
@@ -25,6 +27,19 @@ RESOLUTIONS_PATH = IMPORTS_PATH / "Resolucionesdirectorales20182025_294460178235
 FACILITIES_PATH = IMPORTS_PATH / "CDCLyOPDHconInstalacionesFijas.csv"
 FUEL_SALES_PATH = IMPORTS_PATH / "MNHL7-VentasCombustibles.xlsx"
 DATE_FORMATS = ("%m/%d/%Y", "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d", "%Y-%m")
+MAX_AI_EVIDENCE_BYTES = 10 * 1024 * 1024
+AI_EVIDENCE_MEDIA_TYPES = {
+    ".pdf": "application/pdf",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xls": "application/vnd.ms-excel",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".csv": "text/csv",
+    ".txt": "text/plain",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
 LAG_DAYS = 28
 VALIDATION_DAYS = 14
 MIN_DAILY_POINTS = 60
@@ -209,6 +224,28 @@ class RiskSimulationRequest(BaseModel):
     delay_hours: float = Field(default=0, ge=0, le=168)
     incident_count: int = Field(default=0, ge=0, le=100)
     environmental_alert: bool = False
+
+
+class AIGovernanceControlUpdate(BaseModel):
+    status: Literal["no_evaluado", "en_revision", "conforme", "brecha"]
+    evidence: str = Field(default="", max_length=5000)
+
+
+class AIGovernanceRiskCreate(BaseModel):
+    model_name: str = Field(min_length=2, max_length=160)
+    category: str = Field(min_length=2, max_length=120)
+    description: str = Field(min_length=10, max_length=2000)
+    data_basis: Literal["observado", "sintetico", "conceptual"]
+    evidence: str = Field(default="", max_length=5000)
+    likelihood: int = Field(ge=1, le=5)
+    impact: int = Field(ge=1, le=5)
+    owner: str = Field(min_length=2, max_length=160)
+    treatment: str = Field(min_length=5, max_length=3000)
+
+
+class AIGovernanceRiskUpdate(BaseModel):
+    status: Literal["identificado", "en_tratamiento", "aceptado", "cerrado"]
+    treatment: str = Field(min_length=5, max_length=3000)
 
 
 def _public_report(row: dict[str, Any]) -> dict[str, Any]:
@@ -460,6 +497,8 @@ def _features(history: list[float], target_date: date) -> list[float]:
 
 
 def _make_model() -> XGBRegressor:
+    from xgboost import XGBRegressor
+
     return XGBRegressor(
         objective="reg:squarederror",
         n_estimators=120,
@@ -1127,6 +1166,285 @@ def _classify_route_simulation(request: RiskSimulationRequest) -> dict[str, Any]
     return {"score": score, "riskLevel": risk_level, "factors": factors}
 
 
+@app.get("/api/ai-governance/controls")
+def get_ai_governance_controls(
+    scope: Literal["todos", "demanda", "vial"] = Query(default="todos"),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    if not {"cumplimiento", "dashboard", "riesgos"}.intersection(user["permissions"]):
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar los controles de gobernanza de IA.")
+    try:
+        return database.list_ai_governance_controls(scope)
+    except Exception as error:
+        logger.exception("No se pudieron consultar los controles de gobernanza de IA.")
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los controles en PostgreSQL.") from error
+
+
+@app.patch("/api/ai-governance/controls/{control_id}")
+def update_ai_governance_control(
+    control_id: str,
+    request: AIGovernanceControlUpdate,
+    user: dict[str, Any] = Depends(get_supervisor),
+) -> dict[str, Any]:
+    evidence = request.evidence.strip()
+    if request.status == "conforme" and not evidence:
+        raise HTTPException(status_code=422, detail="Registra evidencia antes de marcar un control como conforme.")
+    try:
+        control = database.update_ai_governance_control(
+            control_id, request.status, evidence, user["username"]
+        )
+    except Exception as error:
+        logger.exception("No se pudo guardar la evaluaciÃ³n del control de gobernanza %s.", control_id)
+        raise HTTPException(status_code=503, detail="No se pudo guardar la evaluaciÃ³n del control.") from error
+    if not control:
+        raise HTTPException(status_code=404, detail="No se encontrÃ³ el control de gobernanza solicitado.")
+    return control
+
+
+def _require_ai_evidence_read_access(user: dict[str, Any]) -> None:
+    if not {"cumplimiento", "dashboard", "riesgos"}.intersection(user["permissions"]):
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar las evidencias de gobernanza.")
+
+
+@app.get("/api/ai-governance/evidence")
+def get_ai_governance_evidence(
+    control_id: str | None = Query(default=None, max_length=120),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_ai_evidence_read_access(user)
+    try:
+        return database.list_ai_governance_evidence_files(control_id)
+    except Exception as error:
+        logger.exception("No se pudieron consultar los archivos de evidencia AI TRiSM.")
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los archivos de evidencia.") from error
+
+
+@app.post("/api/ai-governance/controls/{control_id}/evidence", status_code=201)
+async def upload_ai_governance_evidence(
+    control_id: str,
+    file: UploadFile = File(...),
+    user: dict[str, Any] = Depends(get_supervisor),
+) -> dict[str, Any]:
+    original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    extension = Path(original_name).suffix.lower()
+    media_type = AI_EVIDENCE_MEDIA_TYPES.get(extension)
+    if not original_name or len(original_name) > 255 or not media_type:
+        await file.close()
+        raise HTTPException(status_code=415, detail="Formato de evidencia no admitido. Usa PDF, Word, Excel, CSV, TXT, PNG o JPG.")
+    content = await file.read(MAX_AI_EVIDENCE_BYTES + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(status_code=422, detail="El archivo está vacío.")
+    if len(content) > MAX_AI_EVIDENCE_BYTES:
+        raise HTTPException(status_code=413, detail="El tamaño máximo por archivo es 10 MB.")
+    checksum = hashlib.sha256(content).hexdigest()
+    try:
+        saved = database.save_ai_governance_evidence_file(
+            evidence_id=str(uuid.uuid4()),
+            control_id=control_id,
+            file_name=original_name,
+            media_type=media_type,
+            content=content,
+            checksum=checksum,
+            username=user["username"],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo guardar el archivo de evidencia para el control %s.", control_id)
+        raise HTTPException(status_code=503, detail="No se pudo guardar el archivo de evidencia en PostgreSQL.") from error
+    if not saved:
+        raise HTTPException(status_code=404, detail="No se encontró el control de gobernanza solicitado.")
+    return saved
+
+
+@app.get("/api/ai-governance/evidence/{evidence_id}/download")
+def download_ai_governance_evidence(
+    evidence_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> Response:
+    _require_ai_evidence_read_access(user)
+    try:
+        evidence = database.get_ai_governance_evidence_file(evidence_id)
+    except Exception as error:
+        logger.exception("No se pudo leer el archivo de evidencia %s.", evidence_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el archivo de evidencia.") from error
+    if not evidence:
+        raise HTTPException(status_code=404, detail="No se encontró el archivo de evidencia solicitado.")
+    _append_access_event(
+        username=user["username"],
+        role=user["role"],
+        action="Descarga de evidencia AI TRiSM",
+        resource=f"{evidence['control_id']}/{evidence['file_name']}",
+        result="Permitido",
+    )
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"evidence\"; filename*=UTF-8''{quote(evidence['file_name'])}",
+        "Content-Length": str(evidence["size_bytes"]),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+    }
+    return Response(content=evidence["content"], media_type=evidence["media_type"], headers=headers)
+
+
+def _ai_governance_alerts() -> list[dict[str, Any]]:
+    """Derive technical review alerts from persisted model evidence; never persist a risk automatically."""
+    alerts: list[dict[str, Any]] = []
+    demand_model_name = "XGBoost · Predicción de demanda de combustibles líquidos"
+    latest = database.load_demand_model_run()
+    if not latest:
+        return [{
+            "id": "demand-evaluation-pending",
+            "modelName": demand_model_name,
+            "category": "Evaluación pendiente",
+            "description": "No hay una evaluación persistida del modelo de demanda para revisar su desempeño y controles.",
+            "evidence": "PostgreSQL: demand_model_runs no contiene una evaluación disponible.",
+            "likelihood": 3,
+            "impact": 3,
+            "treatment": "Entrenar y evaluar el modelo con la fuente vigente antes de utilizar pronósticos.",
+        }]
+
+    result = latest["result"]
+    metrics = result.get("metrics") or {}
+    xgboost_metrics = metrics.get("xgboost") or {}
+    baseline_metrics = metrics.get("baseline") or {}
+    run_id = result.get("runId", latest["id"])
+    evaluated_at = result.get("trainedAt", "fecha no disponible")
+    evidence_prefix = f"Evaluación {run_id} · {evaluated_at}."
+
+    try:
+        _, _, current_checksum, _, _ = _load_demand_model_sources()
+        if current_checksum != latest["source_checksum"]:
+            alerts.append({
+                "id": f"demand-source-changed-{run_id}",
+                "modelName": demand_model_name,
+                "category": "Cambio de fuente",
+                "description": "La fuente actual cambió después de la evaluación guardada; las métricas y pronósticos requieren reentrenamiento.",
+                "evidence": f"{evidence_prefix} Checksum de evaluación distinto al checksum actual de las fuentes.",
+                "likelihood": 4,
+                "impact": 4,
+                "treatment": "Revisar cambios en las fuentes, entrenar de nuevo y comparar las métricas con el baseline.",
+            })
+    except (FileNotFoundError, ValueError) as error:
+        alerts.append({
+            "id": f"demand-source-verification-{run_id}",
+            "modelName": demand_model_name,
+            "category": "Verificación de fuente",
+            "description": "No se pudo verificar si las fuentes usadas por el modelo siguen vigentes.",
+            "evidence": f"{evidence_prefix} Error al verificar fuentes: {error}",
+            "likelihood": 3,
+            "impact": 3,
+            "treatment": "Corregir la disponibilidad o formato de la fuente y repetir la evaluación.",
+        })
+
+    r2 = xgboost_metrics.get("r2")
+    if isinstance(r2, (int, float)) and r2 < 0.6:
+        alerts.append({
+            "id": f"demand-r2-low-{run_id}",
+            "modelName": demand_model_name,
+            "category": "Desempeño predictivo",
+            "description": f"El R² de la evaluación temporal es {r2:.3f}, por debajo de la referencia inicial de 0.60.",
+            "evidence": f"{evidence_prefix} R² XGBoost={r2:.6f}; periodo de prueba={result.get('evaluationPeriod')}.",
+            "likelihood": 4,
+            "impact": 4,
+            "treatment": "Revisar cobertura, variables, partición temporal y desempeño frente al baseline antes de usar el pronóstico.",
+        })
+
+    reduction = metrics.get("errorReductionPercent")
+    if isinstance(reduction, (int, float)) and reduction <= 0:
+        alerts.append({
+            "id": f"demand-baseline-not-improved-{run_id}",
+            "modelName": demand_model_name,
+            "category": "Comparación con baseline",
+            "description": "XGBoost no redujo el MAE frente al baseline estacional en la evaluación temporal.",
+            "evidence": f"{evidence_prefix} MAE XGBoost={xgboost_metrics.get('mae')}; MAE baseline={baseline_metrics.get('mae')}; reducción={reduction:.4f}%.",
+            "likelihood": 4,
+            "impact": 3,
+            "treatment": "Revisar variables y configuración; conservar el baseline como referencia hasta demostrar una mejora reproducible.",
+        })
+
+    explanation = ((result.get("explainability") or {}).get("evaluation") or {})
+    if explanation.get("status") != "available":
+        alerts.append({
+            "id": f"demand-explainability-{run_id}",
+            "modelName": demand_model_name,
+            "category": "Explicabilidad",
+            "description": "La evaluación guardada no tiene una explicación SHAP disponible.",
+            "evidence": f"{evidence_prefix} Estado de explicabilidad={explanation.get('status', 'no registrado')}; motivo={explanation.get('reason', 'no disponible')}.",
+            "likelihood": 3,
+            "impact": 3,
+            "treatment": "Corregir el cálculo de explicabilidad y repetir la evaluación antes de presentar factores como explicaciones del modelo.",
+        })
+    return alerts
+
+
+@app.get("/api/ai-governance/alerts")
+def get_ai_governance_alerts(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if "riesgos" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar alertas de riesgos de IA.")
+    try:
+        alerts = _ai_governance_alerts()
+        return {"alerts": alerts, "generatedAt": datetime.now(timezone.utc).isoformat()}
+    except Exception as error:
+        logger.exception("No se pudieron generar las alertas de gobernanza de IA.")
+        raise HTTPException(status_code=503, detail="No se pudieron generar las alertas técnicas de los modelos.") from error
+
+
+@app.get("/api/ai-governance/risks")
+def get_ai_governance_risks(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    if "riesgos" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar el registro de riesgos de IA.")
+    try:
+        return database.list_ai_governance_risks()
+    except Exception as error:
+        logger.exception("No se pudo consultar el registro de riesgos de gobernanza de IA.")
+        raise HTTPException(status_code=503, detail="No se pudo consultar el registro en PostgreSQL.") from error
+
+
+@app.post("/api/ai-governance/risks", status_code=201)
+def create_ai_governance_risk(
+    request: AIGovernanceRiskCreate,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    if "riesgos" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para registrar riesgos de IA.")
+    if request.data_basis == "observado" and not request.evidence.strip():
+        raise HTTPException(status_code=422, detail="Un riesgo con base observada requiere registrar la fuente de evidencia.")
+    risk = {
+        "id": str(uuid.uuid4()),
+        "modelName": request.model_name.strip(),
+        "category": request.category.strip(),
+        "description": request.description.strip(),
+        "dataBasis": request.data_basis,
+        "evidence": request.evidence.strip(),
+        "likelihood": request.likelihood,
+        "impact": request.impact,
+        "owner": request.owner.strip(),
+        "treatment": request.treatment.strip(),
+    }
+    try:
+        return database.create_ai_governance_risk(risk, user["username"])
+    except Exception as error:
+        logger.exception("No se pudo registrar el riesgo de gobernanza de IA.")
+        raise HTTPException(status_code=503, detail="No se pudo registrar el riesgo en PostgreSQL.") from error
+
+
+@app.patch("/api/ai-governance/risks/{risk_id}")
+def update_ai_governance_risk(
+    risk_id: str,
+    request: AIGovernanceRiskUpdate,
+    user: dict[str, Any] = Depends(get_supervisor),
+) -> dict[str, Any]:
+    try:
+        risk = database.update_ai_governance_risk(risk_id, request.status, request.treatment.strip(), user["username"])
+    except Exception as error:
+        logger.exception("No se pudo actualizar el riesgo de gobernanza %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudo actualizar el riesgo en PostgreSQL.") from error
+    if not risk:
+        raise HTTPException(status_code=404, detail="No se encontró el riesgo solicitado.")
+    return risk
+
+
 @app.get("/api/risk-assessments")
 def get_risk_assessments(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
     if "riesgos" not in user["permissions"]:
@@ -1525,7 +1843,7 @@ def get_demand_model_governance_metrics(_: dict[str, Any] = Depends(get_current_
             "comparison": {
                 "status": "not_validated",
                 "indicators": comparison_indicators,
-                "reason": "No hay mediciones AS-IS verificables ni controles de gobernanza evaluados.",
+                "reason": "No hay mediciones AS-IS verificables; los controles registrados son una autoevaluación y no acreditan certificación.",
             },
         }
     except Exception as error:

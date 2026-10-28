@@ -16,11 +16,15 @@ from pathlib import Path
 from typing import Any, Iterator
 
 import psycopg
-from openpyxl import load_workbook
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
-from psycopg.types.json import Jsonb
-from api.imported_data import build_imported_data
+from api.imported_data import (
+    ENVIRONMENTAL_FILES,
+    MINORIST_PRICE_FILE,
+    PRICE_FILE,
+    REGISTRY_FILES,
+    build_imported_data,
+)
 from api.operational_data import build_operational_data
 
 IMPORTS_PATH = Path(__file__).resolve().parents[1] / "public" / "imports"
@@ -36,6 +40,10 @@ DATASET_FILES = {
     "resolutions": "Resolucionesdirectorales20182025_2944601782350740761.csv",
 }
 ALTERNATE_COMPLAINTS_FILE = "DenunciasSINADA_2898361792458095761.csv"
+OPERATIONAL_PREFIXES = (
+    "MNGN2-3-", "MNGN4-", "MNGN5-", "MNGN6-", "MNGN7-", "MNGN8-", "MNHL2-",
+    "MNHL3-", "MNHL4-", "MNHL6-", "MNHL7-", "MNHL8-", "MNHL9-",
+)
 
 PERMISSIONS_BY_ROLE = {
     "Gerente de Operaciones": ["dashboard", "trazabilidad", "reportes", "fuentes"],
@@ -94,7 +102,9 @@ def wait_for_connection(max_attempts: int = 30) -> None:
 
 
 def initialize_database() -> None:
+    startup_started = time.perf_counter()
     wait_for_connection()
+    connection_ready = time.perf_counter()
     with connection() as conn:
         statements = (
             """
@@ -142,10 +152,12 @@ def initialize_database() -> None:
                 file_type TEXT NOT NULL,
                 checksum TEXT NOT NULL,
                 size_bytes BIGINT NOT NULL,
+                modified_time_ns BIGINT,
                 content BYTEA NOT NULL,
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
+            "ALTER TABLE source_files ADD COLUMN IF NOT EXISTS modified_time_ns BIGINT",
             """
             CREATE TABLE IF NOT EXISTS generated_reports (
                 id TEXT PRIMARY KEY,
@@ -175,14 +187,96 @@ def initialize_database() -> None:
             """,
             "CREATE INDEX IF NOT EXISTS risk_assessments_created_at_idx ON risk_assessments(created_at DESC)",
             "ALTER TABLE generated_reports DROP CONSTRAINT IF EXISTS generated_reports_username_fkey",
+            """
+            CREATE TABLE IF NOT EXISTS ai_governance_controls (
+                control_id TEXT PRIMARY KEY,
+                standard TEXT NOT NULL,
+                model_scope TEXT NOT NULL DEFAULT 'ambos',
+                focus TEXT NOT NULL,
+                objective TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'no_evaluado'
+                    CHECK (status IN ('no_evaluado', 'en_revision', 'conforme', 'brecha')),
+                evidence TEXT NOT NULL DEFAULT '',
+                updated_by TEXT,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CHECK (status <> 'conforme' OR length(trim(evidence)) > 0)
+            )
+            """,
+            "ALTER TABLE ai_governance_controls ADD COLUMN IF NOT EXISTS model_scope TEXT NOT NULL DEFAULT 'ambos'",
+            """
+            CREATE TABLE IF NOT EXISTS ai_governance_evidence_files (
+                id TEXT PRIMARY KEY,
+                control_id TEXT NOT NULL REFERENCES ai_governance_controls(control_id) ON DELETE CASCADE,
+                file_name TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
+                checksum TEXT NOT NULL,
+                content BYTEA NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ai_governance_evidence_control_idx ON ai_governance_evidence_files(control_id, created_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS ai_governance_events (
+                id BIGSERIAL PRIMARY KEY,
+                control_id TEXT NOT NULL REFERENCES ai_governance_controls(control_id),
+                username TEXT NOT NULL,
+                previous_status TEXT NOT NULL,
+                new_status TEXT NOT NULL,
+                evidence TEXT NOT NULL,
+                occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ai_governance_events_control_idx ON ai_governance_events(control_id, occurred_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS ai_governance_risks (
+                id TEXT PRIMARY KEY,
+                model_name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                description TEXT NOT NULL,
+                data_basis TEXT NOT NULL CHECK (data_basis IN ('observado', 'sintetico', 'conceptual')),
+                evidence TEXT NOT NULL DEFAULT '',
+                likelihood SMALLINT NOT NULL CHECK (likelihood BETWEEN 1 AND 5),
+                impact SMALLINT NOT NULL CHECK (impact BETWEEN 1 AND 5),
+                owner TEXT NOT NULL,
+                treatment TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'identificado'
+                    CHECK (status IN ('identificado', 'en_tratamiento', 'aceptado', 'cerrado')),
+                created_by TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ai_governance_risks_updated_at_idx ON ai_governance_risks(updated_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS ai_governance_risk_events (
+                id BIGSERIAL PRIMARY KEY,
+                risk_id TEXT NOT NULL REFERENCES ai_governance_risks(id) ON DELETE CASCADE,
+                username TEXT NOT NULL,
+                previous_status TEXT,
+                new_status TEXT NOT NULL,
+                treatment TEXT NOT NULL,
+                occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
         )
         for statement in statements:
             conn.execute(statement)
 
     initialize_demand_model_schema()
+    initialize_ai_governance_schema()
     REPORTS_PATH.mkdir(parents=True, exist_ok=True)
-    import_source_datasets()
-    import_source_files()
+    source_sync_started = time.perf_counter()
+    changed_sources, source_checksums = import_source_files()
+    import_source_datasets(changed_sources, source_checksums)
+    logger.info(
+        "Fuentes sincronizadas: %s/%s cambiaron; PostgreSQL listo en %.2f s, sincronización en %.2f s.",
+        len(changed_sources),
+        len(source_checksums),
+        connection_ready - startup_started,
+        time.perf_counter() - source_sync_started,
+    )
     with connection() as conn:
         conn.execute(
             "UPDATE managed_users SET permissions = permissions || %s WHERE NOT (permissions ? %s)",
@@ -190,6 +284,236 @@ def initialize_database() -> None:
         )
     seed_initial_supervisor()
     migrate_legacy_reports()
+
+
+def initialize_ai_governance_schema() -> None:
+    controls = (
+        ("27001-access", "ISO/IEC 27001:2022", "ambos", "Seguridad de la información", "Definir y revisar el acceso a datos, modelos y funciones según responsabilidades."),
+        ("27001-trace", "ISO/IEC 27001:2022", "ambos", "Registro y trazabilidad", "Conservar evidencia de versiones, fuentes, evaluaciones y cambios de los modelos."),
+        ("27001-monitor", "ISO/IEC 27001:2022", "ambos", "Monitoreo e incidentes", "Definir cómo detectar, registrar y atender incidentes de seguridad o fallas del sistema de IA."),
+        ("38507-accountability", "ISO/IEC 38507:2022", "ambos", "Responsabilidad de gobernanza", "Asignar responsables organizacionales para aprobar, supervisar y revisar el uso de IA."),
+        ("38507-human-oversight", "ISO/IEC 38507:2022", "ambos", "Supervisión y decisión humana", "Establecer cuándo una recomendación requiere revisión humana y quién puede aceptarla o descartarla."),
+        ("38507-risk-impact", "ISO/IEC 38507:2022", "ambos", "Riesgo e impacto", "Evaluar impactos, límites de uso, incertidumbre y riesgos del sistema durante su ciclo de vida."),
+        ("9001-quality-objectives", "ISO 9001:2026", "demanda", "Calidad predictiva de demanda", "Registrar MAE, RMSE, MAPE/WAPE y R² en una prueba temporal y compararlos con el baseline."),
+        ("9001-road-quality", "ISO 9001:2026", "vial", "Calidad y alcance del modelo vial", "Documentar la métrica frente al baseline y que el objetivo es clasificar emergencias reportadas, no estimar riesgo por viaje."),
+        ("9001-improvement", "ISO 9001:2026", "ambos", "No conformidad y mejora", "Registrar desviaciones, acciones correctivas, responsables y revisión de su eficacia."),
+    )
+    with connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO ai_governance_controls (control_id, standard, model_scope, focus, objective)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (control_id) DO UPDATE SET
+                    standard = EXCLUDED.standard,
+                    model_scope = EXCLUDED.model_scope,
+                    focus = EXCLUDED.focus,
+                    objective = EXCLUDED.objective
+                """,
+                controls,
+            )
+
+
+def list_ai_governance_controls(scope: str = "todos") -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT control_id AS id, standard, model_scope, focus, objective, status, evidence,
+                   updated_by, updated_at
+            FROM ai_governance_controls
+            WHERE %s = 'todos' OR model_scope IN (%s, 'ambos')
+            ORDER BY standard, control_id
+            """,
+            (scope, scope),
+        ).fetchall()
+
+
+def update_ai_governance_control(
+    control_id: str,
+    status: str,
+    evidence: str,
+    username: str,
+) -> dict[str, Any] | None:
+    with connection() as conn:
+        current = conn.execute(
+            "SELECT status FROM ai_governance_controls WHERE control_id = %s FOR UPDATE",
+            (control_id,),
+        ).fetchone()
+        if not current:
+            return None
+        updated = conn.execute(
+            """
+            UPDATE ai_governance_controls
+            SET status = %s, evidence = %s, updated_by = %s, updated_at = now()
+            WHERE control_id = %s
+            RETURNING control_id AS id, standard, model_scope, focus, objective, status, evidence,
+                      updated_by, updated_at
+            """,
+            (status, evidence, username, control_id),
+        ).fetchone()
+        conn.execute(
+            """
+            INSERT INTO ai_governance_events
+                (control_id, username, previous_status, new_status, evidence)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (control_id, username, current["status"], status, evidence),
+        )
+        return updated
+
+
+def list_ai_governance_evidence_files(control_id: str | None = None) -> list[dict[str, Any]]:
+    with connection() as conn:
+        if control_id:
+            return conn.execute(
+                """
+                SELECT id, control_id, file_name, media_type, size_bytes, checksum,
+                       uploaded_by, created_at
+                FROM ai_governance_evidence_files
+                WHERE control_id = %s
+                ORDER BY created_at DESC, id
+                """,
+                (control_id,),
+            ).fetchall()
+        return conn.execute(
+            """
+            SELECT id, control_id, file_name, media_type, size_bytes, checksum,
+                   uploaded_by, created_at
+            FROM ai_governance_evidence_files
+            ORDER BY control_id, created_at DESC, id
+            """
+        ).fetchall()
+
+
+def save_ai_governance_evidence_file(
+    *,
+    evidence_id: str,
+    control_id: str,
+    file_name: str,
+    media_type: str,
+    content: bytes,
+    checksum: str,
+    username: str,
+) -> dict[str, Any] | None:
+    with connection() as conn:
+        control = conn.execute(
+            "SELECT status, evidence FROM ai_governance_controls WHERE control_id = %s FOR UPDATE",
+            (control_id,),
+        ).fetchone()
+        if not control:
+            return None
+        attachment_reference = f"Adjunto: {file_name} · SHA-256 {checksum}"
+        evidence = control["evidence"].strip()
+        evidence_changed = attachment_reference not in evidence
+        if evidence_changed:
+            evidence = "\n".join(part for part in (evidence, attachment_reference) if part)
+        if len(evidence) > 5000:
+            raise ValueError("La evidencia supera el límite de 5000 caracteres al añadir el archivo.")
+        row = conn.execute(
+            """
+            INSERT INTO ai_governance_evidence_files
+                (id, control_id, file_name, media_type, size_bytes, checksum, content, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, control_id, file_name, media_type, size_bytes, checksum,
+                      uploaded_by, created_at
+            """,
+            (evidence_id, control_id, file_name, media_type, len(content), checksum, content, username),
+        ).fetchone()
+        if evidence_changed:
+            conn.execute(
+                "UPDATE ai_governance_controls SET evidence = %s, updated_by = %s, updated_at = now() WHERE control_id = %s",
+                (evidence, username, control_id),
+            )
+        conn.execute(
+            """
+            INSERT INTO ai_governance_events
+                (control_id, username, previous_status, new_status, evidence)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (control_id, username, control["status"], control["status"], attachment_reference),
+        )
+        return {**row, "control_evidence": evidence}
+
+
+def get_ai_governance_evidence_file(evidence_id: str) -> dict[str, Any] | None:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, control_id, file_name, media_type, size_bytes, checksum,
+                   content, uploaded_by, created_at
+            FROM ai_governance_evidence_files WHERE id = %s
+            """,
+            (evidence_id,),
+        ).fetchone()
+
+
+def list_ai_governance_risks() -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, model_name, category, description, data_basis, evidence,
+                   likelihood, impact, owner, treatment, status, created_by,
+                   created_at, updated_at
+            FROM ai_governance_risks
+            ORDER BY CASE status WHEN 'identificado' THEN 0 WHEN 'en_tratamiento' THEN 1 ELSE 2 END,
+                     impact * likelihood DESC, updated_at DESC
+            """
+        ).fetchall()
+
+
+def create_ai_governance_risk(risk: dict[str, Any], username: str) -> dict[str, Any]:
+    with connection() as conn:
+        row = conn.execute(
+            """
+            INSERT INTO ai_governance_risks
+                (id, model_name, category, description, data_basis, evidence,
+                 likelihood, impact, owner, treatment, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, model_name, category, description, data_basis, evidence,
+                      likelihood, impact, owner, treatment, status, created_by,
+                      created_at, updated_at
+            """,
+            (
+                risk["id"], risk["modelName"], risk["category"], risk["description"],
+                risk["dataBasis"], risk["evidence"], risk["likelihood"], risk["impact"],
+                risk["owner"], risk["treatment"], username,
+            ),
+        ).fetchone()
+        conn.execute(
+            "INSERT INTO ai_governance_risk_events (risk_id, username, new_status, treatment) VALUES (%s, %s, %s, %s)",
+            (risk["id"], username, "identificado", risk["treatment"]),
+        )
+        return row
+
+
+def update_ai_governance_risk(
+    risk_id: str, status: str, treatment: str, username: str
+) -> dict[str, Any] | None:
+    with connection() as conn:
+        current = conn.execute(
+            "SELECT status FROM ai_governance_risks WHERE id = %s FOR UPDATE", (risk_id,)
+        ).fetchone()
+        if not current:
+            return None
+        row = conn.execute(
+            """
+            UPDATE ai_governance_risks SET status = %s, treatment = %s, updated_at = now()
+            WHERE id = %s
+            RETURNING id, model_name, category, description, data_basis, evidence,
+                      likelihood, impact, owner, treatment, status, created_by,
+                      created_at, updated_at
+            """,
+            (status, treatment, risk_id),
+        ).fetchone()
+        conn.execute(
+            """
+            INSERT INTO ai_governance_risk_events
+                (risk_id, username, previous_status, new_status, treatment)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (risk_id, username, current["status"], status, treatment),
+        )
+        return row
 
 
 def initialize_demand_model_schema() -> None:
@@ -358,6 +682,8 @@ def _normalize_complaint_dates(rows: list[dict[str, str]]) -> list[dict[str, str
 
 
 def _parse_determination_workbook(path: Path, year: int) -> list[dict[str, Any]]:
+    from openpyxl import load_workbook
+
     workbook = load_workbook(path, read_only=True, data_only=True)
     labels = ("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
     monthly = []
@@ -406,6 +732,8 @@ def _number(value: Any) -> float:
 
 
 def _parse_supervision_workbook(path: Path) -> list[dict[str, Any]]:
+    from openpyxl import load_workbook
+
     workbook = load_workbook(path, read_only=True, data_only=True)
     monthly: dict[tuple[int, int], dict[str, Any]] = {}
     month_labels = ("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
@@ -457,24 +785,63 @@ def _parse_supervision_workbook(path: Path) -> list[dict[str, Any]]:
     return [monthly[key] for key in sorted(monthly)]
 
 
-def import_source_datasets() -> None:
+def _dataset_source_needs_refresh(filename: str) -> bool:
+    static_sources = set(DATASET_FILES.values()) | {
+        ALTERNATE_COMPLAINTS_FILE,
+        *REGISTRY_FILES,
+        *ENVIRONMENTAL_FILES,
+        PRICE_FILE,
+        MINORIST_PRICE_FILE,
+        "MNHL1-PAS HL.xlsx",
+    }
+    if filename in static_sources:
+        return True
+    if filename.startswith("Determin") and filename.lower().endswith(".xlsx") and re.search(r"20\d{2}", filename):
+        return True
+    return any(filename.startswith(prefix) for prefix in OPERATIONAL_PREFIXES)
+
+
+def import_source_datasets(
+    changed_source_files: set[str] | None = None,
+    source_checksums: dict[str, str] | None = None,
+) -> None:
+    if changed_source_files is not None:
+        with connection() as conn:
+            stored_keys = {
+                row["dataset_key"]
+                for row in conn.execute("SELECT dataset_key FROM sector_datasets").fetchall()
+            }
+        expected_keys = set(DATASET_FILES) | {
+            "hydrocarbonData", "registryData", "environmentalData", "priceObservations", "operationalData",
+        }
+        data_sources_changed = any(_dataset_source_needs_refresh(name) for name in changed_source_files)
+        if not data_sources_changed and expected_keys.issubset(stored_keys):
+            logger.info("Las fuentes sectoriales no cambiaron; se reutilizan los datasets de PostgreSQL.")
+            return
+
     all_sources: dict[str, dict[str, Any]] = {}
-    source_hashes: dict[str, str] = {}
+    source_hashes = dict(source_checksums or {})
+
+    def checksum_for(path: Path) -> str:
+        checksum = source_hashes.get(path.name)
+        if checksum is None:
+            checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+            source_hashes[path.name] = checksum
+        return checksum
+
     for dataset_key, filename in DATASET_FILES.items():
         path = IMPORTS_PATH / filename
         if not path.is_file():
             raise FileNotFoundError(f"No se encontró el archivo fuente {filename}.")
-        payload = path.read_bytes()
         all_sources[filename] = {"rows": _read_csv_dataset(path)}
-        source_hashes[filename] = hashlib.sha256(payload).hexdigest()
+        checksum_for(path)
     alternate_complaints_path = IMPORTS_PATH / ALTERNATE_COMPLAINTS_FILE
     if not alternate_complaints_path.is_file():
         raise FileNotFoundError(f"No se encontró el archivo fuente {ALTERNATE_COMPLAINTS_FILE}.")
-    alternate_complaints_payload = alternate_complaints_path.read_bytes()
     all_sources[ALTERNATE_COMPLAINTS_FILE] = {
         "rows": _normalize_complaint_dates(_read_csv_dataset(alternate_complaints_path))
     }
-    source_hashes[ALTERNATE_COMPLAINTS_FILE] = hashlib.sha256(alternate_complaints_payload).hexdigest()
+    checksum_for(alternate_complaints_path)
 
     determination_paths = sorted(IMPORTS_PATH.glob("Determin*20*.xlsx"))
     if not determination_paths:
@@ -486,7 +853,7 @@ def import_source_datasets() -> None:
     for source_key, path in workbook_sources.items():
         if not path.is_file():
             raise FileNotFoundError(f"No se encontró el archivo fuente {path.name}.")
-        source_hashes[source_key] = hashlib.sha256(path.read_bytes()).hexdigest()
+        checksum_for(path)
 
     determinations = []
     for path in determination_paths:
@@ -521,18 +888,14 @@ def import_source_datasets() -> None:
     source_hashes["hydrocarbonData"] = hashlib.sha256(
         "".join(source_hashes[name] for name in [*workbook_sources]).encode()
     ).hexdigest()
-    operational_prefixes = (
-        "MNGN2-3-", "MNGN4-", "MNGN5-", "MNGN6-", "MNGN7-", "MNGN8-", "MNHL2-",
-        "MNHL3-", "MNHL4-", "MNHL6-", "MNHL7-", "MNHL8-", "MNHL9-",
-    )
     operational_paths = [
-        path for prefix in operational_prefixes
+        path for prefix in OPERATIONAL_PREFIXES
         for path in IMPORTS_PATH.glob(f"{prefix}*.xlsx")
     ]
-    if len(operational_paths) != len(operational_prefixes):
+    if len(operational_paths) != len(OPERATIONAL_PREFIXES):
         raise FileNotFoundError("Faltan libros Excel operativos requeridos para los indicadores sectoriales.")
     for path in operational_paths:
-        source_hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        checksum_for(path)
     source_hashes["operationalData"] = hashlib.sha256(
         "".join(f"{path.name}:{source_hashes[path.name]}" for path in sorted(operational_paths)).encode()
     ).hexdigest()
@@ -555,8 +918,7 @@ def import_source_datasets() -> None:
         file_hashes = []
         for source_file in source_files:
             path = IMPORTS_PATH / source_file
-            checksum = hashlib.sha256(path.read_bytes()).hexdigest()
-            source_hashes[source_file] = checksum
+            checksum = checksum_for(path)
             file_hashes.append(f"{source_file}:{checksum}")
         source_hashes[dataset_key] = hashlib.sha256("|".join(file_hashes).encode()).hexdigest()
         all_sources[dataset_key] = {"rows": imported_data[dataset_key]}
@@ -626,7 +988,7 @@ def import_source_datasets() -> None:
             )
 
 
-def import_source_files() -> None:
+def import_source_files() -> tuple[set[str], dict[str, str]]:
     if not IMPORTS_PATH.is_dir():
         raise FileNotFoundError(f"No se encontró el directorio de fuentes {IMPORTS_PATH}.")
     paths = sorted(path for path in IMPORTS_PATH.iterdir() if path.is_file())
@@ -634,31 +996,54 @@ def import_source_files() -> None:
         raise FileNotFoundError("El directorio de fuentes no contiene archivos para importar.")
     imported_names = [path.name for path in paths]
 
+    changed_names: set[str] = set()
+    checksums: dict[str, str] = {}
     with connection() as conn:
+        current_rows = conn.execute(
+            "SELECT file_name, checksum, size_bytes, modified_time_ns FROM source_files"
+        ).fetchall()
+        current_by_name = {row["file_name"]: row for row in current_rows}
         for path in paths:
+            stat = path.stat()
+            current = current_by_name.get(path.name)
+            if (
+                current
+                and current["size_bytes"] == stat.st_size
+                and current["modified_time_ns"] == stat.st_mtime_ns
+            ):
+                checksums[path.name] = current["checksum"]
+                continue
+
             payload = path.read_bytes()
             checksum = hashlib.sha256(payload).hexdigest()
-            current = conn.execute(
-                "SELECT checksum FROM source_files WHERE file_name = %s",
-                (path.name,),
-            ).fetchone()
+            checksums[path.name] = checksum
             if current and current["checksum"] == checksum:
+                conn.execute(
+                    "UPDATE source_files SET size_bytes = %s, modified_time_ns = %s WHERE file_name = %s",
+                    (stat.st_size, stat.st_mtime_ns, path.name),
+                )
                 continue
+            changed_names.add(path.name)
             file_type = path.suffix.lower().lstrip(".")
             conn.execute(
                 """
-                INSERT INTO source_files (file_name, file_type, checksum, size_bytes, content, updated_at)
-                VALUES (%s, %s, %s, %s, %s, now())
+                INSERT INTO source_files
+                    (file_name, file_type, checksum, size_bytes, modified_time_ns, content, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, now())
                 ON CONFLICT (file_name) DO UPDATE SET
                     file_type = EXCLUDED.file_type,
                     checksum = EXCLUDED.checksum,
                     size_bytes = EXCLUDED.size_bytes,
+                    modified_time_ns = EXCLUDED.modified_time_ns,
                     content = EXCLUDED.content,
                     updated_at = now()
                 """,
-                (path.name, file_type, checksum, len(payload), payload),
+                (path.name, file_type, checksum, stat.st_size, stat.st_mtime_ns, payload),
             )
+        stale_names = set(current_by_name) - set(imported_names)
+        changed_names.update(stale_names)
         conn.execute("DELETE FROM source_files WHERE NOT (file_name = ANY(%s))", (imported_names,))
+    return changed_names, checksums
 
 
 def list_source_files() -> list[dict[str, Any]]:
@@ -715,6 +1100,8 @@ def preview_source_file(file_name: str, sheet_name: str | None = None) -> dict[s
         }
 
     if source["fileType"] == "xlsx":
+        from openpyxl import load_workbook
+
         workbook = load_workbook(io.BytesIO(source["content"]), read_only=True, data_only=True)
         try:
             sheet_names = workbook.sheetnames
@@ -1040,6 +1427,14 @@ def get_model_operation_metrics() -> dict[str, Any]:
             FROM demand_model_predictions
             """
         ).fetchone()
+        control_metrics = conn.execute(
+            """
+            SELECT COUNT(*) AS total,
+                   COUNT(*) FILTER (WHERE status = 'conforme' AND length(trim(evidence)) > 0) AS conforming
+            FROM ai_governance_controls
+            WHERE model_scope IN ('demanda', 'ambos')
+            """
+        ).fetchone()
 
     total = prediction_metrics["total"]
     traceable = prediction_metrics["traceable"]
@@ -1058,9 +1453,11 @@ def get_model_operation_metrics() -> dict[str, Any]:
             "percent": round(explained / total * 100, 2) if total else None,
         },
         "governanceControlsCompliance": {
-            "status": "unavailable",
-            "reason": "No hay un registro estructurado de controles aplicables y evaluaciones de cumplimiento.",
-            "percent": None,
+            "status": "measured" if control_metrics["total"] else "pending",
+            "totalControls": control_metrics["total"],
+            "controlsWithEvidenceMarkedConforming": control_metrics["conforming"],
+            "reason": "Porcentaje de controles que un supervisor marcó conformes con evidencia registrada; autoevaluación del proyecto, no auditoría ni certificación.",
+            "percent": round(control_metrics["conforming"] / control_metrics["total"] * 100, 2) if control_metrics["total"] else None,
         },
         "riskDetectionTime": {
             "status": "unavailable",

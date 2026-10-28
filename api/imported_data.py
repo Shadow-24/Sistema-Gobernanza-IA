@@ -7,7 +7,6 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from openpyxl import load_workbook
 
 
 REGISTRY_FILES = (
@@ -161,6 +160,8 @@ def _build_registry_summary(root: Path) -> dict[str, Any]:
 
 
 def _build_environmental_summary(root: Path) -> dict[str, Any]:
+    from openpyxl import load_workbook
+
     components: Counter[str] = Counter()
     parameters: Counter[tuple[str, str]] = Counter()
     years: Counter[int] = Counter()

@@ -23,7 +23,8 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   const headers = new Headers(init.headers);
   const token = getSessionToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  if (init.body && !(init.body instanceof Blob) && !headers.has("Content-Type")) {
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (init.body && !(init.body instanceof Blob) && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

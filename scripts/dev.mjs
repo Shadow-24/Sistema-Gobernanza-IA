@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import net from 'node:net';
+import { fileURLToPath } from 'node:url';
 
 const DEFAULT_API_PORT = 8000;
 const DEFAULT_WEB_PORT = 5173;
@@ -89,10 +90,9 @@ async function main() {
     throw error;
   }
 
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const web = spawn(npmCommand, ['run', 'dev:web', '--', '--port', String(webPort)], {
+  const viteCliPath = fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url));
+  const web = spawn(process.execPath, [viteCliPath, '--host', '127.0.0.1', '--port', String(webPort)], {
     stdio: 'inherit',
-    shell: true,
     env: { ...process.env, API_PORT: String(apiPort), WEB_PORT: String(webPort) },
   });
 

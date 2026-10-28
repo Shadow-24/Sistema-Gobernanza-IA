@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import json
 import logging
@@ -16,10 +18,7 @@ from urllib.request import Request, urlopen
 
 import numpy as np
 import pandas as pd
-import shap
-import xgboost
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from xgboost import XGBRegressor
 
 
 logger = logging.getLogger(__name__)
@@ -442,6 +441,8 @@ def _forecast_feature_frame(
 
 
 def _new_model() -> XGBRegressor:
+    from xgboost import XGBRegressor
+
     return XGBRegressor(**MODEL_CONFIG)
 
 
@@ -475,6 +476,8 @@ def _metric_set(actual: np.ndarray, predicted: np.ndarray) -> dict[str, float | 
 
 def _explain(model: XGBRegressor, features: pd.DataFrame) -> dict[str, Any]:
     try:
+        import shap
+
         explainer = shap.TreeExplainer(model)
         shap_values = np.asarray(explainer.shap_values(features), dtype=float)
         if shap_values.ndim == 3:
@@ -727,6 +730,8 @@ def train_and_evaluate(
             f"Pronóstico con {selected_source}: se mantiene constante el último precio observado "
             f"({latest_price_period}) para los periodos futuros."
         )
+    import xgboost
+
     public_result = {
         "runId": run_id,
         "model": "XGBoost",
@@ -789,6 +794,8 @@ def train_and_evaluate(
 
 
 def load_model(artifact: bytes) -> XGBRegressor:
+    from xgboost import XGBRegressor
+
     model = XGBRegressor()
     model.load_model(bytearray(artifact))
     return model

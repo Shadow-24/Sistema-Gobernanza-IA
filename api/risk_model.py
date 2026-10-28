@@ -15,7 +15,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
-from xgboost import XGBClassifier
 
 
 SOURCE_NAME = "3. Reporte Emergencias 01.01 al 20.08.2026 COES-MTC.csv"
@@ -53,6 +52,8 @@ def _prepare(path: Path) -> pd.DataFrame:
 
 
 def _build_pipeline() -> Pipeline:
+    from xgboost import XGBClassifier
+
     preprocess = ColumnTransformer(
         [("categorical", OneHotEncoder(handle_unknown="ignore", min_frequency=3), CATEGORICAL_FEATURES)],
         remainder="drop",

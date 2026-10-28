@@ -5,7 +5,6 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from openpyxl import load_workbook
 
 
 MONTHS = {
@@ -76,6 +75,8 @@ def _workbook_path(root: Path, prefix: str) -> Path:
 
 
 def _records(path: Path, sheet_name: str, header_row: int = 1, max_rows: int | None = None):
+    from openpyxl import load_workbook
+
     workbook = load_workbook(path, read_only=True, data_only=True)
     try:
         if sheet_name not in workbook.sheetnames:
@@ -172,6 +173,8 @@ def _read_gas(root: Path) -> dict[str, Any]:
 
     tariffs = []
     tariff_path = _workbook_path(root, "MNGN8-")
+    from openpyxl import load_workbook
+
     workbook = load_workbook(tariff_path, read_only=True, data_only=True)
     try:
         for sheet_name in workbook.sheetnames:
