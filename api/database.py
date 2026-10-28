@@ -103,8 +103,10 @@ def wait_for_connection(max_attempts: int = 30) -> None:
 
 def initialize_database() -> None:
     startup_started = time.perf_counter()
+    logger.info("Esperando conexión con PostgreSQL.")
     wait_for_connection()
     connection_ready = time.perf_counter()
+    logger.info("PostgreSQL conectado; preparando esquema.")
     with connection() as conn:
         statements = (
             """
@@ -269,7 +271,13 @@ def initialize_database() -> None:
     initialize_ai_governance_schema()
     REPORTS_PATH.mkdir(parents=True, exist_ok=True)
     source_sync_started = time.perf_counter()
+    logger.info("Iniciando sincronización del catálogo de fuentes.")
     changed_sources, source_checksums = import_source_files()
+    logger.info(
+        "Catálogo de fuentes sincronizado; %s/%s archivos nuevos o modificados. Importando datasets.",
+        len(changed_sources),
+        len(source_checksums),
+    )
     import_source_datasets(changed_sources, source_checksums)
     logger.info(
         "Fuentes sincronizadas: %s/%s cambiaron; PostgreSQL listo en %.2f s, sincronización en %.2f s.",

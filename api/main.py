@@ -14,7 +14,7 @@ from typing import Any, Literal
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from psycopg.types.json import Jsonb
@@ -50,6 +50,21 @@ LAG_MONTHS = 3
 logger = logging.getLogger(__name__)
 app = FastAPI(title="Gobernanza de datos sectoriales")
 database_initialized = threading.Event()
+INITIALIZATION_EXEMPT_PATHS = {"/api/health/database", "/api/health/ready"}
+
+
+@app.middleware("http")
+async def require_initialized_database(request: Request, call_next: Any) -> Response:
+    if (
+        request.url.path.startswith("/api/")
+        and request.url.path not in INITIALIZATION_EXEMPT_PATHS
+        and not database_initialized.is_set()
+    ):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Los datos iniciales todavía se están preparando. Intenta de nuevo en unos minutos."},
+        )
+    return await call_next(request)
 
 
 class DemandForecastRequest(BaseModel):
@@ -771,11 +786,6 @@ def build_predictions() -> dict[str, Any]:
 
 @app.get("/api/health/database")
 def get_database_health() -> dict[str, str]:
-    if not database_initialized.is_set():
-        raise HTTPException(
-            status_code=503,
-            detail="PostgreSQL y los datos iniciales todavía no están listos.",
-        )
     try:
         with database.connection() as conn:
             conn.execute("SELECT 1")
@@ -783,6 +793,13 @@ def get_database_health() -> dict[str, str]:
         logger.exception("La comprobación de conexión PostgreSQL falló.")
         raise HTTPException(status_code=503, detail="PostgreSQL no está disponible.") from error
     return {"status": "ok", "database": "postgresql"}
+
+
+@app.get("/api/health/ready")
+def get_application_readiness() -> dict[str, str]:
+    if not database_initialized.is_set():
+        raise HTTPException(status_code=503, detail="Los datos iniciales todavía se están preparando.")
+    return {"status": "ready"}
 
 
 @app.get("/api/datasets")
