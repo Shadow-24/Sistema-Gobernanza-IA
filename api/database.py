@@ -153,11 +153,12 @@ def initialize_database() -> None:
                 checksum TEXT NOT NULL,
                 size_bytes BIGINT NOT NULL,
                 modified_time_ns BIGINT,
-                content BYTEA NOT NULL,
+                content BYTEA,
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
             "ALTER TABLE source_files ADD COLUMN IF NOT EXISTS modified_time_ns BIGINT",
+            "ALTER TABLE source_files ALTER COLUMN content DROP NOT NULL",
             """
             CREATE TABLE IF NOT EXISTS generated_reports (
                 id TEXT PRIMARY KEY,
@@ -1014,8 +1015,15 @@ def import_source_files() -> tuple[set[str], dict[str, str]]:
                 checksums[path.name] = current["checksum"]
                 continue
 
-            payload = path.read_bytes()
-            checksum = hashlib.sha256(payload).hexdigest()
+            # Los originales pueden superar ampliamente el tamaño razonable para
+            # transferirlos como BYTEA en una conexión administrada. El contenedor
+            # ya conserva estos archivos en modo lectura; PostgreSQL mantiene su
+            # catálogo, huella, tamaño y los datos estructurados derivados.
+            file_hash = hashlib.sha256()
+            with path.open("rb") as source_file:
+                for chunk in iter(lambda: source_file.read(1024 * 1024), b""):
+                    file_hash.update(chunk)
+            checksum = file_hash.hexdigest()
             checksums[path.name] = checksum
             if current and current["checksum"] == checksum:
                 conn.execute(
@@ -1029,16 +1037,16 @@ def import_source_files() -> tuple[set[str], dict[str, str]]:
                 """
                 INSERT INTO source_files
                     (file_name, file_type, checksum, size_bytes, modified_time_ns, content, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, now())
+                VALUES (%s, %s, %s, %s, %s, NULL, now())
                 ON CONFLICT (file_name) DO UPDATE SET
                     file_type = EXCLUDED.file_type,
                     checksum = EXCLUDED.checksum,
                     size_bytes = EXCLUDED.size_bytes,
                     modified_time_ns = EXCLUDED.modified_time_ns,
-                    content = EXCLUDED.content,
+                    content = NULL,
                     updated_at = now()
                 """,
-                (path.name, file_type, checksum, stat.st_size, stat.st_mtime_ns, payload),
+                (path.name, file_type, checksum, stat.st_size, stat.st_mtime_ns),
             )
         stale_names = set(current_by_name) - set(imported_names)
         changed_names.update(stale_names)
@@ -1075,12 +1083,18 @@ def get_source_file(file_name: str) -> dict[str, Any] | None:
         ).fetchone()
     if not record:
         return None
+    content = bytes(record["content"]) if record["content"] is not None else None
+    if content is None:
+        source_path = IMPORTS_PATH / file_name
+        if not source_path.is_file():
+            return None
+        content = source_path.read_bytes()
     media_type = mimetypes.guess_type(record["file_name"])[0] or "application/octet-stream"
     return {
         "fileName": record["file_name"],
         "fileType": record["file_type"],
         "sizeBytes": record["size_bytes"],
-        "content": bytes(record["content"]),
+        "content": content,
         "mediaType": media_type,
     }
 

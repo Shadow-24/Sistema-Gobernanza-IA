@@ -39,8 +39,11 @@ npm run dev
 `npm run dev` carga las variables de `.env`, inicia la API y sirve el frontend.
 La API reintenta la conexión a PostgreSQL durante un máximo de 30 segundos al iniciar.
 En el primer arranque, la API crea el esquema e importa los datasets sectoriales
-y almacena todos los archivos de `public/imports` en PostgreSQL, incluidos los
-CSV, libros Excel y PDF originales; debe haber al menos una cuenta inicial configurada con
+y almacena el catálogo, las huellas y los datos estructurados derivados de los
+archivos de `public/imports` en PostgreSQL. Los originales CSV, Excel y PDF se
+mantienen de solo lectura junto a la API y se sirven por las rutas autenticadas;
+de este modo no se transfieren archivos masivos como binarios a PostgreSQL. Debe
+haber al menos una cuenta inicial configurada con
 `SEED_ADMIN_USERNAME` y `SEED_ADMIN_PASSWORD`. Los siguientes cambios de fuente
 se detectan por tamaño y fecha de modificación; solo los archivos que cambian se
 vuelven a hashear e importar. Los reportes se guardan en
