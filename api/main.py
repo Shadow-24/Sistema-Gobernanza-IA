@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from psycopg.types.json import Jsonb
 
@@ -1875,3 +1876,14 @@ def get_model_status(_: dict[str, Any] = Depends(get_current_user)) -> dict[str,
         "warnings": forecast["warnings"],
         "lastUpdated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+
+
+# En Render, la misma API entrega el frontend ya compilado. En desarrollo local
+# Vite continúa sirviendo la interfaz y esta ruta no se monta.
+frontend_dist = os.environ.get("FRONTEND_DIST", "").strip()
+if frontend_dist:
+    frontend_path = Path(frontend_dist)
+    if frontend_path.is_dir():
+        app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    else:
+        logger.warning("FRONTEND_DIST no existe; la API se iniciarÃ¡ sin archivos estÃ¡ticos: %s", frontend_path)

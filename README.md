@@ -223,4 +223,17 @@ Chrome mediante `https://APP_DOMAIN`.
 No subas `.env.production` al repositorio. Para comprobar el estado usa
 `docker compose --env-file .env.production -f docker-compose.prod.yml ps` y
 para consultar el inicio de la API usa `docker compose --env-file .env.production -f docker-compose.prod.yml logs -f api`.
+
+### Alternativa administrada: Render
+
+Para desplegar sin administrar Docker local, crea primero una instancia PostgreSQL
+en Render y luego un **Web Service** desde este repositorio. En la configuración
+del servicio selecciona **Docker**, indica `Dockerfile.render` y configura la
+ruta de salud como `/api/health/database`. Render entrega la aplicación completa
+en un solo servicio: el frontend compilado y las rutas `/api/*` de FastAPI.
+
+Agrega como variables de entorno `DATABASE_URL` (la **Internal Database URL** de
+la instancia PostgreSQL de Render), `SEED_ADMIN_USERNAME`,
+`SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME` y, opcionalmente, `EIA_API_KEY`.
+No copies una URL pública de PostgreSQL ni publiques sus credenciales.
   
