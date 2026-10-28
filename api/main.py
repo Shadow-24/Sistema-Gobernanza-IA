@@ -4,6 +4,7 @@ import json
 import hashlib
 import logging
 import os
+import threading
 import time
 import unicodedata
 import uuid
@@ -48,6 +49,7 @@ LAG_MONTHS = 3
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="Gobernanza de datos sectoriales")
+database_initialized = threading.Event()
 
 
 class DemandForecastRequest(BaseModel):
@@ -85,14 +87,24 @@ def _load_demand_model_sources() -> tuple[
 
 @app.on_event("startup")
 def initialize_postgresql() -> None:
+    database_initialized.clear()
     if not os.environ.get("DATABASE_URL", "").strip():
         logger.warning("PostgreSQL no está configurado; endpoints de datos y operación responderán con HTTP 503.")
         return
-    try:
-        database.initialize_database()
-    except Exception:
-        logger.exception("No se pudo inicializar PostgreSQL ni importar las fuentes sectoriales.")
-        raise
+
+    def initialize_in_background() -> None:
+        try:
+            database.initialize_database()
+        except Exception:
+            logger.exception("No se pudo inicializar PostgreSQL ni importar las fuentes sectoriales.")
+        else:
+            database_initialized.set()
+
+    threading.Thread(
+        target=initialize_in_background,
+        name="postgresql-initialization",
+        daemon=True,
+    ).start()
 
 
 def get_current_user(authorization: str | None = Header(default=None)) -> dict[str, Any]:
@@ -759,6 +771,11 @@ def build_predictions() -> dict[str, Any]:
 
 @app.get("/api/health/database")
 def get_database_health() -> dict[str, str]:
+    if not database_initialized.is_set():
+        raise HTTPException(
+            status_code=503,
+            detail="PostgreSQL y los datos iniciales todavía no están listos.",
+        )
     try:
         with database.connection() as conn:
             conn.execute("SELECT 1")

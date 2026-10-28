@@ -234,6 +234,10 @@ en Render y luego un **Web Service** desde este repositorio. En la configuració
 del servicio selecciona **Docker**, indica `Dockerfile.render` y configura la
 ruta de salud como `/api/health/database`. Render entrega la aplicación completa
 en un solo servicio: el frontend compilado y las rutas `/api/*` de FastAPI.
+FastAPI abre el puerto inmediatamente y sincroniza los archivos fuente con
+PostgreSQL en segundo plano; la ruta de salud devuelve HTTP 503 hasta que esa
+inicialización termine correctamente. En el primer despliegue la importación
+puede tardar más porque debe procesar las fuentes iniciales.
 
 Agrega como variables de entorno `DATABASE_URL` (la **Internal Database URL** de
 la instancia PostgreSQL de Render), `SEED_ADMIN_USERNAME`,
