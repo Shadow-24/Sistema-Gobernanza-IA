@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+!.env.example
+!.env.production.example
+node_modules
+dist
+__pycache__
+*.py[cod]
+.venv
+venv
+reportes_generados
+.vscode
+.idea
+tests
+guidelines

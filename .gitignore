@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # JavaScript dependencies and build output
 node_modules/

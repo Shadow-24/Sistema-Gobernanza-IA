@@ -195,4 +195,32 @@ presentan datos de rutas, existencias o alertas que no estén en las fuentes.
 
 En producción, configura un proxy inverso que dirija las rutas `/api/*` al
 servicio Python; el proxy de Vite solo aplica durante el desarrollo.
+
+## Despliegue con Docker y HTTPS
+
+El archivo `docker-compose.prod.yml` publica la aplicación en un único dominio:
+Caddy entrega el frontend React y enruta `/api/*` a FastAPI. PostgreSQL no tiene
+puertos expuestos al exterior. Los reportes y la base de datos permanecen en
+volúmenes Docker; los datos fuente se copian a la imagen de la API solo para su
+procesamiento interno.
+
+En un servidor Linux con Docker Compose instalado:
+
+```bash
+git clone https://github.com/Shadow-24/Sistema-Gobernanza-IA.git
+cd Sistema-Gobernanza-IA
+git lfs install && git lfs pull
+cp .env.production.example .env.production
+# Edita .env.production: dominio real, correo ACME y contraseñas aleatorias.
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+Antes de iniciar, crea un registro DNS `A` para `APP_DOMAIN` que apunte a la IP
+pública del servidor y permite los puertos TCP 80 y 443 en el firewall. Caddy
+obtiene y renueva automáticamente el certificado HTTPS. Accede después desde
+Chrome mediante `https://APP_DOMAIN`.
+
+No subas `.env.production` al repositorio. Para comprobar el estado usa
+`docker compose --env-file .env.production -f docker-compose.prod.yml ps` y
+para consultar el inicio de la API usa `docker compose --env-file .env.production -f docker-compose.prod.yml logs -f api`.
   

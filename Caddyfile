@@ -1,0 +1,15 @@
+{
+	# Caddy solicita y renueva los certificados HTTPS. Configura ACME_EMAIL en .env.production.
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	@api path /api/* /docs /openapi.json
+	reverse_proxy @api api:8000
+
+	root * /srv
+	try_files {path} /index.html
+	file_server
+}
