@@ -355,6 +355,15 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_road_evaluations (
+                risk_id TEXT PRIMARY KEY,
+                inputs JSONB NOT NULL,
+                result JSONB NOT NULL,
+                evaluated_by TEXT NOT NULL,
+                evaluated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
             "CREATE INDEX IF NOT EXISTS detected_risk_workflow_events_risk_idx ON detected_risk_workflow_events(risk_id, occurred_at DESC)",
             "ALTER TABLE detected_risk_workflow ADD COLUMN IF NOT EXISTS risk_level TEXT",
             "ALTER TABLE detected_risk_workflow ALTER COLUMN status DROP NOT NULL",
@@ -716,6 +725,39 @@ def list_detected_risk_workflows() -> list[dict[str, Any]]:
             ORDER BY updated_at DESC
             """
         ).fetchall()
+
+
+def get_detected_risk_road_evaluation(risk_id: str) -> dict[str, Any] | None:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT risk_id, inputs, result, evaluated_by, evaluated_at
+            FROM detected_risk_road_evaluations
+            WHERE risk_id = %s
+            """,
+            (risk_id,),
+        ).fetchone()
+
+
+def save_detected_risk_road_evaluation(
+    risk_id: str,
+    inputs: dict[str, Any],
+    result: dict[str, Any],
+    username: str,
+) -> dict[str, Any]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            INSERT INTO detected_risk_road_evaluations
+                (risk_id, inputs, result, evaluated_by)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (risk_id) DO UPDATE
+            SET inputs = EXCLUDED.inputs, result = EXCLUDED.result,
+                evaluated_by = EXCLUDED.evaluated_by, evaluated_at = now()
+            RETURNING risk_id, inputs, result, evaluated_by, evaluated_at
+            """,
+            (risk_id, Jsonb(inputs), Jsonb(result), username),
+        ).fetchone()
 
 
 def update_detected_risk_workflow(

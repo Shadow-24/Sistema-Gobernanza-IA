@@ -214,8 +214,8 @@ export function ExecutiveDashboard() {
 
       <div role="tablist" aria-label="Secciones del resumen" className="flex flex-wrap gap-2 border-b" style={{ borderColor: "#e1dfdd" }}>
         {([
-          { id: "operacion", label: "Operación sectorial", stories: ["HU-001", "HU-002", "HU-003", "HU-004"] },
           { id: "hidrocarburos", label: "Hidrocarburos", stories: ["HU-003", "HU-004"] },
+          { id: "operacion", label: "Operación sectorial", stories: ["HU-001", "HU-002", "HU-003", "HU-004"] },
           { id: "demanda", label: "Demanda y modelo IA", stories: ["HU-009", "HU-010"] },
         ] as const).map(({ id: tab, label, stories }) => (
           <button key={tab} type="button" role="tab" aria-selected={dashboardTab === tab} onClick={() => setDashboardTab(tab)}
@@ -440,7 +440,7 @@ export function ExecutiveDashboard() {
               <Card className="p-4">
                 <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Precios de combustibles · promedio por producto</div>
                 <p className="text-[11px] mb-2" style={{ color: "#8a8886" }}>Periodo más reciente: {latestFuelPrices[0]?.period ?? "sin datos"} · S/ por unidad publicada</p>
-                <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                <div className="space-y-1.5">
                   {latestFuelPrices.map((item) => (
                     <div key={item.product} className="flex justify-between gap-2 text-[12px]">
                       <span className="truncate" style={{ color: "#605e5c" }}>{item.product}</span>
@@ -461,7 +461,7 @@ export function ExecutiveDashboard() {
               <Card className="p-4">
                 <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Comercio exterior de hidrocarburos · MBLS</div>
                 <p className="text-[11px] mb-2" style={{ color: "#8a8886" }}>Periodo más reciente: {latestTradePeriod ?? "sin datos"}</p>
-                <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                <div className="space-y-1.5">
                   {latestTrade.slice(0, 8).map((item) => (
                     <div key={`${item.direction}-${item.product}`} className="flex justify-between gap-2 text-[12px]">
                       <span className="truncate" style={{ color: "#605e5c" }}>{item.direction} · {item.product}</span>

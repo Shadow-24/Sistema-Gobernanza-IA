@@ -138,6 +138,66 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 403)
         list_workflows.assert_not_called()
 
+    def test_road_evaluation_api_predicts_and_persists_result(self) -> None:
+        request = api_main.RoadImpactRequest(
+            phenomenonClass="HIDROMETEOROLÓGICO",
+            phenomenon="Inundación",
+            event="Desborde",
+            department="LORETO",
+        )
+        prediction = {"prediction": "INTERRUMPIDO", "confidence": 0.9}
+        saved = {
+            "risk_id": "SIM-TRN-001",
+            "inputs": request.model_dump(by_alias=True),
+            "result": prediction,
+            "evaluated_by": "supervisor",
+        }
+        user = {"username": "analyst", "role": "Analista de Datos", "permissions": ["riesgos"]}
+
+        with (
+            patch.object(api_main.risk_model, "predict_road_state", return_value=prediction) as predict,
+            patch.object(api_main.database, "save_detected_risk_road_evaluation", return_value=saved) as save,
+        ):
+            result = api_main.evaluate_detected_risk_road_impact("SIM-TRN-001", request, user)
+
+        self.assertEqual(result, saved)
+        predict.assert_called_once_with(api_main.IMPORTS_PATH, request.model_dump(by_alias=True))
+        save.assert_called_once_with("SIM-TRN-001", request.model_dump(by_alias=True, exclude_none=True), prediction, "analyst")
+
+    def test_road_evaluation_save_replaces_previous_evaluation_for_risk(self) -> None:
+        connection_context = MagicMock()
+        connection = connection_context.__enter__.return_value
+        saved = {
+            "risk_id": "SIM-TRN-001",
+            "inputs": {"phenomenonClass": "HIDROMETEOROLÓGICO"},
+            "result": {"prediction": "INTERRUMPIDO"},
+            "evaluated_by": "supervisor",
+        }
+        connection.execute.return_value.fetchone.return_value = saved
+
+        with patch.object(database, "connection", return_value=connection_context):
+            result = database.save_detected_risk_road_evaluation(
+                "SIM-TRN-001",
+                {"phenomenonClass": "HIDROMETEOROLÓGICO"},
+                {"prediction": "INTERRUMPIDO"},
+                "supervisor",
+            )
+
+        self.assertEqual(result, saved)
+        statement, parameters = connection.execute.call_args.args
+        self.assertIn("ON CONFLICT (risk_id) DO UPDATE", statement)
+        self.assertEqual(parameters[0], "SIM-TRN-001")
+        self.assertEqual(parameters[1].obj, {"phenomenonClass": "HIDROMETEOROLÓGICO"})
+        self.assertEqual(parameters[2].obj, {"prediction": "INTERRUMPIDO"})
+
+    def test_road_evaluation_read_requires_risk_permission(self) -> None:
+        with patch.object(api_main.database, "get_detected_risk_road_evaluation") as get_evaluation:
+            with self.assertRaises(HTTPException) as raised:
+                api_main.get_detected_risk_road_evaluation("SIM-TRN-001", {"permissions": ["dashboard"]})
+
+        self.assertEqual(raised.exception.status_code, 403)
+        get_evaluation.assert_not_called()
+
     def test_uploaded_document_does_not_assign_initial_status(self) -> None:
         connection_context = MagicMock()
         connection = connection_context.__enter__.return_value

@@ -1424,6 +1424,52 @@ def get_detected_risk_events(
         raise HTTPException(status_code=503, detail="No se pudo consultar la línea de tiempo del riesgo.") from error
 
 
+@app.get("/api/detected-risks/{risk_id}/road-evaluation")
+def get_detected_risk_road_evaluation(
+    risk_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any] | None:
+    _require_risk_read_access(user)
+    if len(risk_id) > 120:
+        raise HTTPException(status_code=422, detail="El identificador del riesgo no es válido.")
+    try:
+        return database.get_detected_risk_road_evaluation(risk_id)
+    except Exception as error:
+        logger.exception("No se pudo consultar la evaluación vial del riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar la evaluación vial guardada.") from error
+
+
+@app.post("/api/detected-risks/{risk_id}/road-evaluation")
+def evaluate_detected_risk_road_impact(
+    risk_id: str,
+    request: RoadImpactRequest,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_risk_read_access(user)
+    if len(risk_id) > 120:
+        raise HTTPException(status_code=422, detail="El identificador del riesgo no es válido.")
+    try:
+        prediction = risk_model.predict_road_state(IMPORTS_PATH, request.model_dump(by_alias=True))
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="No se encontró el CSV MTC requerido en imports.") from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo evaluar el impacto vial con XGBoost.")
+        raise HTTPException(status_code=503, detail="No se pudo evaluar el impacto vial con XGBoost.") from error
+
+    try:
+        return database.save_detected_risk_road_evaluation(
+            risk_id,
+            request.model_dump(by_alias=True, exclude_none=True),
+            prediction,
+            user["username"],
+        )
+    except Exception as error:
+        logger.exception("No se pudo guardar la evaluación vial del riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="La evaluación se calculó, pero no se pudo guardar.") from error
+
+
 @app.get("/api/detected-risks/{risk_id}/documents")
 def get_detected_risk_documents(
     risk_id: str,

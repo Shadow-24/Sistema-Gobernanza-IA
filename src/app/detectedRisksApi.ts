@@ -1,4 +1,5 @@
 import { apiFetch, apiRequest } from "./apiClient";
+import type { RoadImpactInput, RoadImpactPrediction } from "./riskAssessmentsApi";
 
 export type DetectedRiskStatus = "Activo" | "En análisis" | "Mitigado" | "Cerrado";
 export type DetectedRiskLevel = "Crítico" | "Alto" | "Medio" | "Bajo";
@@ -40,12 +41,34 @@ export type DetectedRiskDocument = {
   created_at: string;
 };
 
+export type DetectedRiskRoadEvaluation = {
+  risk_id: string;
+  inputs: RoadImpactInput;
+  result: RoadImpactPrediction;
+  evaluated_by: string;
+  evaluated_at: string;
+};
+
 export function loadDetectedRiskWorkflows(): Promise<DetectedRiskWorkflow[]> {
   return apiRequest<DetectedRiskWorkflow[]>("/api/detected-risks/workflow");
 }
 
 export function loadDetectedRiskEvents(riskId: string): Promise<DetectedRiskEvent[]> {
   return apiRequest<DetectedRiskEvent[]>(`/api/detected-risks/events?risk_id=${encodeURIComponent(riskId)}`);
+}
+
+export function loadDetectedRiskRoadEvaluation(riskId: string): Promise<DetectedRiskRoadEvaluation | null> {
+  return apiRequest<DetectedRiskRoadEvaluation | null>(`/api/detected-risks/${encodeURIComponent(riskId)}/road-evaluation`);
+}
+
+export function evaluateDetectedRiskRoadImpact(
+  riskId: string,
+  input: RoadImpactInput,
+): Promise<DetectedRiskRoadEvaluation> {
+  return apiRequest<DetectedRiskRoadEvaluation>(`/api/detected-risks/${encodeURIComponent(riskId)}/road-evaluation`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export function updateDetectedRiskWorkflow(

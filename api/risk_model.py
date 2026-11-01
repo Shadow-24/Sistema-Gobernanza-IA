@@ -73,7 +73,7 @@ def _build_pipeline() -> Pipeline:
 
 
 @lru_cache(maxsize=2)
-def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any]]:
+def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], list[str]]:
     del mtime_ns  # included in the cache key to reload after source updates
     data = _prepare(Path(source_path))
     if len(data) < 30:
@@ -86,9 +86,13 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any]]:
     if train[TARGET].nunique() < 2:
         raise ValueError("El tramo de entrenamiento no contiene al menos dos estados viales.")
 
+    train_classes = sorted(train[TARGET].unique().tolist())
+    target_indexes = {label: index for index, label in enumerate(train_classes)}
+    train_targets = train[TARGET].map(target_indexes).astype(int)
     pipeline = _build_pipeline()
-    pipeline.fit(train[CATEGORICAL_FEATURES], train[TARGET])
-    predictions = pipeline.predict(test[CATEGORICAL_FEATURES])
+    pipeline.fit(train[CATEGORICAL_FEATURES], train_targets)
+    predicted_indexes = pipeline.predict(test[CATEGORICAL_FEATURES])
+    predictions = [train_classes[int(index)] for index in predicted_indexes]
     majority = train[TARGET].value_counts().idxmax()
     labels = sorted(data[TARGET].unique().tolist())
     metrics = {
@@ -116,7 +120,7 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any]]:
         "labels": labels,
         "caveat": "No estima probabilidad de accidente ni riesgo por viaje: el archivo contiene emergencias, sin viajes sin incidentes ni identificación de cisternas.",
     }
-    return pipeline, metrics
+    return pipeline, metrics, train_classes
 
 
 def model_status(imports_path: Path) -> dict[str, Any]:
@@ -124,7 +128,7 @@ def model_status(imports_path: Path) -> dict[str, Any]:
     if not source.is_file():
         return {"available": False, "reason": f"No se encontró {SOURCE_NAME} en imports."}
     try:
-        _, metrics = _fit(str(source.resolve()), source.stat().st_mtime_ns)
+        _, metrics, _ = _fit(str(source.resolve()), source.stat().st_mtime_ns)
         return {"available": True, "model": "XGBoost", "modelStatus": "experimental", **metrics}
     except Exception as error:
         return {"available": False, "reason": str(error), "source": SOURCE_NAME}
@@ -134,7 +138,7 @@ def predict_road_state(imports_path: Path, scenario: dict[str, Any]) -> dict[str
     source = imports_path / SOURCE_NAME
     if not source.is_file():
         raise FileNotFoundError(SOURCE_NAME)
-    pipeline, metrics = _fit(str(source.resolve()), source.stat().st_mtime_ns)
+    pipeline, metrics, train_classes = _fit(str(source.resolve()), source.stat().st_mtime_ns)
     date = pd.to_datetime(scenario.get("date"), errors="coerce")
     row = {
         "CLASE_FENOMENO": scenario["phenomenonClass"],
@@ -149,10 +153,11 @@ def predict_road_state(imports_path: Path, scenario: dict[str, Any]) -> dict[str
     probabilities = pipeline.predict_proba(pd.DataFrame([row])[CATEGORICAL_FEATURES])[0]
     classes = pipeline.named_steps["classifier"].classes_
     order = probabilities.argsort()[::-1]
+    class_labels = [train_classes[int(index)] for index in classes]
     return {
-        "prediction": str(classes[order[0]]),
+        "prediction": class_labels[order[0]],
         "confidence": float(probabilities[order[0]]),
-        "probabilities": {str(classes[index]): float(probabilities[index]) for index in order},
+        "probabilities": {class_labels[index]: float(probabilities[index]) for index in order},
         "model": "XGBoost experimental",
         "evaluation": metrics["metrics"],
         "limitations": metrics["caveat"],
