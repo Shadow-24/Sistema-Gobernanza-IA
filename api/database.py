@@ -253,6 +253,14 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             """,
             "CREATE INDEX IF NOT EXISTS ai_governance_risks_updated_at_idx ON ai_governance_risks(updated_at DESC)",
             """
+            CREATE TABLE IF NOT EXISTS ai_governance_alert_reviews (
+                alert_id TEXT PRIMARY KEY,
+                risk_id TEXT NOT NULL REFERENCES ai_governance_risks(id) ON DELETE CASCADE,
+                reviewed_by TEXT NOT NULL,
+                reviewed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS ai_governance_risk_events (
                 id BIGSERIAL PRIMARY KEY,
                 risk_id TEXT NOT NULL REFERENCES ai_governance_risks(id) ON DELETE CASCADE,
@@ -263,10 +271,67 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS audit_workflow (
+                audit_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL CHECK (status IN ('Pendiente', 'Completada', 'En curso', 'Observada')),
+                progress SMALLINT NOT NULL CHECK (progress BETWEEN 0 AND 100),
+                phase TEXT NOT NULL DEFAULT 'Planificación',
+                responsible TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',
+                updated_by TEXT,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "ALTER TABLE audit_workflow DROP CONSTRAINT IF EXISTS audit_workflow_status_check",
+            """
+            ALTER TABLE audit_workflow
+            ADD CONSTRAINT audit_workflow_status_check
+            CHECK (status IN ('Pendiente', 'Completada', 'En curso', 'Observada'))
+            """,
+            "ALTER TABLE audit_workflow ADD COLUMN IF NOT EXISTS phase TEXT NOT NULL DEFAULT 'Planificación'",
+            """
+            CREATE TABLE IF NOT EXISTS audit_workflow_events (
+                id BIGSERIAL PRIMARY KEY,
+                audit_id TEXT NOT NULL REFERENCES audit_workflow(audit_id) ON DELETE CASCADE,
+                event_type TEXT NOT NULL CHECK (event_type IN ('status', 'progress', 'responsible', 'note', 'document')),
+                detail TEXT NOT NULL,
+                username TEXT NOT NULL,
+                occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS audit_workflow_migrations (
+                migration_id TEXT PRIMARY KEY,
+                applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "ALTER TABLE audit_workflow_events DROP CONSTRAINT IF EXISTS audit_workflow_events_event_type_check",
+            """
+            ALTER TABLE audit_workflow_events
+            ADD CONSTRAINT audit_workflow_events_event_type_check
+            CHECK (event_type IN ('status', 'progress', 'responsible', 'note', 'stage', 'update', 'document'))
+            """,
+            "CREATE INDEX IF NOT EXISTS audit_workflow_events_audit_idx ON audit_workflow_events(audit_id, occurred_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS audit_documents (
+                id TEXT PRIMARY KEY,
+                audit_id TEXT NOT NULL REFERENCES audit_workflow(audit_id) ON DELETE CASCADE,
+                file_name TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
+                checksum TEXT NOT NULL,
+                content BYTEA NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS audit_documents_audit_idx ON audit_documents(audit_id, created_at DESC)",
         )
         for statement in statements:
             conn.execute(statement)
 
+    initialize_audit_workflow()
     initialize_demand_model_schema()
     initialize_ai_governance_schema()
     with connection() as conn:
@@ -325,6 +390,243 @@ def initialize_ai_governance_schema() -> None:
                 """,
                 controls,
             )
+
+
+def initialize_audit_workflow() -> None:
+    initial_audits = tuple(
+        (audit_id, "Pendiente", 0)
+        for audit_id in (
+            "AUD-2024-041",
+            "AUD-2024-038",
+            "AUD-2024-035",
+            "AUD-2024-031",
+            "AUD-2024-028",
+            "AUD-2024-052",
+            "AUD-2024-055",
+            "AUD-2024-058",
+            "AUD-2025-004",
+            "AUD-2025-002",
+            "AUD-2025-001",
+        )
+    )
+    with connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO audit_workflow (audit_id, status, progress)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (audit_id) DO NOTHING
+                """,
+                initial_audits,
+            )
+        reset = conn.execute(
+            """
+            INSERT INTO audit_workflow_migrations (migration_id)
+            VALUES (%s)
+            ON CONFLICT (migration_id) DO NOTHING
+            RETURNING migration_id
+            """,
+            ("reset-audit-workflow-2026-11",),
+        ).fetchone()
+        if reset:
+            conn.execute(
+                """
+                UPDATE audit_workflow
+                SET status = 'Pendiente', progress = 0, phase = 'Planificación',
+                    responsible = '', notes = '', updated_by = NULL, updated_at = now()
+                WHERE audit_id = %s
+                """
+                ,
+                ("AUD-2025-004",),
+            )
+            conn.execute(
+                "DELETE FROM audit_workflow_events WHERE audit_id = %s",
+                ("AUD-2025-004",),
+            )
+        timeline_reset = conn.execute(
+            """
+            INSERT INTO audit_workflow_migrations (migration_id)
+            VALUES (%s)
+            ON CONFLICT (migration_id) DO NOTHING
+            RETURNING migration_id
+            """,
+            ("clear-audit-timeline-2026-11",),
+        ).fetchone()
+        if timeline_reset:
+            conn.execute(
+                "DELETE FROM audit_workflow_events WHERE audit_id = %s",
+                ("AUD-2025-004",),
+            )
+def list_audit_workflow() -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT audit_id, status, phase, responsible, notes, updated_by, updated_at
+            FROM audit_workflow
+            ORDER BY audit_id DESC
+            """
+        ).fetchall()
+
+
+def update_audit_workflow(
+    audit_id: str,
+    status: str,
+    phase: str,
+    responsible: str,
+    notes: str,
+    username: str,
+) -> dict[str, Any] | None:
+    with connection() as conn:
+        current = conn.execute(
+            "SELECT status, phase, responsible, notes FROM audit_workflow WHERE audit_id = %s FOR UPDATE",
+            (audit_id,),
+        ).fetchone()
+        if not current:
+            return None
+        if responsible and not conn.execute(
+            """
+            SELECT 1
+            FROM managed_users
+            WHERE username = %s AND active AND permissions ? 'auditoria'
+            """,
+            (responsible,),
+        ).fetchone():
+            raise ValueError("El responsable debe ser un usuario activo con permiso de Auditoría.")
+
+        updated = conn.execute(
+            """
+            UPDATE audit_workflow
+            SET status = %s, phase = %s, responsible = %s, notes = %s,
+                updated_by = %s, updated_at = now()
+            WHERE audit_id = %s
+            RETURNING audit_id, status, phase, responsible, notes, updated_by, updated_at
+            """,
+            (status, phase, responsible, notes, username, audit_id),
+        ).fetchone()
+        changes = []
+        for field, label, previous, value in (
+            ("status", "Estado", current["status"], status),
+            ("phase", "Etapa", current["phase"], phase),
+            ("responsible", "Responsable", current["responsible"], responsible),
+            ("notes", "Notas de seguimiento", current["notes"], notes),
+        ):
+            if previous != value:
+                changes.append({"field": field, "label": label, "before": previous, "after": value})
+        if changes:
+            conn.execute(
+                """
+                INSERT INTO audit_workflow_events (audit_id, event_type, detail, username)
+                VALUES (%s, 'update', %s, %s)
+                """,
+                (audit_id, json.dumps({"changes": changes}, ensure_ascii=False), username),
+            )
+        return updated
+
+
+def list_audit_workflow_events(audit_id: str | None = None) -> list[dict[str, Any]]:
+    with connection() as conn:
+        if audit_id:
+            return conn.execute(
+                """
+                SELECT id, audit_id, event_type, detail, username, occurred_at
+                FROM audit_workflow_events
+                WHERE audit_id = %s AND event_type <> 'progress'
+                ORDER BY occurred_at DESC, id DESC
+                LIMIT 200
+                """,
+                (audit_id,),
+            ).fetchall()
+        return conn.execute(
+            """
+            SELECT id, audit_id, event_type, detail, username, occurred_at
+            FROM audit_workflow_events
+            WHERE event_type <> 'progress'
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT 500
+            """
+        ).fetchall()
+
+
+def list_audit_documents(audit_id: str) -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, audit_id, file_name, media_type, size_bytes, checksum,
+                   uploaded_by, created_at
+            FROM audit_documents
+            WHERE audit_id = %s
+            ORDER BY created_at DESC, id
+            """,
+            (audit_id,),
+        ).fetchall()
+
+
+def save_audit_document(
+    *,
+    document_id: str,
+    audit_id: str,
+    file_name: str,
+    media_type: str,
+    content: bytes,
+    checksum: str,
+    username: str,
+) -> dict[str, Any] | None:
+    with connection() as conn:
+        if not conn.execute("SELECT 1 FROM audit_workflow WHERE audit_id = %s", (audit_id,)).fetchone():
+            return None
+        document = conn.execute(
+            """
+            INSERT INTO audit_documents
+                (id, audit_id, file_name, media_type, size_bytes, checksum, content, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, audit_id, file_name, media_type, size_bytes, checksum,
+                      uploaded_by, created_at
+            """,
+            (document_id, audit_id, file_name, media_type, len(content), checksum, content, username),
+        ).fetchone()
+        conn.execute(
+            """
+            INSERT INTO audit_workflow_events (audit_id, event_type, detail, username)
+            VALUES (%s, 'document', %s, %s)
+            """,
+            (audit_id, f"Documento adjuntado: {file_name}", username),
+        )
+        return document
+
+
+def get_audit_document(document_id: str) -> dict[str, Any] | None:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, audit_id, file_name, media_type, size_bytes, checksum,
+                   content, uploaded_by, created_at
+            FROM audit_documents
+            WHERE id = %s
+            """,
+            (document_id,),
+        ).fetchone()
+
+
+def delete_audit_document(document_id: str, username: str) -> dict[str, str] | None:
+    with connection() as conn:
+        document = conn.execute(
+            """
+            DELETE FROM audit_documents
+            WHERE id = %s
+            RETURNING audit_id, file_name
+            """,
+            (document_id,),
+        ).fetchone()
+        if not document:
+            return None
+        conn.execute(
+            """
+            INSERT INTO audit_workflow_events (audit_id, event_type, detail, username)
+            VALUES (%s, 'document', %s, %s)
+            """,
+            (document["audit_id"], f"Documento eliminado: {document['file_name']}", username),
+        )
+        return document
 
 
 def list_ai_governance_controls(scope: str = "todos") -> list[dict[str, Any]]:
@@ -474,7 +776,17 @@ def list_ai_governance_risks() -> list[dict[str, Any]]:
         ).fetchall()
 
 
-def create_ai_governance_risk(risk: dict[str, Any], username: str) -> dict[str, Any]:
+def list_reviewed_ai_governance_alert_ids() -> set[str]:
+    with connection() as conn:
+        rows = conn.execute("SELECT alert_id FROM ai_governance_alert_reviews").fetchall()
+        return {row["alert_id"] for row in rows}
+
+
+def create_ai_governance_risk(
+    risk: dict[str, Any],
+    username: str,
+    source_alert_id: str | None = None,
+) -> dict[str, Any]:
     with connection() as conn:
         row = conn.execute(
             """
@@ -496,6 +808,18 @@ def create_ai_governance_risk(risk: dict[str, Any], username: str) -> dict[str, 
             "INSERT INTO ai_governance_risk_events (risk_id, username, new_status, treatment) VALUES (%s, %s, %s, %s)",
             (risk["id"], username, "identificado", risk["treatment"]),
         )
+        if source_alert_id:
+            review = conn.execute(
+                """
+                INSERT INTO ai_governance_alert_reviews (alert_id, risk_id, reviewed_by)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (alert_id) DO NOTHING
+                RETURNING alert_id
+                """,
+                (source_alert_id, risk["id"], username),
+            ).fetchone()
+            if not review:
+                raise ValueError("Esta alerta automática ya fue registrada.")
         return row
 
 

@@ -33,7 +33,9 @@ export type GovernanceRisk = {
   updated_at: string;
 };
 
-export type GovernanceRiskInput = Omit<GovernanceRisk, "id" | "status" | "created_by" | "created_at" | "updated_at">;
+export type GovernanceRiskInput = Omit<GovernanceRisk, "id" | "status" | "created_by" | "created_at" | "updated_at"> & {
+  source_alert_id?: string;
+};
 
 export type GovernanceEvidenceFile = {
   id: string;
@@ -93,6 +95,7 @@ export function createAIGovernanceRisk(value: GovernanceRiskInput): Promise<Gove
       impact: value.impact,
       owner: value.owner,
       treatment: value.treatment,
+      source_alert_id: value.source_alert_id,
     }),
   });
 }

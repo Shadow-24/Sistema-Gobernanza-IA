@@ -5,12 +5,13 @@ import { generateExecutiveDashboardPDF, generateDashboardPreview } from "../../u
 import { generateDetailedReportPDF } from "../../utils/reportGenerators/detailedReport";
 import { generateExcelExport } from "../../utils/reportGenerators/excelExport";
 import { generateEvidencesZip } from "../../utils/reportGenerators/evidencesZip";
-import { downloadGeneratedReport, formatReportSize, listGeneratedReports, openGeneratedReport, saveGeneratedReport, type GeneratedReport, type GeneratedReportType } from "../../utils/generatedReports";
+import { downloadGeneratedReport, formatReportSize, getGeneratedReportBlob, listGeneratedReports, saveGeneratedReport, type GeneratedReport, type GeneratedReportType } from "../../utils/generatedReports";
 import { formatPeriodLabel, getDefaultSections, getReportSectionGroups, type ReportConfiguration, type ReportDetailLevel } from "../../utils/reportConfiguration";
 import { buildConfiguredReportSections } from "../../utils/reportGenerators/configuredReport";
 import { canGenerateReport, canGenerateReportWithSections } from "../reportPermissions";
 import { UserStoryRefs } from "./UserStoryRefs";
 import { useAuth, type UserRole } from "../AuthContext";
+import { DocumentPreviewModal } from "./DocumentPreviewModal";
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`bg-white rounded ${className}`} style={{ border: "1px solid #e1dfdd" }}>{children}</div>;
@@ -278,6 +279,7 @@ export function ReportsModule() {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewPeriod, setPreviewPeriod] = useState<string | null>(null);
   const [previewReportType, setPreviewReportType] = useState<GeneratedReportType | null>(null);
+  const [historyPreview, setHistoryPreview] = useState<{ report: GeneratedReport; blob: Blob } | null>(null);
   const history = [...generatedReports].sort((a, b) => Date.parse(b.generado) - Date.parse(a.generado));
   const authorizedReportTypes = user ? reportTypes.filter((report) => canGenerateReport(user.role, report.label)) : [];
 
@@ -396,12 +398,8 @@ export function ReportsModule() {
   const handleHistoryDetails = async (report: GeneratedReport) => {
     recordAccess("Consulta de reporte", report.nombre);
     try {
-      if (report.fileName.endsWith(".pdf")) {
-        await openGeneratedReport(report);
-        return;
-      }
-      await downloadGeneratedReport(report);
-      toast.info(`El formato ${report.fileName.split(".").pop()?.toUpperCase()} se descarga para su visualización`);
+      const blob = await getGeneratedReportBlob(report);
+      setHistoryPreview({ report, blob });
     } catch (error) {
       console.error("No se pudo abrir el reporte:", error);
       toast.error(error instanceof Error ? error.message : "No se pudo abrir el reporte.");
@@ -555,6 +553,15 @@ export function ReportsModule() {
           reportType={previewReportType}
           period={previewPeriod}
           onBack={() => setPreviewHtml(null)}
+        />
+      )}
+
+      {historyPreview && (
+        <DocumentPreviewModal
+          fileName={historyPreview.report.fileName}
+          mediaType={historyPreview.blob.type}
+          blob={historyPreview.blob}
+          onClose={() => setHistoryPreview(null)}
         />
       )}
 

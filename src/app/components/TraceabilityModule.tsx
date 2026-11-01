@@ -1,8 +1,6 @@
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Activity, AlertTriangle, ArrowRight, BarChart2, CheckCircle, CloudRain, Cpu, Database, FileText, ShieldCheck, Truck } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart2, CheckCircle, CloudRain, Cpu, Database, FileText, ShieldCheck, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { csvValue, useSectorData } from "../SectorDataContext";
-import { loadForecasts, type ForecastResponse } from "../forecastApi";
 import { loadDemandPredictionHistory, type DemandPredictionRecord } from "../demandModelApi";
 import { UserStoryRefs } from "./UserStoryRefs";
 
@@ -141,24 +139,14 @@ export function TraceabilityModule() {
   const latestTrade = operationalData?.liquidFuels.trade.slice(-1)[0];
   const latestFine = operationalData?.liquidFuels.fines.slice(-1)[0];
   const [selectedPeriod, setSelectedPeriod] = useState("Q4");
-  const [selectedPredictionKey, setSelectedPredictionKey] = useState("complaints");
   const [centerSort, setCenterSort] = useState("desc");
-  const [forecastResponse, setForecastResponse] = useState<ForecastResponse | null>(null);
-  const [forecastError, setForecastError] = useState("");
   const [demandPredictionHistory, setDemandPredictionHistory] = useState<DemandPredictionRecord[]>([]);
   const [demandTraceError, setDemandTraceError] = useState("");
   const [predictionHistorySearch, setPredictionHistorySearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "forecasts" | "predictions" | "examples">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "predictions" | "examples">("overview");
 
   useEffect(() => {
     let active = true;
-    loadForecasts()
-      .then((response) => {
-        if (active) setForecastResponse(response);
-      })
-      .catch((error: unknown) => {
-        if (active) setForecastError(error instanceof Error ? error.message : "Error inesperado al cargar XGBoost.");
-      });
     loadDemandPredictionHistory()
       .then((history) => {
         if (active) setDemandPredictionHistory(history.predictions);
@@ -190,53 +178,18 @@ export function TraceabilityModule() {
       prediction.traceability.runId,
     ].some((value) => value.toLocaleLowerCase("es-PE").includes(predictionHistorySearch.trim().toLocaleLowerCase("es-PE")))
   ));
-  const selectedPrediction = forecastResponse?.predictions.find((prediction) => prediction.key === selectedPredictionKey)
-    ?? forecastResponse?.predictions[0];
-  const predictionChartData = selectedPrediction
-    ? [
-        ...selectedPrediction.history.map((month) => ({
-          period: month.period,
-          historica: month.count,
-          predicha: null as number | null,
-        })),
-        {
-          period: selectedPrediction.forecast.period,
-          historica: null,
-          predicha: selectedPrediction.forecast.count,
-        },
-      ]
-    : [];
-  const historyRows = forecastResponse?.predictions.flatMap((prediction) => [
-    ...prediction.history.map((item) => ({
-      period: item.period,
-      process: prediction.label,
-      count: item.count,
-      unit: prediction.unit,
-      status: "Histórico",
-      source: prediction.source,
-    })),
-    {
-      period: prediction.forecast.period,
-      process: prediction.label,
-      count: prediction.forecast.count,
-      unit: prediction.unit,
-      status: "Pronóstico",
-      source: prediction.source,
-    },
-  ]) ?? [];
   const statusColor = (status: string) => status === "Normal" || status === "Entregado" || status === "Mitigada" ? "#107c10" : status === "Crítico" || status === "Retrasado" ? "#a4262c" : "#ca5010";
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>Trazabilidad</h1>
-        <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>Consulta fuentes operativas, pronósticos y trazas técnicas. Los casos demostrativos se identifican como simulados.</p>
+        <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>Consulta fuentes operativas y trazas técnicas. Los casos demostrativos se identifican como simulados.</p>
       </div>
 
       <nav className="flex flex-wrap gap-2" aria-label="Secciones de trazabilidad">
         {[
           { id: "overview", label: "Resumen operativo", stories: ["HU-001", "HU-002", "HU-003", "HU-004"] },
-          { id: "forecasts", label: "Series y pronósticos", stories: [] },
           { id: "predictions", label: "Trazabilidad del modelo", stories: ["HU-009", "HU-010", "HU-016", "HU-017"] },
           { id: "examples", label: "Escenarios de demostración", stories: ["HU-005", "HU-006", "HU-007", "HU-008", "HU-021", "HU-022", "HU-023", "HU-024", "HU-025", "HU-026"] },
         ].map(({ id: tab, label, stories }) => <button
@@ -246,7 +199,7 @@ export function TraceabilityModule() {
           onClick={() => setActiveTab(tab as typeof activeTab)}
           className="rounded px-3 py-2 text-[11px] font-medium transition-colors"
           style={{ background: activeTab === tab ? "#0f6cbd" : "#ffffff", color: activeTab === tab ? "#ffffff" : "#605e5c", border: `1px solid ${activeTab === tab ? "#0f6cbd" : "#e1dfdd"}` }}
-        ><span className="flex flex-col items-start gap-1"><span>{label}</span><UserStoryRefs ids={stories} note={tab === "overview" ? "Datos históricos de contexto; no demuestran inventarios o envíos actuales." : tab === "forecasts" ? "Pronósticos de series administrativas, sin HU directa de demanda de hidrocarburos." : undefined} /></span></button>)}
+        ><span className="flex flex-col items-start gap-1"><span>{label}</span><UserStoryRefs ids={stories} note={tab === "overview" ? "Datos históricos de contexto; no demuestran inventarios o envíos actuales." : undefined} /></span></button>)}
       </nav>
 
       {/* Decision Flow Diagram */}
@@ -274,55 +227,6 @@ export function TraceabilityModule() {
           })}
         </div>
         </div>
-      </Card>}
-
-      {activeTab === "forecasts" && <Card className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Pronóstico experimental de series administrativas</div>
-          <span className="rounded px-1.5 py-0.5 text-[9px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>
-            XGBoost
-          </span>
-        </div>
-        <p className="text-[9px] mb-3" style={{ color: "#8a8886" }}>
-          Denuncias, expedientes y resoluciones son series administrativas separadas; no se usan como demanda de hidrocarburos.
-        </p>
-        {forecastError ? (
-          <p className="text-[10px]" role="alert" style={{ color: "#a4262c" }}>{forecastError}</p>
-        ) : forecastResponse ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
-              {forecastResponse.predictions.map((prediction) => (
-                <button
-                  key={prediction.key}
-                  type="button"
-                  onClick={() => setSelectedPredictionKey(prediction.key)}
-                  className="p-3 rounded text-left"
-                  style={{
-                    background: selectedPredictionKey === prediction.key ? "#f5f0fb" : "#f9f8f7",
-                    border: `1px solid ${selectedPredictionKey === prediction.key ? "#8764b8" : "#e1dfdd"}`,
-                  }}
-                >
-                  <div className="text-[10px] font-semibold" style={{ color: "#201f1e" }}>{prediction.label}</div>
-                  <div className="text-[9px] mt-1" style={{ color: "#605e5c" }}>
-                    {prediction.forecast.period}: {prediction.forecast.count.toLocaleString("es-PE")} {prediction.unit}
-                  </div>
-                  <div className="text-[9px] mt-1" style={{ color: "#8a8886" }}>
-                    {prediction.coverage.months} meses · {prediction.source}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 space-y-1">
-              {forecastResponse.unavailable.map((item) => (
-                <p key={item.key} className="text-[9px]" style={{ color: "#605e5c" }}>
-                  {item.label}: no pronosticable con el archivo disponible · {item.reason}
-                </p>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p className="text-[10px]" style={{ color: "#605e5c" }}>Calculando pronósticos desde los CSV históricos…</p>
-        )}
       </Card>}
 
       {activeTab === "predictions" && <Card className="p-4">
@@ -414,20 +318,6 @@ export function TraceabilityModule() {
           </div>
       </Card>}
 
-      {activeTab === "forecasts" && <Card className="p-4">
-        <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Datos faltantes para otros pronósticos</div>
-          <div className="space-y-3">
-            {(forecastResponse?.unavailable ?? []).map((item) => (
-              <div key={item.key} className="p-2.5 rounded" style={{ background: "#f9f8f7" }}>
-                <div className="text-[10px] font-semibold" style={{ color: "#201f1e" }}>{item.label}</div>
-                <div className="text-[9px] mt-1" style={{ color: "#605e5c" }}>{item.reason}</div>
-                {item.source && <div className="text-[8px] mt-1" style={{ color: "#8a8886" }}>Fuente revisada: {item.source}</div>}
-              </div>
-            ))}
-            {!forecastResponse && !forecastError && <p className="text-[9px]" style={{ color: "#8a8886" }}>Cargando estado de los datasets…</p>}
-          </div>
-      </Card>}
-
       {activeTab === "overview" && <Card className="p-4">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div><h2 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Operación observada</h2><p className="mt-1 text-[9px]" style={{ color: "#8a8886" }}>Último periodo disponible por fuente. Las series son agregadas y no representan rutas o envíos.</p></div>
@@ -513,64 +403,6 @@ export function TraceabilityModule() {
         </Card>
       </div>}
 
-      {activeTab === "forecasts" && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Card className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-            <div className="flex items-center gap-2"><Activity className="w-3.5 h-3.5" style={{ color: "#8764b8" }} /><div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Pronósticos de actividad · XGBoost</div></div>
-            {forecastResponse && (
-              <select
-                aria-label="Serie para el pronóstico"
-                value={selectedPrediction?.key ?? ""}
-                onChange={(event) => setSelectedPredictionKey(event.target.value)}
-                className="px-2 py-1 rounded text-[9px] border"
-                style={{ borderColor: "#e1dfdd" }}
-              >
-                {forecastResponse.predictions.map((prediction) => (
-                  <option key={prediction.key} value={prediction.key}>{prediction.label}</option>
-                ))}
-              </select>
-            )}
-          </div>
-          <p className="text-[9px] mb-2" style={{ color: "#8a8886" }}>
-            {selectedPrediction
-              ? `${selectedPrediction.label} · fuente ${selectedPrediction.source} · último periodo observado ${selectedPrediction.coverage.to}.`
-              : "Estimaciones sobre las series temporales observadas; los pronósticos no sustituyen datos operativos actuales."}
-          </p>
-          {forecastError ? (
-            <div className="py-5 text-[10px]" role="alert" style={{ color: "#a4262c" }}>
-              <div>No se pudieron cargar los pronósticos: {forecastError}</div>
-              <div className="mt-2" style={{ color: "#605e5c" }}>Inicia el servicio Python con <code>python -m uvicorn api.main:app --reload --port 8000</code>.</div>
-            </div>
-          ) : selectedPrediction ? (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={predictionChartData} margin={{ left: 0, right: 8, top: 5, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="2 2" stroke="#f3f2f1" />
-                  <XAxis dataKey="period" tick={{ fontSize: 9, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 9, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ fontSize: 10, border: "1px solid #e1dfdd", borderRadius: 4 }} />
-                  <Line name={`${selectedPrediction.label} históricos`} dataKey="historica" stroke="#0f6cbd" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-                  <Line name="Pronóstico XGBoost" dataKey="predicha" stroke="#ca5010" strokeWidth={2} strokeDasharray="4 3" connectNulls dot={{ r: 4 }} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="text-[9px] mt-1" style={{ color: "#605e5c" }}>
-                {selectedPrediction.forecast.period}: ~{selectedPrediction.forecast.count.toLocaleString("es-PE")} {selectedPrediction.unit} ·
-                {selectedPrediction.validation.maePerDay !== undefined
-                  ? ` validación de ${selectedPrediction.validation.horizonDays} días: MAE ${selectedPrediction.validation.maePerDay} ${selectedPrediction.unit}/día.`
-                  : ` validación de ${selectedPrediction.validation.horizonMonths} meses: MAE ${selectedPrediction.validation.maePerMonth} ${selectedPrediction.unit}/mes.`}
-                {" "}Cobertura: {selectedPrediction.coverage.from} a {selectedPrediction.coverage.to} ({selectedPrediction.coverage.months} meses).
-              </div>
-              {selectedPrediction.warnings.map((warning) => (
-                <div key={warning} className="text-[9px] mt-2" role="note" style={{ color: "#986f0b" }}>{warning}</div>
-              ))}
-            </>
-          ) : (
-            <div className="py-8 text-center text-[10px]" style={{ color: "#605e5c" }}>Calculando pronósticos con XGBoost…</div>
-          )}
-        </Card>
-
-      </div>}
-
       {activeTab === "overview" && <Card className="p-4">
         <div className="mb-3 flex items-center gap-2"><AlertTriangle className="h-4 w-4" style={{ color: "#ca5010" }} /><h2 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Cobertura pendiente para monitoreo en ruta</h2></div>
         <div className="grid gap-3 sm:grid-cols-3 text-[10px]" style={{ color: "#605e5c" }}>
@@ -579,14 +411,6 @@ export function TraceabilityModule() {
           <div><strong className="block" style={{ color: "#201f1e" }}>Ambiente</strong>Los muestreos IPASH son históricos; no hay sensores de ruta ni umbrales configurados.</div>
         </div>
       </Card>}
-
-      {activeTab === "forecasts" && <details className="rounded bg-white p-4" style={{ border: "1px solid #e1dfdd" }}>
-        <summary className="cursor-pointer text-[12px] font-semibold" style={{ color: "#201f1e" }}>Abrir tabla histórica completa</summary>
-        <p className="mb-3 mt-1 text-[9px]" style={{ color: "#8a8886" }}>Conteos administrativos y volúmenes de ventas; cada resultado conserva su unidad y cobertura.</p>
-        <div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-[9px]"><thead style={{ color: "#8a8886" }}><tr><th className="pb-2">Periodo</th><th className="pb-2">Serie</th><th className="pb-2">Valor</th><th className="pb-2">Tipo</th><th className="pb-2">Fuente</th></tr></thead><tbody>{historyRows.map((row, index) => <tr key={`${row.period}-${row.process}-${index}`} style={{ borderTop: "1px solid #f3f2f1", color: "#605e5c" }}><td className="py-2">{row.period}</td><td className="py-2">{row.process}</td><td className="py-2">{row.count.toLocaleString("es-PE")} {row.unit}</td><td className="py-2 font-medium" style={{ color: row.status === "Pronóstico" ? "#ca5010" : "#0f6cbd" }}>{row.status}</td><td className="py-2">{row.source}</td></tr>)}</tbody></table>
-          {historyRows.length === 0 && <div className="py-4 text-center text-[10px]" style={{ color: "#8a8886" }}>{forecastError || "Cargando series temporales…"}</div>}
-        </div>
-      </details>}
 
       {/* Trace Records */}
       {activeTab === "examples" && <div className="space-y-4">

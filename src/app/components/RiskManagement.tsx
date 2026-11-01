@@ -112,6 +112,7 @@ export function RiskManagement() {
   const [governanceRiskSaved, setGovernanceRiskSaved] = useState("");
   const [governanceRiskLoading, setGovernanceRiskLoading] = useState(true);
   const [automaticAlerts, setAutomaticAlerts] = useState<GovernanceAlert[]>([]);
+  const [selectedAutomaticAlertId, setSelectedAutomaticAlertId] = useState<string | null>(null);
   const [automaticAlertsError, setAutomaticAlertsError] = useState("");
   const [automaticAlertsAt, setAutomaticAlertsAt] = useState<string | null>(null);
   const [newGovernanceRisk, setNewGovernanceRisk] = useState({
@@ -175,6 +176,7 @@ export function RiskManagement() {
   }, []);
 
   const reviewAutomaticAlert = (alert: GovernanceAlert) => {
+    setSelectedAutomaticAlertId(alert.id);
     setNewGovernanceRisk({
       model_name: alert.modelName,
       other_model_name: "",
@@ -204,10 +206,15 @@ export function RiskManagement() {
         evidence: newGovernanceRisk.evidence.trim(),
         owner: (newGovernanceRisk.owner || user?.name || user?.username || "").trim(),
         treatment: newGovernanceRisk.treatment.trim(),
+        source_alert_id: selectedAutomaticAlertId ?? undefined,
       });
       setGovernanceRisks((current) => [created, ...current]);
       setRiskDrafts((current) => ({ ...current, [created.id]: { status: created.status, treatment: created.treatment } }));
       setGovernanceRiskSaved("Riesgo registrado en PostgreSQL.");
+      if (selectedAutomaticAlertId) {
+        setAutomaticAlerts((current) => current.filter((alert) => alert.id !== selectedAutomaticAlertId));
+        setSelectedAutomaticAlertId(null);
+      }
       setNewGovernanceRisk({ model_name: "XGBoost · Predicción de demanda de combustibles líquidos", other_model_name: "", category: "", description: "", data_basis: "observado", evidence: "", likelihood: 3, impact: 3, owner: "", treatment: "" });
     } catch (error) {
       setGovernanceRiskError(error instanceof Error ? error.message : "No se pudo registrar el riesgo.");

@@ -70,6 +70,10 @@ async function fetchGeneratedReport(report: GeneratedReport, download: boolean):
   return response.blob();
 }
 
+export function getGeneratedReportBlob(report: GeneratedReport): Promise<Blob> {
+  return fetchGeneratedReport(report, false);
+}
+
 export async function openGeneratedReport(report: GeneratedReport): Promise<void> {
   const previewWindow = window.open("about:blank", "_blank");
   if (previewWindow) previewWindow.opener = null;

@@ -152,6 +152,12 @@ def get_supervisor(user: dict[str, Any] = Depends(get_current_user)) -> dict[str
     return user
 
 
+def get_audit_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if user["role"] != "Supervisor de Cumplimiento" or "auditoria" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento con permiso de auditoría.")
+    return user
+
+
 def get_demand_model_analyst(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     if user["role"] not in {"Analista de Datos", "Supervisor de Cumplimiento"}:
         raise HTTPException(status_code=403, detail="Se requiere el rol Analista de Datos o Supervisor de Cumplimiento.")
@@ -280,11 +286,19 @@ class AIGovernanceRiskCreate(BaseModel):
     impact: int = Field(ge=1, le=5)
     owner: str = Field(min_length=2, max_length=160)
     treatment: str = Field(min_length=5, max_length=3000)
+    source_alert_id: str | None = Field(default=None, max_length=200)
 
 
 class AIGovernanceRiskUpdate(BaseModel):
     status: Literal["identificado", "en_tratamiento", "aceptado", "cerrado"]
     treatment: str = Field(min_length=5, max_length=3000)
+
+
+class AuditWorkflowUpdate(BaseModel):
+    status: Literal["Pendiente", "Completada", "En curso", "Observada"]
+    phase: Literal["Planificación", "Recopilación de evidencias", "Análisis", "Hallazgos y recomendaciones", "Revisión y cierre"]
+    responsible: str = Field(default="", max_length=160)
+    notes: str = Field(default="", max_length=5000)
 
 
 def _public_report(row: dict[str, Any]) -> dict[str, Any]:
@@ -1195,6 +1209,154 @@ def create_access_event(
     return {"ok": True}
 
 
+def _require_audit_read_access(user: dict[str, Any]) -> None:
+    if "auditoria" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar auditorías.")
+
+
+@app.get("/api/audits/workflow")
+def get_audit_workflow(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    _require_audit_read_access(user)
+    try:
+        return database.list_audit_workflow()
+    except Exception as error:
+        logger.exception("No se pudo consultar el flujo de auditorías.")
+        raise HTTPException(status_code=503, detail="No se pudo consultar el flujo de auditorías en PostgreSQL.") from error
+
+
+@app.patch("/api/audits/{audit_id}/workflow")
+def update_audit_workflow(
+    audit_id: str,
+    request: AuditWorkflowUpdate,
+    user: dict[str, Any] = Depends(get_audit_manager),
+) -> dict[str, Any]:
+    responsible = request.responsible.strip()
+    notes = request.notes.strip()
+    if request.status != "Pendiente" and not responsible:
+        raise HTTPException(status_code=422, detail="Asigna un responsable antes de iniciar o actualizar la auditoría.")
+    if request.status != "Pendiente" and not notes:
+        raise HTTPException(status_code=422, detail="Agrega una nota de seguimiento antes de guardar.")
+    try:
+        audit = database.update_audit_workflow(
+            audit_id,
+            request.status,
+            request.phase,
+            responsible,
+            notes,
+            user["username"],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo actualizar el flujo de auditoría %s.", audit_id)
+        raise HTTPException(status_code=503, detail="No se pudo actualizar el flujo de auditoría.") from error
+    if not audit:
+        raise HTTPException(status_code=404, detail="No se encontró la auditoría solicitada.")
+    return audit
+
+
+@app.get("/api/audits/events")
+def get_audit_events(
+    audit_id: str | None = Query(default=None, max_length=80),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_audit_read_access(user)
+    try:
+        return database.list_audit_workflow_events(audit_id)
+    except Exception as error:
+        logger.exception("No se pudo consultar la línea de tiempo de auditorías.")
+        raise HTTPException(status_code=503, detail="No se pudo consultar la línea de tiempo de auditorías.") from error
+
+
+@app.get("/api/audits/{audit_id}/documents")
+def get_audit_documents(
+    audit_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_audit_read_access(user)
+    try:
+        if not any(item["audit_id"] == audit_id for item in database.list_audit_workflow()):
+            raise HTTPException(status_code=404, detail="No se encontró la auditoría solicitada.")
+        return database.list_audit_documents(audit_id)
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.exception("No se pudieron consultar los documentos de auditoría %s.", audit_id)
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los documentos de auditoría.") from error
+
+
+@app.post("/api/audits/{audit_id}/documents", status_code=201)
+async def upload_audit_document(
+    audit_id: str,
+    file: UploadFile = File(...),
+    user: dict[str, Any] = Depends(get_audit_manager),
+) -> dict[str, Any]:
+    original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    media_type = AI_EVIDENCE_MEDIA_TYPES.get(Path(original_name).suffix.lower())
+    if not original_name or len(original_name) > 255 or not media_type:
+        await file.close()
+        raise HTTPException(status_code=415, detail="Formato no admitido. Usa PDF, Word, Excel, CSV, TXT, PNG o JPG.")
+    content = await file.read(MAX_AI_EVIDENCE_BYTES + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(status_code=422, detail="El archivo está vacío.")
+    if len(content) > MAX_AI_EVIDENCE_BYTES:
+        raise HTTPException(status_code=413, detail="El tamaño máximo por documento es 10 MB.")
+    try:
+        document = database.save_audit_document(
+            document_id=str(uuid.uuid4()),
+            audit_id=audit_id,
+            file_name=original_name,
+            media_type=media_type,
+            content=content,
+            checksum=hashlib.sha256(content).hexdigest(),
+            username=user["username"],
+        )
+    except Exception as error:
+        logger.exception("No se pudo adjuntar un documento a la auditoría %s.", audit_id)
+        raise HTTPException(status_code=503, detail="No se pudo guardar el documento de auditoría.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró la auditoría solicitada.")
+    return document
+
+
+@app.get("/api/audits/documents/{document_id}/download")
+def download_audit_document(
+    document_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> Response:
+    _require_audit_read_access(user)
+    try:
+        document = database.get_audit_document(document_id)
+    except Exception as error:
+        logger.exception("No se pudo leer el documento de auditoría %s.", document_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el documento de auditoría.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"audit-document\"; filename*=UTF-8''{quote(document['file_name'])}",
+        "Content-Length": str(document["size_bytes"]),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+    }
+    return Response(content=document["content"], media_type=document["media_type"], headers=headers)
+
+
+@app.delete("/api/audits/documents/{document_id}", status_code=204)
+def delete_audit_document(
+    document_id: str,
+    user: dict[str, Any] = Depends(get_audit_manager),
+) -> Response:
+    try:
+        document = database.delete_audit_document(document_id, user["username"])
+    except Exception as error:
+        logger.exception("No se pudo eliminar el documento de auditoría %s.", document_id)
+        raise HTTPException(status_code=503, detail="No se pudo eliminar el documento de auditoría.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
+    return Response(status_code=204)
+
+
 @app.delete("/api/access-events", status_code=204)
 def clear_access_events(_: dict[str, Any] = Depends(get_supervisor)) -> None:
     try:
@@ -1437,6 +1599,8 @@ def get_ai_governance_alerts(user: dict[str, Any] = Depends(get_current_user)) -
         raise HTTPException(status_code=403, detail="No tienes permiso para consultar alertas de riesgos de IA.")
     try:
         alerts = _ai_governance_alerts()
+        reviewed_alert_ids = database.list_reviewed_ai_governance_alert_ids()
+        alerts = [alert for alert in alerts if alert["id"] not in reviewed_alert_ids]
         return {"alerts": alerts, "generatedAt": datetime.now(timezone.utc).isoformat()}
     except Exception as error:
         logger.exception("No se pudieron generar las alertas de gobernanza de IA.")
@@ -1474,9 +1638,12 @@ def create_ai_governance_risk(
         "impact": request.impact,
         "owner": request.owner.strip(),
         "treatment": request.treatment.strip(),
+        "sourceAlertId": request.source_alert_id,
     }
     try:
-        return database.create_ai_governance_risk(risk, user["username"])
+        return database.create_ai_governance_risk(risk, user["username"], request.source_alert_id)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     except Exception as error:
         logger.exception("No se pudo registrar el riesgo de gobernanza de IA.")
         raise HTTPException(status_code=503, detail="No se pudo registrar el riesgo en PostgreSQL.") from error
