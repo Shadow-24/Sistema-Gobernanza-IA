@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -158,6 +158,12 @@ def get_audit_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[
     return user
 
 
+def get_detected_risk_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if user["role"] != "Supervisor de Cumplimiento" or "riesgos" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento con permiso de riesgos.")
+    return user
+
+
 def get_demand_model_analyst(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     if user["role"] not in {"Analista de Datos", "Supervisor de Cumplimiento"}:
         raise HTTPException(status_code=403, detail="Se requiere el rol Analista de Datos o Supervisor de Cumplimiento.")
@@ -299,6 +305,13 @@ class AuditWorkflowUpdate(BaseModel):
     phase: Literal["Planificación", "Recopilación de evidencias", "Análisis", "Hallazgos y recomendaciones", "Revisión y cierre"]
     responsible: str = Field(default="", max_length=160)
     notes: str = Field(default="", max_length=5000)
+
+
+class DetectedRiskWorkflowUpdate(BaseModel):
+    status: Literal["Activo", "En análisis", "Mitigado", "Cerrado"]
+    phase: Literal["Identificación", "Análisis", "Plan de tratamiento", "Implementación", "Monitoreo y cierre"]
+    responsible: str = Field(min_length=2, max_length=160)
+    notes: str = Field(min_length=1, max_length=5000)
 
 
 def _public_report(row: dict[str, Any]) -> dict[str, Any]:
@@ -1352,6 +1365,143 @@ def delete_audit_document(
     except Exception as error:
         logger.exception("No se pudo eliminar el documento de auditoría %s.", document_id)
         raise HTTPException(status_code=503, detail="No se pudo eliminar el documento de auditoría.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
+    return Response(status_code=204)
+
+
+def _require_risk_read_access(user: dict[str, Any]) -> None:
+    if "riesgos" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar riesgos.")
+
+
+@app.get("/api/detected-risks/workflow")
+def get_detected_risk_workflow(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    _require_risk_read_access(user)
+    try:
+        return database.list_detected_risk_workflows()
+    except Exception as error:
+        logger.exception("No se pudo consultar el flujo de riesgos detectados.")
+        raise HTTPException(status_code=503, detail="No se pudo consultar el seguimiento de riesgos.") from error
+
+
+@app.patch("/api/detected-risks/{risk_id}/workflow")
+def update_detected_risk_workflow(
+    risk_id: str,
+    request: DetectedRiskWorkflowUpdate,
+    user: dict[str, Any] = Depends(get_detected_risk_manager),
+) -> dict[str, Any]:
+    responsible = request.responsible.strip()
+    notes = request.notes.strip()
+    if len(risk_id) > 120:
+        raise HTTPException(status_code=422, detail="El identificador del riesgo no es válido.")
+    if not responsible:
+        raise HTTPException(status_code=422, detail="Asigna un responsable para guardar el seguimiento.")
+    if not notes:
+        raise HTTPException(status_code=422, detail="Agrega una nota antes de guardar el seguimiento.")
+    try:
+        return database.update_detected_risk_workflow(
+            risk_id, request.status, request.phase, responsible, notes, user["username"]
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo actualizar el seguimiento del riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudo actualizar el seguimiento del riesgo.") from error
+
+
+@app.get("/api/detected-risks/events")
+def get_detected_risk_events(
+    risk_id: str = Query(min_length=1, max_length=120),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_risk_read_access(user)
+    try:
+        return database.list_detected_risk_workflow_events(risk_id)
+    except Exception as error:
+        logger.exception("No se pudo consultar la línea de tiempo del riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar la línea de tiempo del riesgo.") from error
+
+
+@app.get("/api/detected-risks/{risk_id}/documents")
+def get_detected_risk_documents(
+    risk_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_risk_read_access(user)
+    try:
+        return database.list_detected_risk_documents(risk_id)
+    except Exception as error:
+        logger.exception("No se pudieron consultar documentos del riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los documentos del riesgo.") from error
+
+
+@app.post("/api/detected-risks/{risk_id}/documents", status_code=201)
+async def upload_detected_risk_document(
+    risk_id: str,
+    file: UploadFile = File(...),
+    initial_status: Literal["Activo", "En análisis", "Mitigado", "Cerrado"] = Form(default="Activo"),
+    user: dict[str, Any] = Depends(get_detected_risk_manager),
+) -> dict[str, Any]:
+    original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    media_type = AI_EVIDENCE_MEDIA_TYPES.get(Path(original_name).suffix.lower())
+    if len(risk_id) > 120 or not original_name or len(original_name) > 255 or not media_type:
+        await file.close()
+        raise HTTPException(status_code=415, detail="Formato o identificador no admitido. Usa PDF, Word, Excel, CSV, TXT, PNG o JPG.")
+    content = await file.read(MAX_AI_EVIDENCE_BYTES + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(status_code=422, detail="El archivo está vacío.")
+    if len(content) > MAX_AI_EVIDENCE_BYTES:
+        raise HTTPException(status_code=413, detail="El tamaño máximo por documento es 10 MB.")
+    try:
+        return database.save_detected_risk_document(
+            document_id=str(uuid.uuid4()),
+            risk_id=risk_id,
+            initial_status=initial_status,
+            file_name=original_name,
+            media_type=media_type,
+            content=content,
+            checksum=hashlib.sha256(content).hexdigest(),
+            username=user["username"],
+        )
+    except Exception as error:
+        logger.exception("No se pudo adjuntar un documento al riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudo guardar el documento del riesgo.") from error
+
+
+@app.get("/api/detected-risks/documents/{document_id}/download")
+def download_detected_risk_document(
+    document_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> Response:
+    _require_risk_read_access(user)
+    try:
+        document = database.get_detected_risk_document(document_id)
+    except Exception as error:
+        logger.exception("No se pudo leer el documento de riesgo %s.", document_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el documento del riesgo.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"risk-document\"; filename*=UTF-8''{quote(document['file_name'])}",
+        "Content-Length": str(document["size_bytes"]),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+    }
+    return Response(content=document["content"], media_type=document["media_type"], headers=headers)
+
+
+@app.delete("/api/detected-risks/documents/{document_id}", status_code=204)
+def delete_detected_risk_document(
+    document_id: str,
+    user: dict[str, Any] = Depends(get_detected_risk_manager),
+) -> Response:
+    try:
+        document = database.delete_detected_risk_document(document_id, user["username"])
+    except Exception as error:
+        logger.exception("No se pudo eliminar el documento del riesgo %s.", document_id)
+        raise HTTPException(status_code=503, detail="No se pudo eliminar el documento del riesgo.") from error
     if not document:
         raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
     return Response(status_code=204)

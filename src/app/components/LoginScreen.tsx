@@ -38,28 +38,28 @@ export function LoginScreen() {
             <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2"><h1 className="text-[17px] font-semibold" style={{ color: "#201f1e" }}>Gobernanza</h1><UserStoryRefs ids={["HU-018"]} /></div>
-            <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>Sector Hidrocarburos · Perú</p>
+            <div className="flex items-center gap-2"><h1 className="text-[19px] font-semibold" style={{ color: "#201f1e" }}>Gobernanza</h1><UserStoryRefs ids={["HU-018"]} /></div>
+            <p className="text-[13px] mt-1" style={{ color: "#605e5c" }}>Sector Hidrocarburos · Perú</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
-            <span className="block text-[12px] font-medium mb-1.5" style={{ color: "#201f1e" }}>Usuario</span>
+            <span className="block text-[14px] font-medium mb-1.5" style={{ color: "#201f1e" }}>Usuario</span>
             <span className="relative block">
               <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#8a8886" }} />
-              <input autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} className="w-full h-10 pl-9 pr-3 rounded text-[13px] outline-none focus:ring-2 focus:ring-[#0f6cbd]" style={{ border: "1px solid #c8c6c4", color: "#201f1e" }} />
+              <input autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} className="w-full h-10 pl-9 pr-3 rounded text-[15px] outline-none focus:ring-2 focus:ring-[#0f6cbd]" style={{ border: "1px solid #c8c6c4", color: "#201f1e" }} />
             </span>
           </label>
           <label className="block">
-            <span className="block text-[12px] font-medium mb-1.5" style={{ color: "#201f1e" }}>Contraseña</span>
+            <span className="block text-[14px] font-medium mb-1.5" style={{ color: "#201f1e" }}>Contraseña</span>
             <span className="relative block">
               <LockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#8a8886" }} />
-              <input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full h-10 pl-9 pr-3 rounded text-[13px] outline-none focus:ring-2 focus:ring-[#0f6cbd]" style={{ border: "1px solid #c8c6c4", color: "#201f1e" }} />
+              <input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} className="w-full h-10 pl-9 pr-3 rounded text-[15px] outline-none focus:ring-2 focus:ring-[#0f6cbd]" style={{ border: "1px solid #c8c6c4", color: "#201f1e" }} />
             </span>
           </label>
-          {error && <p role="alert" className="text-[12px]" style={{ color: "#a4262c" }}>{error}</p>}
-          <button type="submit" disabled={isSubmitting} className="w-full h-10 rounded text-[13px] font-medium text-white transition-colors hover:bg-[#115ea3] disabled:opacity-60" style={{ background: "#0f6cbd" }}>
+          {error && <p role="alert" className="text-[14px]" style={{ color: "#a4262c" }}>{error}</p>}
+          <button type="submit" disabled={isSubmitting} className="w-full h-10 rounded text-[15px] font-medium text-white transition-colors hover:bg-[#115ea3] disabled:opacity-60" style={{ background: "#0f6cbd" }}>
             {isSubmitting ? "Verificando..." : "Iniciar sesión"}
           </button>
         </form>

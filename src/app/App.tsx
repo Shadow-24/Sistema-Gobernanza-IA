@@ -37,9 +37,9 @@ function ProtectedModule({ module, label, supervisorOnly = false, children }: { 
   if (!permitted) {
     return (
       <div className="max-w-xl mx-auto mt-10 bg-white rounded p-6" style={{ border: "1px solid #e1dfdd" }}>
-        <h1 className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>Acceso no autorizado</h1>
-        <p className="text-[12px] mt-2 mb-4" style={{ color: "#605e5c" }}>Tu rol no tiene permiso para acceder a {label}.</p>
-        <Link to="/dashboard" className="inline-flex items-center px-3 py-2 rounded text-[12px] font-medium text-white" style={{ background: "#0f6cbd" }}>Regresar al Dashboard Ejecutivo</Link>
+        <h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Acceso no autorizado</h1>
+        <p className="text-[14px] mt-2 mb-4" style={{ color: "#605e5c" }}>Tu rol no tiene permiso para acceder a {label}.</p>
+        <Link to="/dashboard" className="inline-flex items-center px-3 py-2 rounded text-[14px] font-medium text-white" style={{ background: "#0f6cbd" }}>Regresar al Dashboard Ejecutivo</Link>
       </div>
     );
   }

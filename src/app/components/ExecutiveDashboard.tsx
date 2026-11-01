@@ -26,7 +26,7 @@ function Card({ children, className = "", style }: { children: React.ReactNode; 
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-[13px] font-semibold mb-4" style={{ color: "#201f1e" }}>{children}</h2>;
+  return <h2 className="text-[15px] font-semibold mb-4" style={{ color: "#201f1e" }}>{children}</h2>;
 }
 
 function formatMetric(value: number | null | undefined, suffix = ""): string {
@@ -219,7 +219,7 @@ export function ExecutiveDashboard() {
           { id: "demanda", label: "Demanda y modelo IA", stories: ["HU-009", "HU-010"] },
         ] as const).map(({ id: tab, label, stories }) => (
           <button key={tab} type="button" role="tab" aria-selected={dashboardTab === tab} onClick={() => setDashboardTab(tab)}
-            className="px-3 py-2 text-[11px] font-medium border-b-2 transition-colors"
+            className="px-3 py-2 text-[13px] font-medium border-b-2 transition-colors"
             style={{ color: dashboardTab === tab ? "#0f6cbd" : "#605e5c", borderColor: dashboardTab === tab ? "#0f6cbd" : "transparent" }}>
             <span className="flex flex-col items-start gap-1"><span>{label}</span><UserStoryRefs ids={[...stories]} note={tab === "operacion" ? "Series sectoriales históricas relacionadas con las historias de consulta y tendencias; no representan inventarios o envíos en tiempo real." : undefined} /></span>
           </button>
@@ -253,7 +253,7 @@ export function ExecutiveDashboard() {
             <span id="hydrocarbon-data-title">Hidrocarburos · series históricas</span>
           </SectionTitle>
           {latestDetermination && latestSupervision && (
-            <span className="text-[10px]" style={{ color: "#8a8886" }}>
+            <span className="text-[12px]" style={{ color: "#8a8886" }}>
               Últimos datos: determinación {latestDetermination.label} {latestDetermination.year} · supervisiones/PAS {latestSupervision.label} {latestSupervision.year}
             </span>
           )}
@@ -293,13 +293,13 @@ export function ExecutiveDashboard() {
                       ? `US$ ${metric.value.toLocaleString("es-PE", { maximumFractionDigits: 0 })}`
                       : metric.value.toLocaleString("es-PE")}
                   </div>
-                  <div className="text-[11px] mt-1" style={{ color: "#605e5c" }}>{metric.label}</div>
+                  <div className="text-[13px] mt-1" style={{ color: "#605e5c" }}>{metric.label}</div>
                 </Card>
               ))}
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               <Card className="p-4">
-                <div className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>
+                <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>
                   Valor de producción y canon · US$ millones
                 </div>
                 <ResponsiveContainer width="100%" height={210}>
@@ -308,11 +308,11 @@ export function ExecutiveDashboard() {
                     margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="2 2" stroke="#f3f2f1" />
-                    <XAxis dataKey="periodLabel" tick={{ fontSize: 9, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="periodLabel" tick={{ fontSize: 11, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "#8a8886" }} axisLine={false} tickLine={false} />
                     <Tooltip
                       formatter={(value, name) => [`US$ ${Number(value).toFixed(1)} M`, name]}
-                      contentStyle={{ fontSize: 11, border: "1px solid #e1dfdd", borderRadius: 4 }}
+                      contentStyle={{ fontSize: 13, border: "1px solid #e1dfdd", borderRadius: 4 }}
                     />
                     <Bar name="Valor de producción" dataKey="productionValue" fill="#0f6cbd" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                     <Bar name="Canon y participación" dataKey="canonAndParticipation" fill="#107c10" radius={[3, 3, 0, 0]} isAnimationActive={false} />
@@ -320,15 +320,15 @@ export function ExecutiveDashboard() {
                 </ResponsiveContainer>
               </Card>
               <Card className="p-4">
-                <div className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>
+                <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>
                   Supervisiones y procedimientos PAS
                 </div>
                 <ResponsiveContainer width="100%" height={210}>
                   <BarChart data={supervisionTrend} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 2" stroke="#f3f2f1" />
-                    <XAxis dataKey="periodLabel" tick={{ fontSize: 9, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ fontSize: 11, border: "1px solid #e1dfdd", borderRadius: 4 }} />
+                    <XAxis dataKey="periodLabel" tick={{ fontSize: 11, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ fontSize: 13, border: "1px solid #e1dfdd", borderRadius: 4 }} />
                     <Bar name="Supervisiones" dataKey="supervisions" fill="#8764b8" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                     <Bar name="Procedimientos PAS" dataKey="pas" fill="#ca5010" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                   </BarChart>
@@ -346,7 +346,7 @@ export function ExecutiveDashboard() {
           <SectionTitle>
             <span id="operational-data-title">Operación de gas y combustibles</span>
           </SectionTitle>
-          <p className="text-[10px] -mt-3" style={{ color: "#8a8886" }}>
+          <p className="text-[12px] -mt-3" style={{ color: "#8a8886" }}>
             Indicadores construidos con volúmenes, precios y periodos de los registros sectoriales disponibles. Cada serie conserva su propia fecha de actualización.
           </p>
         </div>
@@ -392,45 +392,45 @@ export function ExecutiveDashboard() {
                 },
               ].map((metric) => (
                 <Card key={metric.label} className="p-3">
-                  <div className="text-[15px] font-semibold" style={{ color: metric.color }}>{metric.value}</div>
-                  <div className="text-[10px] mt-1" style={{ color: "#605e5c" }}>{metric.label}</div>
+                  <div className="text-[17px] font-semibold" style={{ color: metric.color }}>{metric.value}</div>
+                  <div className="text-[12px] mt-1" style={{ color: "#605e5c" }}>{metric.label}</div>
                 </Card>
               ))}
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-3">
               <Card className="p-4">
-                <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Transporte por ducto · MMPC mensuales</div>
+                <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Transporte por ducto · MMPC mensuales</div>
                 <ResponsiveContainer width="100%" height={170}>
                   <LineChart data={gasTransport.slice(-12)} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 2" stroke="#f3f2f1" />
-                    <XAxis dataKey="period" tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ fontSize: 10, border: "1px solid #e1dfdd", borderRadius: 4 }} />
+                    <XAxis dataKey="period" tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #e1dfdd", borderRadius: 4 }} />
                     <Line name="Volumen empacado TGP" dataKey="packedVolume" stroke="#0f6cbd" strokeWidth={2} dot={false} isAnimationActive={false} />
                     <Line name="Volumen inyectado" dataKey="injectedVolume" stroke="#107c10" strokeWidth={2} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </Card>
               <Card className="p-4">
-                <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Ventas de combustibles · millones de galones</div>
+                <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Ventas de combustibles · millones de galones</div>
                 <ResponsiveContainer width="100%" height={170}>
                   <LineChart data={monthlyFuelSales.map((row) => ({ ...row, millionGallons: row.gallons / 1_000_000 }))} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 2" stroke="#f3f2f1" />
-                    <XAxis dataKey="period" tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => Number(value).toLocaleString("es-PE", { maximumFractionDigits: 2 })} contentStyle={{ fontSize: 10, border: "1px solid #e1dfdd", borderRadius: 4 }} />
+                    <XAxis dataKey="period" tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(value) => Number(value).toLocaleString("es-PE", { maximumFractionDigits: 2 })} contentStyle={{ fontSize: 12, border: "1px solid #e1dfdd", borderRadius: 4 }} />
                     <Line name="Galones" dataKey="millionGallons" stroke="#ca5010" strokeWidth={2} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </Card>
               <Card className="p-4">
-                <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Ventas de GLP · miles de barriles</div>
+                <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Ventas de GLP · miles de barriles</div>
                 <ResponsiveContainer width="100%" height={170}>
                   <LineChart data={monthlyGlpSales.map((row) => ({ ...row, thousandBarrels: row.barrels / 1_000 }))} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 2" stroke="#f3f2f1" />
-                    <XAxis dataKey="period" tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => Number(value).toLocaleString("es-PE", { maximumFractionDigits: 2 })} contentStyle={{ fontSize: 10, border: "1px solid #e1dfdd", borderRadius: 4 }} />
+                    <XAxis dataKey="period" tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(value) => Number(value).toLocaleString("es-PE", { maximumFractionDigits: 2 })} contentStyle={{ fontSize: 12, border: "1px solid #e1dfdd", borderRadius: 4 }} />
                     <Line name="Barriles" dataKey="thousandBarrels" stroke="#8764b8" strokeWidth={2} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -438,19 +438,19 @@ export function ExecutiveDashboard() {
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
               <Card className="p-4">
-                <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Precios de combustibles · promedio por producto</div>
-                <p className="text-[9px] mb-2" style={{ color: "#8a8886" }}>Periodo más reciente: {latestFuelPrices[0]?.period ?? "sin datos"} · S/ por unidad publicada</p>
+                <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Precios de combustibles · promedio por producto</div>
+                <p className="text-[11px] mb-2" style={{ color: "#8a8886" }}>Periodo más reciente: {latestFuelPrices[0]?.period ?? "sin datos"} · S/ por unidad publicada</p>
                 <div className="space-y-1.5 max-h-44 overflow-y-auto">
                   {latestFuelPrices.map((item) => (
-                    <div key={item.product} className="flex justify-between gap-2 text-[10px]">
+                    <div key={item.product} className="flex justify-between gap-2 text-[12px]">
                       <span className="truncate" style={{ color: "#605e5c" }}>{item.product}</span>
                       <span className="font-medium" style={{ color: "#201f1e" }}>S/ {item.averagePrice.toFixed(2)}</span>
                     </div>
                   ))}
                   <div className="pt-2 mt-2" style={{ borderTop: "1px solid #f3f2f1" }}>
-                    <p className="text-[9px] mb-1 font-medium" style={{ color: "#605e5c" }}>Precio público MINEM · {latestPriceStructure[0]?.period ?? "sin datos"}</p>
+                    <p className="text-[11px] mb-1 font-medium" style={{ color: "#605e5c" }}>Precio público MINEM · {latestPriceStructure[0]?.period ?? "sin datos"}</p>
                     {latestPriceStructure.slice(0, 4).map((item) => (
-                      <div key={item.product} className="flex justify-between gap-2 text-[9px]">
+                      <div key={item.product} className="flex justify-between gap-2 text-[11px]">
                         <span className="truncate" style={{ color: "#8a8886" }}>{item.product}</span>
                         <span style={{ color: "#201f1e" }}>S/ {item.publicPrice.toFixed(2)}</span>
                       </div>
@@ -459,11 +459,11 @@ export function ExecutiveDashboard() {
                 </div>
               </Card>
               <Card className="p-4">
-                <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Comercio exterior de hidrocarburos · MBLS</div>
-                <p className="text-[9px] mb-2" style={{ color: "#8a8886" }}>Periodo más reciente: {latestTradePeriod ?? "sin datos"}</p>
+                <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Comercio exterior de hidrocarburos · MBLS</div>
+                <p className="text-[11px] mb-2" style={{ color: "#8a8886" }}>Periodo más reciente: {latestTradePeriod ?? "sin datos"}</p>
                 <div className="space-y-1.5 max-h-44 overflow-y-auto">
                   {latestTrade.slice(0, 8).map((item) => (
-                    <div key={`${item.direction}-${item.product}`} className="flex justify-between gap-2 text-[10px]">
+                    <div key={`${item.direction}-${item.product}`} className="flex justify-between gap-2 text-[12px]">
                       <span className="truncate" style={{ color: "#605e5c" }}>{item.direction} · {item.product}</span>
                       <span className="font-medium" style={{ color: "#201f1e" }}>{item.volumeMbbl.toLocaleString("es-PE", { maximumFractionDigits: 1 })}</span>
                     </div>
@@ -471,29 +471,29 @@ export function ExecutiveDashboard() {
                 </div>
               </Card>
               <Card className="p-4">
-                <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Distribución de gas natural</div>
-                <p className="text-[9px] mb-2" style={{ color: "#8a8886" }}>Volumen y clientes · periodo {latestDistribution[0]?.period ?? "sin datos"}</p>
+                <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Distribución de gas natural</div>
+                <p className="text-[11px] mb-2" style={{ color: "#8a8886" }}>Volumen y clientes · periodo {latestDistribution[0]?.period ?? "sin datos"}</p>
                 <div className="space-y-1.5 max-h-44 overflow-y-auto">
                   {latestDistribution.map((item) => (
-                    <div key={item.concession} className="flex justify-between gap-2 text-[10px]">
+                    <div key={item.concession} className="flex justify-between gap-2 text-[12px]">
                       <span className="truncate" style={{ color: "#605e5c" }}>{item.concession}</span>
                       <span className="text-right" style={{ color: "#201f1e" }}>{item.volume.toLocaleString("es-PE", { maximumFractionDigits: 0 })} · {item.customers.toLocaleString("es-PE")} clientes</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-[9px] mt-3 mb-1" style={{ color: "#8a8886" }}>Redes reportadas · {latestNetwork[0]?.period ?? "sin datos"}</p>
+                <p className="text-[11px] mt-3 mb-1" style={{ color: "#8a8886" }}>Redes reportadas · {latestNetwork[0]?.period ?? "sin datos"}</p>
                 <div className="space-y-1">
                   {latestNetwork.slice(0, 5).map((item) => (
-                    <div key={item.concession} className="flex justify-between gap-2 text-[9px]">
+                    <div key={item.concession} className="flex justify-between gap-2 text-[11px]">
                       <span className="truncate" style={{ color: "#8a8886" }}>{item.concession}</span>
                       <span style={{ color: "#605e5c" }}>{item.kilometers.toLocaleString("es-PE", { maximumFractionDigits: 1 })} km</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-[9px] mt-3 mb-1" style={{ color: "#8a8886" }}>Tarifas de distribución vigentes reportadas</p>
+                <p className="text-[11px] mt-3 mb-1" style={{ color: "#8a8886" }}>Tarifas de distribución vigentes reportadas</p>
                 <div className="space-y-1">
                   {operationalData.naturalGas.tariffs.map((item) => (
-                    <div key={item.concession} className="text-[9px] py-1">
+                    <div key={item.concession} className="text-[11px] py-1">
                       <div className="flex justify-between gap-2 py-1 font-medium">
                         <span className="truncate" style={{ color: "#8a8886" }}>{item.concession} · {item.period}</span>
                         <span style={{ color: "#605e5c" }}>{item.categories.length} categorías</span>
@@ -511,7 +511,7 @@ export function ExecutiveDashboard() {
                     </div>
                   ))}
                 </div>
-                <p className="text-[9px]" style={{ color: "#8a8886" }}>
+                <p className="text-[11px]" style={{ color: "#8a8886" }}>
                   Multas: {latestFines?.count.toLocaleString("es-PE") ?? "s/d"} · {latestFines?.uit.toLocaleString("es-PE", { maximumFractionDigits: 0 }) ?? "s/d"} UIT · periodo {latestFines?.period ?? "s/d"}
                 </p>
               </Card>
@@ -526,15 +526,15 @@ export function ExecutiveDashboard() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-[13px] font-semibold" style={{ color: "#201f1e" }}>Demanda observada de combustibles líquidos</h2>
+              <h2 className="text-[15px] font-semibold" style={{ color: "#201f1e" }}>Demanda observada de combustibles líquidos</h2>
               <UserStoryRefs ids={["HU-009", "HU-010"]} />
-              <span className="rounded px-1.5 py-0.5 text-[9px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>XGBoost</span>
+              <span className="rounded px-1.5 py-0.5 text-[11px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>XGBoost</span>
             </div>
-            <p className="text-[10px] mt-1" style={{ color: "#605e5c" }}>
+            <p className="text-[12px] mt-1" style={{ color: "#605e5c" }}>
               Objetivo: ventas mensuales observadas (galones); se usan como indicador de demanda, no como consumo final.
             </p>
             {demandModelStatus && (
-              <p className="text-[9px] mt-1" style={{ color: "#8a8886" }}>
+              <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>
                 Fuente: {demandModelStatus.source} · cobertura {demandModelStatus.coverage?.from ?? "—"} a {demandModelStatus.coverage?.to ?? "—"}
               </p>
             )}
@@ -542,12 +542,12 @@ export function ExecutiveDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             {demandModelStatus?.status === "evaluated" && (
               <>
-                <label className="text-[9px]" style={{ color: "#605e5c" }}>
+                <label className="text-[11px]" style={{ color: "#605e5c" }}>
                   Horizonte
                   <select
                     value={demandHorizon}
                     onChange={(event) => setDemandHorizon(Number(event.target.value))}
-                    className="ml-1 rounded border px-1.5 py-1 text-[9px]"
+                    className="ml-1 rounded border px-1.5 py-1 text-[11px]"
                     style={{ borderColor: "#e1dfdd" }}
                   >
                     {[1, 3, 6, 12].map((months) => <option key={months} value={months}>{months} mes{months > 1 ? "es" : ""}</option>)}
@@ -557,7 +557,7 @@ export function ExecutiveDashboard() {
                   type="button"
                   onClick={runDemandPrediction}
                   disabled={demandPredictionLoading || demandModelStatus?.sourceIsCurrent === false}
-                  className="rounded px-3 py-1.5 text-[10px] font-medium text-white disabled:opacity-60"
+                  className="rounded px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-60"
                   style={{ background: "#0f6cbd" }}
                 >
                   {demandPredictionLoading ? "Calculando…" : "Generar pronóstico"}
@@ -569,7 +569,7 @@ export function ExecutiveDashboard() {
                 type="button"
                 onClick={runDemandTraining}
                 disabled={demandTraining}
-                className="rounded px-3 py-1.5 text-[10px] font-medium text-white disabled:opacity-60"
+                className="rounded px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-60"
                 style={{ background: "#8764b8" }}
               >
                 {demandTraining ? "Entrenando y evaluando…" : "Entrenar y evaluar"}
@@ -579,30 +579,30 @@ export function ExecutiveDashboard() {
         </div>
 
         {demandModelError && (
-          <div className="mt-3 rounded p-2 text-[10px]" role="alert" style={{ color: "#a4262c", background: "#fdf3f4" }}>
+          <div className="mt-3 rounded p-2 text-[12px]" role="alert" style={{ color: "#a4262c", background: "#fdf3f4" }}>
             {demandModelError}
           </div>
         )}
         {!demandModelStatus && !demandModelError && (
-          <p className="mt-3 text-[10px]" style={{ color: "#605e5c" }}>Cargando estado de evaluación…</p>
+          <p className="mt-3 text-[12px]" style={{ color: "#605e5c" }}>Cargando estado de evaluación…</p>
         )}
         {demandModelStatus && demandModelStatus.status !== "evaluated" && (
-          <p className="mt-3 text-[10px]" style={{ color: "#605e5c" }}>
+          <p className="mt-3 text-[12px]" style={{ color: "#605e5c" }}>
             {demandModelStatus.message ?? "La evaluación está pendiente."}
           </p>
         )}
         {demandModelStatus?.status === "evaluated" && demandModelStatus.metrics && (
           <div className="mt-4 space-y-4">
             {demandModelStatus.sourceIsCurrent === false && (
-              <div role="status" className="rounded p-2 text-[10px]" style={{ background: "#fff8f0", color: "#8a4b08" }}>
+              <div role="status" className="rounded p-2 text-[12px]" style={{ background: "#fff8f0", color: "#8a4b08" }}>
                 Estas métricas pertenecen al último modelo guardado y sus fuentes cambiaron después de esa evaluación. Pulsa <strong>Entrenar y evaluar</strong> antes de interpretar la comparación actual de fuentes EIA.
               </div>
             )}
             {demandPredictions.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 rounded p-2" style={{ background: "#f5f0fb" }}>
-                <span className="text-[9px] font-semibold" style={{ color: "#8764b8" }}>Pronóstico:</span>
+                <span className="text-[11px] font-semibold" style={{ color: "#8764b8" }}>Pronóstico:</span>
                 {demandPredictions.map((prediction) => (
-                  <span key={prediction.period} className="flex flex-col text-[9px]" style={{ color: "#201f1e" }}>
+                  <span key={prediction.period} className="flex flex-col text-[11px]" style={{ color: "#201f1e" }}>
                     <span>{prediction.period} · {prediction.value.toLocaleString("es-PE", { maximumFractionDigits: 0 })} {prediction.unit}</span>
                     {prediction.warnings?.map((warning) => (
                       <span key={warning} className="mt-0.5" style={{ color: "#8a8886" }}>{warning}</span>
@@ -642,16 +642,16 @@ export function ExecutiveDashboard() {
                 },
               ].map((metric) => (
                 <div key={metric.label} className="rounded p-2" style={{ background: "#f9f8f7" }}>
-                  <div className="text-[9px]" style={{ color: "#8a8886" }}>{metric.label}</div>
-                  <div className="text-[12px] font-semibold mt-1" style={{ color: "#201f1e" }}>{metric.value}</div>
-                  <p className="text-[9px] leading-snug mt-1" style={{ color: "#605e5c" }}>{metric.interpretation}</p>
+                  <div className="text-[11px]" style={{ color: "#8a8886" }}>{metric.label}</div>
+                  <div className="text-[14px] font-semibold mt-1" style={{ color: "#201f1e" }}>{metric.value}</div>
+                  <p className="text-[11px] leading-snug mt-1" style={{ color: "#605e5c" }}>{metric.interpretation}</p>
                 </div>
               ))}
             </div>
-            <div className="rounded p-2 text-[10px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
+            <div className="rounded p-2 text-[12px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
               R² en el mismo periodo de prueba: XGBoost {formatMetric(demandModelStatus.metrics.xgboost.r2)} · baseline estacional {formatMetric(demandModelStatus.metrics.baseline.r2)}. {r2Comparison}
             </div>
-            <div className="flex flex-wrap justify-between gap-2 text-[9px]" style={{ color: "#605e5c" }}>
+            <div className="flex flex-wrap justify-between gap-2 text-[11px]" style={{ color: "#605e5c" }}>
               <span>
                 Entrenamiento: {demandModelStatus.trainingPeriod?.from} a {demandModelStatus.trainingPeriod?.to}
                 {" · "}{demandModelStatus.trainingObservations} filas entrenables tras rezagos
@@ -664,7 +664,7 @@ export function ExecutiveDashboard() {
               <span>Versión: {demandModelStatus.modelVersion}</span>
             </div>
             {demandModelStatus.dataQuality && (
-              <p className="text-[9px]" style={{ color: "#8a8886" }}>
+              <p className="text-[11px]" style={{ color: "#8a8886" }}>
                 Calidad de fuente: {formatMetric(demandModelStatus.dataQuality.validRows)} filas válidas
                 {" · "}{formatMetric(demandModelStatus.dataQuality.duplicateRowsRemoved)} duplicados exactos retirados
                 {" · "}{formatMetric(demandModelStatus.dataQuality.invalidDateRows)} fechas inválidas
@@ -672,7 +672,7 @@ export function ExecutiveDashboard() {
                 {" · "}{formatMetric(demandModelStatus.dataQuality.negativeRowsRemoved)} ventas negativas retiradas
               </p>
             )}
-            <div className="rounded p-2 text-[10px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
+            <div className="rounded p-2 text-[12px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
               MAE baseline estacional: {formatMetric(demandModelStatus.metrics.baseline.mae, ` ${demandModelStatus.unit}`)}
               {" · "}reducción de error frente al baseline: {formatMetric(demandModelStatus.metrics.errorReductionPercent, "%")}
               {demandModelStatus.metrics.errorReductionPercent != null && demandModelStatus.metrics.errorReductionPercent <= 0
@@ -682,14 +682,14 @@ export function ExecutiveDashboard() {
                   : " (no calculable porque el MAE baseline es cero)."}
             </div>
             {demandModelStatus.metrics.xgboost.mapeLimitation && (
-              <p className="text-[9px]" style={{ color: "#8a8886" }}>{demandModelStatus.metrics.xgboost.mapeLimitation}</p>
+              <p className="text-[11px]" style={{ color: "#8a8886" }}>{demandModelStatus.metrics.xgboost.mapeLimitation}</p>
             )}
             <div className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-              <div className="text-[10px] font-semibold mb-2" style={{ color: "#201f1e" }}>Cobertura y aporte de las fuentes EIA</div>
+              <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Cobertura y aporte de las fuentes EIA</div>
               {(demandModelStatus.dataSources ?? []).filter((source) => source.provider === "U.S. Energy Information Administration").length > 0 ? (
                 <div className="space-y-2">
                   {(demandModelStatus.dataSources ?? []).filter((source) => source.provider === "U.S. Energy Information Administration").map((source) => (
-                    <div key={source.seriesId ?? source.source} className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-[9px]" style={{ color: "#605e5c" }}>
+                    <div key={source.seriesId ?? source.source} className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-[11px]" style={{ color: "#605e5c" }}>
                       <span><strong>{source.source}</strong> · {source.status}</span>
                       <span>Entrenamiento: {source.trainingObservations ?? 0} · prueba: {source.testObservations ?? 0} · última observación: {source.latestFeaturePeriod ?? "s/d"}</span>
                       <span>{source.reason}{source.errorReductionPercent != null ? ` Reducción de MAE: ${source.errorReductionPercent.toFixed(2)}%.` : ""}</span>
@@ -697,17 +697,17 @@ export function ExecutiveDashboard() {
                   ))}
                 </div>
               ) : (
-                <p className="text-[9px]" style={{ color: "#8a8886" }}>Esta evaluación no contiene resultados de cobertura EIA; vuelve a entrenar para registrar la evaluación actual.</p>
+                <p className="text-[11px]" style={{ color: "#8a8886" }}>Esta evaluación no contiene resultados de cobertura EIA; vuelve a entrenar para registrar la evaluación actual.</p>
               )}
             </div>
             {demandModelStatus.testPredictions && demandModelStatus.testPredictions.length > 0 && (
               <div>
-                <div className="text-[10px] font-semibold mb-2" style={{ color: "#201f1e" }}>Valores reales frente a predicciones en el periodo de prueba</div>
+                <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Valores reales frente a predicciones en el periodo de prueba</div>
                 <ResponsiveContainer width="100%" height={210}>
                   <LineChart data={demandModelStatus.testPredictions}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#edebe9" />
-                    <XAxis dataKey="period" tick={{ fontSize: 9, fill: "#8a8886" }} />
-                    <YAxis tick={{ fontSize: 9, fill: "#8a8886" }} tickFormatter={(value: number) => `${(value / 1_000_000).toFixed(0)}M`} />
+                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#8a8886" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#8a8886" }} tickFormatter={(value: number) => `${(value / 1_000_000).toFixed(0)}M`} />
                     <Tooltip formatter={(value: number) => value.toLocaleString("es-PE", { maximumFractionDigits: 0 })} />
                     <Line name="Real" dataKey="actual" stroke="#107c10" strokeWidth={2} dot={false} />
                     <Line name="XGBoost" dataKey="xgboost" stroke="#8764b8" strokeWidth={2} dot={false} />
@@ -718,24 +718,24 @@ export function ExecutiveDashboard() {
             )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-                <div className="mb-2 flex flex-wrap items-center gap-2"><div className="text-[10px] font-semibold" style={{ color: "#201f1e" }}>Explicabilidad SHAP</div><UserStoryRefs ids={["HU-016"]} /></div>
+                <div className="mb-2 flex flex-wrap items-center gap-2"><div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Explicabilidad SHAP</div><UserStoryRefs ids={["HU-016"]} /></div>
                 {demandModelStatus.explainability?.evaluation.status === "available" ? (
                   <div className="space-y-1">
                     {demandModelStatus.explainability.evaluation.featureImportance.slice(0, 5).map((feature) => (
-                      <div key={feature.feature} className="flex justify-between gap-2 text-[9px]" style={{ color: "#605e5c" }}>
+                      <div key={feature.feature} className="flex justify-between gap-2 text-[11px]" style={{ color: "#605e5c" }}>
                         <span>{feature.feature}</span>
                         <span>{feature.meanAbsoluteShap.toLocaleString("es-PE", { maximumFractionDigits: 2 })}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[9px]" style={{ color: "#8a8886" }}>
+                  <p className="text-[11px]" style={{ color: "#8a8886" }}>
                     Explicación SHAP no disponible; no se atribuyen explicaciones inexistentes.
                   </p>
                 )}
               </div>
               <div className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-                <div className="text-[10px] font-semibold mb-2" style={{ color: "#201f1e" }}>Gobernanza y operación</div>
+                <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Gobernanza y operación</div>
                 {demandGovernance ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
@@ -748,7 +748,7 @@ export function ExecutiveDashboard() {
                       { label: "Detección de riesgos IA", metric: demandGovernance.governanceAndSystem.aiRiskDetectionRate },
                       { label: "Utilidad percibida", metric: demandGovernance.governanceAndSystem.perceivedUtility },
                     ].map(({ label, metric }) => (
-                      <div key={label} className="text-[9px]" style={{ color: "#605e5c" }}>
+                      <div key={label} className="text-[11px]" style={{ color: "#605e5c" }}>
                         <span className="font-medium">{label}: </span>
                         {metric.status === "measured"
                           ? label === "Detección de riesgos"
@@ -762,13 +762,13 @@ export function ExecutiveDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[9px]" style={{ color: "#8a8886" }}>Cargando métricas verificables…</p>
+                  <p className="text-[11px]" style={{ color: "#8a8886" }}>Cargando métricas verificables…</p>
                 )}
               </div>
             </div>
             <ModelGovernancePanel scope="demanda" modelName="XGBoost · Predicción de demanda de combustibles líquidos" />
             {demandModelStatus.warnings?.map((warning) => (
-              <p key={warning} className="text-[9px]" style={{ color: "#8a8886" }}>{warning}</p>
+              <p key={warning} className="text-[11px]" style={{ color: "#8a8886" }}>{warning}</p>
             ))}
           </div>
         )}
@@ -778,20 +778,20 @@ export function ExecutiveDashboard() {
       {dashboardTab === "operacion" && <Card className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
           <div>
-            <div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Capacidad registrada</div>
+            <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Capacidad registrada</div>
           </div>
-          <span className="px-2 py-0.5 rounded text-[9px] font-medium" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Histórico · 2017</span>
+          <span className="px-2 py-0.5 rounded text-[11px] font-medium" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Histórico · 2017</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {inventoryFacilities.map((facility) => {
             return (
               <div key={`${facility.name}-${facility.department}`} className="p-3 rounded" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
-                <div className="text-[10px] font-semibold truncate" style={{ color: "#201f1e" }}>{facility.name}</div>
-                <div className="text-[9px] mt-0.5" style={{ color: "#8a8886" }}>{facility.department}{facility.registeredCapacity ? ` · Cap. registrada ${Number(facility.registeredCapacity).toLocaleString("es-PE")} gl` : ""}</div>
+                <div className="text-[12px] font-semibold truncate" style={{ color: "#201f1e" }}>{facility.name}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: "#8a8886" }}>{facility.department}{facility.registeredCapacity ? ` · Cap. registrada ${Number(facility.registeredCapacity).toLocaleString("es-PE")} gl` : ""}</div>
               </div>
             );
           })}
-          {!loading && inventoryFacilities.length === 0 && <p className="text-[10px]" style={{ color: "#8a8886" }}>No hay instalaciones disponibles en el CSV.</p>}
+          {!loading && inventoryFacilities.length === 0 && <p className="text-[12px]" style={{ color: "#8a8886" }}>No hay instalaciones disponibles en el CSV.</p>}
         </div>
       </Card>}
 

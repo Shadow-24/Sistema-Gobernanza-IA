@@ -74,7 +74,7 @@ function ReportWebPreviewModal({ htmlContent, reportType, period, onBack }: { ht
       <div className="bg-white rounded-lg shadow-xl w-[96vw] max-w-[1440px] h-[92vh] max-h-[92vh] mx-4 overflow-hidden flex flex-col">
         <div className="flex flex-shrink-0 items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#e1dfdd" }}>
           <h2 className="text-lg font-semibold">Vista previa web · {reportType} · {period}</h2>
-          <button onClick={onBack} className="px-3 py-1.5 rounded text-[10px] font-medium border" style={{ borderColor: "#0f6cbd", color: "#0f6cbd" }}>
+          <button onClick={onBack} className="px-3 py-1.5 rounded text-[12px] font-medium border" style={{ borderColor: "#0f6cbd", color: "#0f6cbd" }}>
             Volver
           </button>
         </div>
@@ -182,8 +182,8 @@ function ReportConfigurationModal({
       <div role="dialog" aria-modal="true" aria-labelledby="report-config-title" className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col" style={{ border: "1px solid #e1dfdd" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#e1dfdd" }}>
           <div>
-            <h2 id="report-config-title" className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>{phase === "configure" ? "Configurar reporte" : "Vista previa de configuración"}</h2>
-            <p className="text-[10px] mt-1" style={{ color: "#8a8886" }}>Selecciona el contenido y confirma cómo se aplican las fuentes.</p>
+            <h2 id="report-config-title" className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>{phase === "configure" ? "Configurar reporte" : "Vista previa de configuración"}</h2>
+            <p className="text-[12px] mt-1" style={{ color: "#8a8886" }}>Selecciona el contenido y confirma cómo se aplican las fuentes.</p>
           </div>
           <button onClick={onClose} aria-label="Cerrar configuración" className="text-gray-500 hover:text-gray-700 text-2xl leading-none">×</button>
         </div>
@@ -191,7 +191,7 @@ function ReportConfigurationModal({
         <div className="overflow-y-auto p-5 space-y-4">
           {phase === "configure" ? <>
             <div className="grid grid-cols-1 gap-4">
-              <fieldset className="text-[10px] font-medium" style={{ color: "#605e5c" }}>
+              <fieldset className="text-[12px] font-medium" style={{ color: "#605e5c" }}>
                 <legend>Nivel de detalle</legend>
                 <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
                   {([{ value: "executive", label: "Resumen ejecutivo" }, { value: "detailed", label: "Detallado" }, { value: "complete", label: "Completo" }] as const).map((option) => <label key={option.value} className="inline-flex items-center gap-1.5 font-normal"><input type="radio" name="report-detail" value={option.value} checked={detailLevel === option.value} onChange={() => setDetailLevel(option.value)} />{option.label}</label>)}
@@ -200,30 +200,30 @@ function ReportConfigurationModal({
             </div>
 
             <section className="p-3 rounded" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
-              <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Período del reporte</div>
+              <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Período del reporte</div>
               <div className="flex flex-wrap gap-2 mb-3">
-                {["Último mes", "Últimos 3 meses", "Últimos 6 meses", "Año en curso", "Año completo", "Personalizado"].map((value) => <button key={value} type="button" onClick={() => setDatePreset(value)} className="px-2.5 py-1 rounded text-[9px] border" style={{ borderColor: preset === value ? "#0f6cbd" : "#e1dfdd", background: preset === value ? "#eff6ff" : "#ffffff", color: preset === value ? "#0f6cbd" : "#605e5c" }}>{value}</button>)}
+                {["Último mes", "Últimos 3 meses", "Últimos 6 meses", "Año en curso", "Año completo", "Personalizado"].map((value) => <button key={value} type="button" onClick={() => setDatePreset(value)} className="px-2.5 py-1 rounded text-[11px] border" style={{ borderColor: preset === value ? "#0f6cbd" : "#e1dfdd", background: preset === value ? "#eff6ff" : "#ffffff", color: preset === value ? "#0f6cbd" : "#605e5c" }}>{value}</button>)}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="text-[9px]" style={{ color: "#605e5c" }}>Fecha inicial<input type="date" value={startDate} max={endDate || undefined} onChange={(event) => { setStartDate(event.target.value); setPreset("Personalizado"); }} className="mt-1 w-full px-2 py-1.5 rounded text-[10px] border" style={{ borderColor: "#e1dfdd" }} /></label>
-                <label className="text-[9px]" style={{ color: "#605e5c" }}>Fecha final<input type="date" value={endDate} min={startDate || undefined} onChange={(event) => { setEndDate(event.target.value); setPreset("Personalizado"); }} className="mt-1 w-full px-2 py-1.5 rounded text-[10px] border" style={{ borderColor: "#e1dfdd" }} /></label>
+                <label className="text-[11px]" style={{ color: "#605e5c" }}>Fecha inicial<input type="date" value={startDate} max={endDate || undefined} onChange={(event) => { setStartDate(event.target.value); setPreset("Personalizado"); }} className="mt-1 w-full px-2 py-1.5 rounded text-[12px] border" style={{ borderColor: "#e1dfdd" }} /></label>
+                <label className="text-[11px]" style={{ color: "#605e5c" }}>Fecha final<input type="date" value={endDate} min={startDate || undefined} onChange={(event) => { setEndDate(event.target.value); setPreset("Personalizado"); }} className="mt-1 w-full px-2 py-1.5 rounded text-[12px] border" style={{ borderColor: "#e1dfdd" }} /></label>
               </div>
-              <div className="text-[10px] mt-2" style={{ color: isPeriodValid ? "#605e5c" : "#a4262c" }}>{isPeriodValid ? `Periodo seleccionado: ${formatPeriodLabel(startDate, endDate)}` : "La fecha inicial no puede ser posterior a la fecha final."}</div>
-              <p className="text-[9px] mt-2" style={{ color: "#8a8886" }}>El rango filtra registros con fecha de SINADA, expedientes, resoluciones y accesos locales. La capacidad CDCLyOPDH es una referencia histórica, no una medición de existencias.</p>
+              <div className="text-[12px] mt-2" style={{ color: isPeriodValid ? "#605e5c" : "#a4262c" }}>{isPeriodValid ? `Periodo seleccionado: ${formatPeriodLabel(startDate, endDate)}` : "La fecha inicial no puede ser posterior a la fecha final."}</div>
+              <p className="text-[11px] mt-2" style={{ color: "#8a8886" }}>El rango filtra registros con fecha de SINADA, expedientes, resoluciones y accesos locales. La capacidad CDCLyOPDH es una referencia histórica, no una medición de existencias.</p>
             </section>
 
             <section>
-              <div className="text-[11px] font-semibold mb-2" style={{ color: "#201f1e" }}>Información a incluir</div>
+              <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Información a incluir</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {sectionGroups.map((group) => <details key={group.id} open className="p-3 rounded" style={{ border: "1px solid #e1dfdd" }}>
-                  <summary className="cursor-pointer text-[10px] font-semibold" style={{ color: "#201f1e" }}>{group.label}</summary>
+                  <summary className="cursor-pointer text-[12px] font-semibold" style={{ color: "#201f1e" }}>{group.label}</summary>
                   <div className="grid grid-cols-1 gap-1.5 mt-2">
-                    {group.sections.map((section) => <label key={section.id} title={`Fuente: ${section.source}`} className="flex items-start gap-2 text-[9px] font-normal" style={{ color: "#605e5c" }}>
+                    {group.sections.map((section) => <label key={section.id} title={`Fuente: ${section.source}`} className="flex items-start gap-2 text-[11px] font-normal" style={{ color: "#605e5c" }}>
                       <input type="checkbox" checked={sections.includes(section.id)} onChange={(event) => toggleSection(section.id, event.target.checked)} className="mt-0.5" />
                       <span className="inline-flex flex-wrap items-center gap-1.5">
                         {section.label}
                         {section.id === "demand" && (
-                          <span className="rounded px-1.5 py-0.5 text-[8px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>
+                          <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>
                             XGBoost
                           </span>
                         )}
@@ -232,10 +232,10 @@ function ReportConfigurationModal({
                   </div>
                 </details>)}
               </div>
-              {selectedOptions.length === 0 && <p className="text-[10px] mt-2" style={{ color: "#a4262c" }}>Selecciona al menos una sección.</p>}
+              {selectedOptions.length === 0 && <p className="text-[12px] mt-2" style={{ color: "#a4262c" }}>Selecciona al menos una sección.</p>}
             </section>
 
-            <p className="text-[9px]" style={{ color: "#605e5c" }}>“Vista previa web” muestra el contenido seleccionado. “Generar reporte” crea y almacena el archivo del tipo correspondiente.</p>
+            <p className="text-[11px]" style={{ color: "#605e5c" }}>“Vista previa web” muestra el contenido seleccionado. “Generar reporte” crea y almacena el archivo del tipo correspondiente.</p>
           </> : <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
@@ -243,27 +243,27 @@ function ReportConfigurationModal({
                 { label: "Periodo", value: formatPeriodLabel(startDate, endDate) },
                 { label: "Nivel", value: detailLevel === "executive" ? "Resumen ejecutivo" : detailLevel === "complete" ? "Completo" : "Detallado" },
                 { label: "Secciones", value: String(selectedOptions.length) },
-              ].map((item) => <div key={item.label} className="p-2 rounded" style={{ background: "#f9f8f7" }}><div className="text-[8px]" style={{ color: "#8a8886" }}>{item.label}</div><div className="text-[10px] font-medium mt-1" style={{ color: "#201f1e" }}>{item.value}</div></div>)}
+              ].map((item) => <div key={item.label} className="p-2 rounded" style={{ background: "#f9f8f7" }}><div className="text-[10px]" style={{ color: "#8a8886" }}>{item.label}</div><div className="text-[12px] font-medium mt-1" style={{ color: "#201f1e" }}>{item.value}</div></div>)}
             </div>
             <div className="p-3 rounded" style={{ background: "#eff6ff", border: "1px solid #cce0f5" }}>
-              <div className="text-[10px] font-semibold" style={{ color: "#0f6cbd" }}>Contenido seleccionado</div>
-              <p className="text-[9px] mt-1" style={{ color: "#605e5c" }}>{selectedOptions.map((section) => section.label).join(" · ") || "Sin secciones"}</p>
-              <div className="text-[10px] mt-2" style={{ color: "#201f1e" }}>{previewLoading ? "Contando registros..." : `Cantidad aproximada de registros: ${recordCount}`}</div>
-              <p className="text-[9px] mt-1" style={{ color: "#605e5c" }}>Origen: {[...new Set(sourceSummary)].slice(0, 4).join(" · ")}{sourceSummary.length > 4 ? " · y otras fuentes indicadas por sección" : ""}</p>
+              <div className="text-[12px] font-semibold" style={{ color: "#0f6cbd" }}>Contenido seleccionado</div>
+              <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>{selectedOptions.map((section) => section.label).join(" · ") || "Sin secciones"}</p>
+              <div className="text-[12px] mt-2" style={{ color: "#201f1e" }}>{previewLoading ? "Contando registros..." : `Cantidad aproximada de registros: ${recordCount}`}</div>
+              <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>Origen: {[...new Set(sourceSummary)].slice(0, 4).join(" · ")}{sourceSummary.length > 4 ? " · y otras fuentes indicadas por sección" : ""}</p>
             </div>
-            <p className="text-[9px]" style={{ color: "#8a8886" }}>Los rangos se aplican a CSV con fecha compatible. Las secciones sin datos exportables no generan registros inventados.</p>
+            <p className="text-[11px]" style={{ color: "#8a8886" }}>Los rangos se aplican a CSV con fecha compatible. Las secciones sin datos exportables no generan registros inventados.</p>
           </>}
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 px-5 py-3 border-t" style={{ borderColor: "#e1dfdd" }}>
           {phase === "configure" ? <>
-            <button onClick={onClose} className="px-3 py-1.5 rounded text-[10px] border" style={{ borderColor: "#e1dfdd", color: "#605e5c" }}>Cancelar</button>
-            <button disabled={!isPeriodValid || selectedOptions.length === 0 || loading} onClick={() => setPhase("preview")} className="px-3 py-1.5 rounded text-[10px] font-medium text-white disabled:opacity-50" style={{ background: "#0f6cbd" }}>Vista previa</button>
+            <button onClick={onClose} className="px-3 py-1.5 rounded text-[12px] border" style={{ borderColor: "#e1dfdd", color: "#605e5c" }}>Cancelar</button>
+            <button disabled={!isPeriodValid || selectedOptions.length === 0 || loading} onClick={() => setPhase("preview")} className="px-3 py-1.5 rounded text-[12px] font-medium text-white disabled:opacity-50" style={{ background: "#0f6cbd" }}>Vista previa</button>
           </> : <>
-            <button onClick={onClose} className="px-3 py-1.5 rounded text-[10px] border" style={{ borderColor: "#e1dfdd", color: "#605e5c" }}>Cancelar</button>
-            <button onClick={() => setPhase("configure")} className="px-3 py-1.5 rounded text-[10px] border" style={{ borderColor: "#e1dfdd", color: "#0f6cbd" }}>Volver a configurar</button>
-            <button disabled={!isPeriodValid || selectedOptions.length === 0 || loading} onClick={() => onPreviewWeb(configuration)} className="px-3 py-1.5 rounded text-[10px] border disabled:opacity-50" style={{ borderColor: "#0f6cbd", color: "#0f6cbd" }}>Vista previa web</button>
-            <button disabled={!isPeriodValid || selectedOptions.length === 0 || loading} onClick={() => onGenerate(configuration)} className="px-3 py-1.5 rounded text-[10px] font-medium text-white disabled:opacity-50" style={{ background: "#107c10" }}>{loading ? "Generando..." : "Generar reporte"}</button>
+            <button onClick={onClose} className="px-3 py-1.5 rounded text-[12px] border" style={{ borderColor: "#e1dfdd", color: "#605e5c" }}>Cancelar</button>
+            <button onClick={() => setPhase("configure")} className="px-3 py-1.5 rounded text-[12px] border" style={{ borderColor: "#e1dfdd", color: "#0f6cbd" }}>Volver a configurar</button>
+            <button disabled={!isPeriodValid || selectedOptions.length === 0 || loading} onClick={() => onPreviewWeb(configuration)} className="px-3 py-1.5 rounded text-[12px] border disabled:opacity-50" style={{ borderColor: "#0f6cbd", color: "#0f6cbd" }}>Vista previa web</button>
+            <button disabled={!isPeriodValid || selectedOptions.length === 0 || loading} onClick={() => onGenerate(configuration)} className="px-3 py-1.5 rounded text-[12px] font-medium text-white disabled:opacity-50" style={{ background: "#107c10" }}>{loading ? "Generando..." : "Generar reporte"}</button>
           </>}
         </div>
       </div>
@@ -420,8 +420,8 @@ export function ReportsModule() {
   return (
     <div className="space-y-5">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>Reportes</h1><UserStoryRefs ids={["HU-010", "HU-013", "HU-014", "HU-016", "HU-017"]} /></div>
-        <p className="text-[11px] mt-0.5" style={{ color: "#605e5c" }}>
+        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Reportes</h1><UserStoryRefs ids={["HU-010", "HU-013", "HU-014", "HU-016", "HU-017"]} /></div>
+        <p className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>
           Generación y exportación de informes con periodos configurables
         </p>
       </div>
@@ -438,22 +438,22 @@ export function ReportsModule() {
                 <Icon className="w-5 h-5" style={{ color: rt.color }} />
               </div>
               <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                <div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>{rt.label}</div>
+                <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>{rt.label}</div>
                 {rt.label === "Reporte de Predicción de Demanda" && (
-                  <span className="rounded px-1.5 py-0.5 text-[9px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>
+                  <span className="rounded px-1.5 py-0.5 text-[11px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>
                     XGBoost
                   </span>
                 )}
               </div>
-              <p className="text-[10px] leading-snug mb-3" style={{ color: "#8a8886" }}>{rt.desc}</p>
+              <p className="text-[12px] leading-snug mb-3" style={{ color: "#8a8886" }}>{rt.desc}</p>
               <div className="flex items-center justify-between">
-                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: rt.color + "15", color: rt.color }}>{rt.formato}</span>
-                <span className="text-[9px]" style={{ color: "#8a8886" }}>{rt.acceso}</span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: rt.color + "15", color: rt.color }}>{rt.formato}</span>
+                <span className="text-[11px]" style={{ color: "#8a8886" }}>{rt.acceso}</span>
               </div>
               <button
                 onClick={() => handleReportButtonClick(rt.label)}
                 disabled={isLoading}
-                className="mt-3 w-full py-1.5 rounded text-[10px] font-medium transition-colors flex items-center justify-center gap-2"
+                className="mt-3 w-full py-1.5 rounded text-[12px] font-medium transition-colors flex items-center justify-center gap-2"
                 style={{
                   background: rt.color,
                   color: "#ffffff",
@@ -477,14 +477,14 @@ export function ReportsModule() {
 
       {/* Report history */}
       <Card className="p-4">
-        <div className="text-[12px] font-semibold mb-4" style={{ color: "#201f1e" }}>
+        <div className="text-[14px] font-semibold mb-4" style={{ color: "#201f1e" }}>
           Historial de reportes · {history.length} registros · más recientes primero
         </div>
 
         <div className="overflow-x-auto">
         <div className="min-w-[760px]">
         {/* Table header */}
-        <div className="grid grid-cols-12 gap-2 pb-2 mb-1 text-[10px] font-semibold" style={{ color: "#8a8886", borderBottom: "1px solid #f3f2f1" }}>
+        <div className="grid grid-cols-12 gap-2 pb-2 mb-1 text-[12px] font-semibold" style={{ color: "#8a8886", borderBottom: "1px solid #f3f2f1" }}>
           <div className="col-span-1">ID</div>
           <div className="col-span-3">Nombre del Reporte</div>
           <div className="col-span-1">Tipo</div>
@@ -497,7 +497,7 @@ export function ReportsModule() {
 
         <div className="space-y-1">
           {history.length === 0 ? (
-            <div className="py-6 text-center text-[11px]" style={{ color: "#8a8886" }}>No hay reportes generados</div>
+            <div className="py-6 text-center text-[13px]" style={{ color: "#8a8886" }}>No hay reportes generados</div>
           ) : history.map(report => {
             const s = STATE_STYLES[report.estado];
             const Icon = s.icon;
@@ -505,21 +505,21 @@ export function ReportsModule() {
             const generatedAt = new Date(report.generado).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" });
             return (
               <div key={report.id} className="grid grid-cols-12 gap-2 items-center py-2.5 px-1 rounded hover:bg-gray-50 transition-colors">
-                <div className="col-span-1 text-[9px] font-mono" style={{ color: "#8a8886" }}>{report.id.replace("RPT-", "")}</div>
-                <div className="col-span-3 text-[11px] font-medium" style={{ color: "#201f1e" }}>{report.nombre}</div>
+                <div className="col-span-1 text-[11px] font-mono" style={{ color: "#8a8886" }}>{report.id.replace("RPT-", "")}</div>
+                <div className="col-span-3 text-[13px] font-medium" style={{ color: "#201f1e" }}>{report.nombre}</div>
                 <div className="col-span-1">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: typeColor + "15", color: typeColor }}>
+                  <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: typeColor + "15", color: typeColor }}>
                     {report.tipo}
                   </span>
                 </div>
-                <div className="col-span-2 text-[9px]" style={{ color: "#605e5c" }}>{report.periodo.includes("|") ? formatPeriodLabel(...report.periodo.split("|") as [string, string]) : report.periodo}</div>
-                <div className="col-span-2 text-[10px]" style={{ color: "#8a8886" }}>{generatedAt}</div>
+                <div className="col-span-2 text-[11px]" style={{ color: "#605e5c" }}>{report.periodo.includes("|") ? formatPeriodLabel(...report.periodo.split("|") as [string, string]) : report.periodo}</div>
+                <div className="col-span-2 text-[12px]" style={{ color: "#8a8886" }}>{generatedAt}</div>
                 <div className="col-span-1">
-                  <span className="inline-flex items-center gap-1 text-[9px]" style={{ color: s.text }}>
+                  <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: s.text }}>
                     <Icon className="w-2.5 h-2.5" />{report.estado}
                   </span>
                 </div>
-                <div className="col-span-1 text-[10px]" style={{ color: "#8a8886" }}>{formatReportSize(report.sizeBytes)}</div>
+                <div className="col-span-1 text-[12px]" style={{ color: "#8a8886" }}>{formatReportSize(report.sizeBytes)}</div>
                 <div className="col-span-1 flex items-center justify-end gap-1">
                   {report.estado === "Generado" && (
                     <>
@@ -541,7 +541,7 @@ export function ReportsModule() {
       </Card>
 
       {/* Footer note */}
-      <div className="flex items-center gap-2 px-4 py-3 rounded text-[10px]" style={{ background: "#eff6ff", color: "#0f6cbd", border: "1px solid #cce0f5" }}>
+      <div className="flex items-center gap-2 px-4 py-3 rounded text-[12px]" style={{ background: "#eff6ff", color: "#0f6cbd", border: "1px solid #cce0f5" }}>
         <FileBarChart2 className="w-3.5 h-3.5 flex-shrink-0" />
         <span>Las exportaciones usan datasets históricos cargados en PostgreSQL y resultados persistidos del modelo de demanda cuando están disponibles. No hay conexiones en vivo, firma digital ni cadena de custodia real.</span>
       </div>

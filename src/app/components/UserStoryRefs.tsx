@@ -9,7 +9,7 @@ export function UserStoryRefs({ ids = [], note }: UserStoryRefsProps) {
   return (
     <span
       title={note ?? "Historias relacionadas con esta sección; la etiqueta no certifica el cumplimiento de sus criterios de aceptación."}
-      className="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-[9px] font-medium"
+      className="inline-flex max-w-full items-center rounded px-1.5 py-0.5 text-[11px] font-medium"
       style={{ background: "#eff6ff", color: "#0f6cbd" }}
     >
       {label}

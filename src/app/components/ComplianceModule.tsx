@@ -20,7 +20,7 @@ function ProgressRing({ value, color, size = 80 }: { value: number; color: strin
         strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       <text x={size / 2} y={size / 2 + 1} textAnchor="middle" dominantBaseline="middle"
-        fontSize={13} fontWeight={700} fill={color}>{value}%</text>
+        fontSize={15} fontWeight={700} fill={color}>{value}%</text>
     </svg>
   );
 }
@@ -104,6 +104,7 @@ export function ComplianceModule() {
   const [governanceDrafts, setGovernanceDrafts] = useState<Record<string, { status: GovernanceControlStatus; evidence: string }>>({});
   const [governanceAttachments, setGovernanceAttachments] = useState<Record<string, GovernanceEvidenceFile[]>>({});
   const [uploadingEvidenceControl, setUploadingEvidenceControl] = useState<string | null>(null);
+  const [selectedStandard, setSelectedStandard] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -199,13 +200,15 @@ export function ComplianceModule() {
     (groups[control.standard] ??= []).push(control);
     return groups;
   }, {});
+  const standardEntries = Object.entries(governanceByStandard);
+  const activeStandard = governanceByStandard[selectedStandard] ? selectedStandard : standardEntries[0]?.[0] ?? "";
   const governanceCount = (status: GovernanceControlStatus) => governanceControls.filter((control) => control.status === status).length;
 
   return (
     <div className="space-y-5">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>Cumplimiento Normativo</h1><UserStoryRefs ids={["HU-014", "HU-015"]} /></div>
-        <p className="text-[11px] mt-0.5" style={{ color: "#605e5c" }}>
+        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Cumplimiento Normativo</h1><UserStoryRefs ids={["HU-014", "HU-015"]} /></div>
+        <p className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>
           Último escenario demostrativo disponible · referencias del estudio · {latestComplianceYear}
         </p>
       </div>
@@ -213,29 +216,46 @@ export function ComplianceModule() {
       <Card className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
-            <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "#201f1e" }}>
+            <div className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: "#201f1e" }}>
               <ShieldCheck className="w-4 h-4" style={{ color: "#0f6cbd" }} />
               Controles y evidencias de gobernanza de IA
               <UserStoryRefs ids={["HU-011", "HU-012", "HU-013", "HU-014", "HU-015", "HU-016", "HU-021", "HU-022", "HU-025", "HU-026"]} />
             </div>
-            <p className="text-[10px] mt-1" style={{ color: "#605e5c" }}>
+            <p className="text-[12px] mt-1" style={{ color: "#605e5c" }}>
               Registro central de evidencias y responsables. Los controles aplicables se muestran junto a cada evaluación XGBoost.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-[9px]">
+          <div className="flex flex-wrap gap-2 text-[11px]">
             <span className="rounded px-2 py-1" style={{ background: "#f3f2f1", color: "#605e5c" }}>Sin evaluar: {governanceCount("no_evaluado")}</span>
             <span className="rounded px-2 py-1" style={{ background: "#eff6ff", color: "#0f6cbd" }}>En revisión: {governanceCount("en_revision")}</span>
             <span className="rounded px-2 py-1" style={{ background: "#f1faf1", color: "#107c10" }}>Conformes con evidencia: {governanceCount("conforme")}</span>
             <span className="rounded px-2 py-1" style={{ background: "#fdf3f4", color: "#a4262c" }}>Brechas: {governanceCount("brecha")}</span>
           </div>
         </div>
-        {governanceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[10px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{governanceError}</p>}
-        {governanceSaved && <p role="status" className="mb-3 text-[10px]" style={{ color: "#107c10" }}>{governanceSaved}</p>}
-        {governanceLoading ? <p className="text-[10px]" style={{ color: "#8a8886" }}>Cargando controles desde PostgreSQL…</p> : governanceControls.length === 0 ? <p className="text-[10px]" style={{ color: "#8a8886" }}>No hay controles inicializados. Verifica la conexión con PostgreSQL.</p> : (
-          <div className="space-y-4">
-            {Object.entries(governanceByStandard).map(([standard, controls]) => (
-              <section key={standard}>
-                <h2 className="text-[10px] font-semibold mb-2" style={{ color: "#323130" }}>{standard}</h2>
+        {governanceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{governanceError}</p>}
+        {governanceSaved && <p role="status" className="mb-3 text-[12px]" style={{ color: "#107c10" }}>{governanceSaved}</p>}
+        {governanceLoading ? <p className="text-[12px]" style={{ color: "#8a8886" }}>Cargando controles desde PostgreSQL…</p> : governanceControls.length === 0 ? <p className="text-[12px]" style={{ color: "#8a8886" }}>No hay controles inicializados. Verifica la conexión con PostgreSQL.</p> : (
+          <div>
+            <nav role="tablist" aria-label="Normativas de gobernanza de IA" className="mb-3 flex flex-wrap gap-2 border-b" style={{ borderColor: "#e1dfdd" }}>
+              {standardEntries.map(([standard]) => (
+                <button
+                  key={standard}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeStandard === standard}
+                  onClick={() => setSelectedStandard(standard)}
+                  className="px-3 py-2 text-[14px] font-medium border-b-2 transition-colors"
+                  style={{
+                    color: activeStandard === standard ? "#0f6cbd" : "#605e5c",
+                    borderColor: activeStandard === standard ? "#0f6cbd" : "transparent",
+                  }}
+                >
+                  {standard}
+                </button>
+              ))}
+            </nav>
+            {standardEntries.filter(([standard]) => standard === activeStandard).map(([standard, controls]) => (
+              <section key={standard} role="tabpanel" aria-label={standard}>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
                   {controls.map((control) => {
                     const draft = governanceDrafts[control.id] ?? { status: control.status, evidence: control.evidence };
@@ -243,24 +263,24 @@ export function ComplianceModule() {
                       <article key={control.id} className="rounded p-3" style={{ border: "1px solid #edebe9" }}>
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[10px] font-semibold" style={{ color: "#201f1e" }}>{control.focus}</h3><span className="rounded px-1 py-0.5 text-[8px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{control.model_scope === "ambos" ? "Demanda y vial" : control.model_scope === "demanda" ? "XGBoost demanda" : "XGBoost vial"}</span></div>
-                            <p className="text-[9px] mt-1" style={{ color: "#605e5c" }}>{control.objective}</p>
+                            <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>{control.focus}</h3><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{control.model_scope === "ambos" ? "Demanda y vial" : control.model_scope === "demanda" ? "XGBoost demanda" : "XGBoost vial"}</span></div>
+                            <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>{control.objective}</p>
                           </div>
-                          <span className="text-[8px] rounded px-1.5 py-1" style={{ background: control.status === "conforme" ? "#f1faf1" : control.status === "brecha" ? "#fdf3f4" : "#f3f2f1", color: control.status === "conforme" ? "#107c10" : control.status === "brecha" ? "#a4262c" : "#605e5c" }}>
+                          <span className="text-[10px] rounded px-1.5 py-1" style={{ background: control.status === "conforme" ? "#f1faf1" : control.status === "brecha" ? "#fdf3f4" : "#f3f2f1", color: control.status === "conforme" ? "#107c10" : control.status === "brecha" ? "#a4262c" : "#605e5c" }}>
                             {control.status.replace("_", " ")}
                           </span>
                         </div>
                         {canEvaluateControls ? (
                           <div className="mt-2 grid grid-cols-1 sm:grid-cols-[150px_1fr_auto] gap-2 items-end">
-                            <label className="text-[8px]" style={{ color: "#605e5c" }}>Evaluación
-                              <select className="mt-1 block w-full rounded border p-1.5 text-[9px]" value={draft.status} onChange={(event) => setGovernanceDrafts((current) => ({ ...current, [control.id]: { ...draft, status: event.target.value as GovernanceControlStatus } }))}>
+                            <label className="text-[10px]" style={{ color: "#605e5c" }}>Evaluación
+                              <select className="mt-1 block w-full rounded border p-1.5 text-[11px]" value={draft.status} onChange={(event) => setGovernanceDrafts((current) => ({ ...current, [control.id]: { ...draft, status: event.target.value as GovernanceControlStatus } }))}>
                                 <option value="no_evaluado">Sin evaluar</option><option value="en_revision">En revisión</option><option value="conforme">Conforme</option><option value="brecha">Brecha</option>
                               </select>
                             </label>
-                            <div className="text-[8px]" style={{ color: "#605e5c" }}><span>Evidencia / referencia</span>
-                              <span className="mt-1 block text-[8px]" style={{ color: "#8a8886" }}>Escribe una referencia o adjunta el documento; guardaremos su nombre y huella SHA-256.</span>
+                            <div className="text-[10px]" style={{ color: "#605e5c" }}><span>Evidencia / referencia</span>
+                              <span className="mt-1 block text-[10px]" style={{ color: "#8a8886" }}>Escribe una referencia o adjunta el documento; guardaremos su nombre y huella SHA-256.</span>
                               <span className="mt-1 flex flex-wrap items-center gap-2">
-                                <label htmlFor={`governance-evidence-${control.id}`} className="inline-flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-[8px]" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
+                                <label htmlFor={`governance-evidence-${control.id}`} className="inline-flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-[10px]" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
                                   <Paperclip className="h-3 w-3" /> {uploadingEvidenceControl === control.id ? "Subiendo…" : "Elegir archivos"}
                                 </label>
                                 <input id={`governance-evidence-${control.id}`} type="file" className="sr-only" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={!canEvaluateControls || uploadingEvidenceControl === control.id} onChange={(event) => {
@@ -268,21 +288,21 @@ export function ComplianceModule() {
                                     event.currentTarget.value = "";
                                     void uploadGovernanceEvidence(control, selected);
                                   }} />
-                                <span className="text-[8px]" style={{ color: "#8a8886" }}>PDF, Word, Excel, CSV, TXT o imagen · hasta 10 MB</span>
+                                <span className="text-[10px]" style={{ color: "#8a8886" }}>PDF, Word, Excel, CSV, TXT o imagen · hasta 10 MB</span>
                               </span>
                               {(governanceAttachments[control.id] ?? []).length > 0 && (
                                 <span className="mt-2 grid gap-1">
                                   {(governanceAttachments[control.id] ?? []).map((file) => (
                                     <span key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1" style={{ background: "#f9f8f7" }}>
-                                      <span className="inline-flex min-w-0 items-center gap-1 text-[8px]" style={{ color: "#323130" }}><FileText className="h-3 w-3 shrink-0" /><span className="truncate">{file.file_name}</span><span style={{ color: "#8a8886" }}>· {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span></span>
-                                      <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1 text-[8px]" style={{ color: "#0f6cbd" }}><Download className="h-3 w-3" /> Descargar</button>
+                                      <span className="inline-flex min-w-0 items-center gap-1 text-[10px]" style={{ color: "#323130" }}><FileText className="h-3 w-3 shrink-0" /><span className="truncate">{file.file_name}</span><span style={{ color: "#8a8886" }}>· {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span></span>
+                                      <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1 text-[10px]" style={{ color: "#0f6cbd" }}><Download className="h-3 w-3" /> Descargar</button>
                                     </span>
                                   ))}
                                 </span>
                               )}
-                              <textarea className="mt-1 block w-full rounded border p-1.5 text-[9px]" rows={2} maxLength={5000} placeholder="Documento, versión, enlace interno o motivo de la brecha" value={draft.evidence} onChange={(event) => setGovernanceDrafts((current) => ({ ...current, [control.id]: { ...draft, evidence: event.target.value } }))} />
+                              <textarea className="mt-1 block w-full rounded border p-1.5 text-[11px]" rows={2} maxLength={5000} placeholder="Documento, versión, enlace interno o motivo de la brecha" value={draft.evidence} onChange={(event) => setGovernanceDrafts((current) => ({ ...current, [control.id]: { ...draft, evidence: event.target.value } }))} />
                             </div>
-                            <button type="button" className="inline-flex items-center justify-center gap-1 rounded px-2 py-1.5 text-[9px] text-white disabled:opacity-50" style={{ background: "#0f6cbd" }} onClick={() => void saveGovernanceControl(control)} disabled={draft.status === control.status && draft.evidence === control.evidence}>
+                            <button type="button" className="inline-flex items-center justify-center gap-1 rounded px-2 py-1.5 text-[11px] text-white disabled:opacity-50" style={{ background: "#0f6cbd" }} onClick={() => void saveGovernanceControl(control)} disabled={draft.status === control.status && draft.evidence === control.evidence}>
                               <Save className="w-3 h-3" /> Guardar
                             </button>
                           </div>
@@ -290,16 +310,16 @@ export function ComplianceModule() {
                           <>
                           <div className="mt-2 space-y-1">
                             {(governanceAttachments[control.id] ?? []).map((file) => (
-                              <div key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1 text-[8px]" style={{ background: "#f9f8f7" }}>
+                              <div key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1 text-[10px]" style={{ background: "#f9f8f7" }}>
                                 <span className="inline-flex items-center gap-1" style={{ color: "#323130" }}><FileText className="h-3 w-3" />{file.file_name} · {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span>
                                 <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1" style={{ color: "#0f6cbd" }}><Download className="h-3 w-3" />Descargar</button>
                               </div>
                             ))}
                           </div>
-                          <p className="text-[8px] mt-2" style={{ color: "#8a8886" }}>Evidencia: {control.evidence || "Pendiente"} · actualizado por {control.updated_by || "sin evaluar"}</p>
+                          <p className="text-[10px] mt-2" style={{ color: "#8a8886" }}>Evidencia: {control.evidence || "Pendiente"} · actualizado por {control.updated_by || "sin evaluar"}</p>
                           </>
                         )}
-                        {canEvaluateControls && control.updated_by && <p className="text-[8px] mt-1" style={{ color: "#8a8886" }}>Último registro: {control.updated_by} · {new Date(control.updated_at).toLocaleString("es-PE")}</p>}
+                        {canEvaluateControls && control.updated_by && <p className="text-[10px] mt-1" style={{ color: "#8a8886" }}>Último registro: {control.updated_by} · {new Date(control.updated_at).toLocaleString("es-PE")}</p>}
                       </article>
                     );
                   })}
@@ -308,7 +328,7 @@ export function ComplianceModule() {
             ))}
           </div>
         )}
-        <p className="text-[8px] mt-3" style={{ color: "#8a8886" }}>
+        <p className="text-[10px] mt-3" style={{ color: "#8a8886" }}>
           La matriz traduce temas de seguridad (ISO/IEC 27001:2022), gobernanza organizacional de IA (ISO/IEC 38507:2022) y calidad/mejora (ISO 9001:2026) a controles del proyecto. Las referencias no son una lista oficial de cláusulas ni acreditan conformidad. “Conforme” es una autoevaluación del supervisor sustentada por la evidencia descrita.
         </p>
       </Card>
@@ -328,8 +348,8 @@ export function ComplianceModule() {
                 <Icon className="w-4 h-4" style={{ color: kpi.color }} />
               </div>
               <div>
-                <div className="text-[20px] font-semibold" style={{ color: "#201f1e" }}>{kpi.value}</div>
-                <div className="text-[10px]" style={{ color: "#8a8886" }}>{kpi.label}</div>
+                <div className="text-[22px] font-semibold" style={{ color: "#201f1e" }}>{kpi.value}</div>
+                <div className="text-[12px]" style={{ color: "#8a8886" }}>{kpi.label}</div>
               </div>
             </Card>
           );
@@ -341,7 +361,7 @@ export function ComplianceModule() {
         {/* Compliance rings per normativa */}
         <div className="xl:col-span-2">
           <Card className="p-4">
-            <div className="text-[12px] font-semibold mb-4" style={{ color: "#201f1e" }}>Cumplimiento por Normativa</div>
+            <div className="text-[14px] font-semibold mb-4" style={{ color: "#201f1e" }}>Cumplimiento por Normativa</div>
             <div className="space-y-3">
               {d.normativaList.map((norm, i) => {
                 const sc = STATUS_COLORS[norm.estado] ?? STATUS_COLORS["Conforme"];
@@ -350,14 +370,14 @@ export function ComplianceModule() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <div className="min-w-0 mr-2">
-                          <div className="text-[11px] font-medium truncate" style={{ color: "#201f1e" }}>{norm.nombre}</div>
+                          <div className="text-[13px] font-medium truncate" style={{ color: "#201f1e" }}>{norm.nombre}</div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#f3f2f1", color: "#8a8886" }}>{norm.tipo}</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: sc.bg, color: sc.text }}>{norm.estado}</span>
+                            <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: "#f3f2f1", color: "#8a8886" }}>{norm.tipo}</span>
+                            <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: sc.bg, color: sc.text }}>{norm.estado}</span>
                           </div>
                         </div>
                         <div className="flex-shrink-0 flex items-center gap-2">
-                          <span className="text-[11px] font-semibold" style={{ color: norm.cumplimiento >= 90 ? "#107c10" : norm.cumplimiento >= 80 ? "#ca5010" : "#a4262c" }}>
+                          <span className="text-[13px] font-semibold" style={{ color: norm.cumplimiento >= 90 ? "#107c10" : norm.cumplimiento >= 80 ? "#ca5010" : "#a4262c" }}>
                             {norm.cumplimiento}%
                           </span>
                         </div>
@@ -368,7 +388,7 @@ export function ComplianceModule() {
                           background: norm.cumplimiento >= 90 ? "#107c10" : norm.cumplimiento >= 80 ? "#ca5010" : "#a4262c",
                         }} />
                       </div>
-                      <div className="flex gap-3 mt-1 text-[9px]" style={{ color: "#8a8886" }}>
+                      <div className="flex gap-3 mt-1 text-[11px]" style={{ color: "#8a8886" }}>
                         <span>{norm.controles} controles realizados</span>
                         {norm.pendientes > 0 && <span style={{ color: "#ca5010" }}>{norm.pendientes} pendientes</span>}
                       </div>
@@ -383,20 +403,20 @@ export function ComplianceModule() {
         {/* Overall ring + trend */}
         <div className="space-y-4">
           <Card className="p-4 flex flex-col items-center">
-            <div className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>Cumplimiento Global</div>
+            <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>Cumplimiento Global</div>
             <ProgressRing value={d.overall} color={d.overall >= 90 ? "#107c10" : "#ca5010"} size={120} />
-            <p className="text-[10px] text-center mt-3" style={{ color: "#8a8886" }}>
+            <p className="text-[12px] text-center mt-3" style={{ color: "#8a8886" }}>
               Promedio ponderado de {d.normativas} normativas evaluadas
             </p>
           </Card>
 
           <Card className="p-4">
-            <div className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>Evolución histórica del cumplimiento</div>
+            <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>Evolución histórica del cumplimiento</div>
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={d.historico} margin={{ left: 0, right: 4, top: 0, bottom: 0 }}>
-                <XAxis dataKey="periodo" tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[80, 100]} tick={{ fontSize: 8, fill: "#8a8886" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ fontSize: 10, border: "1px solid #e1dfdd", borderRadius: 4 }} />
+                <XAxis dataKey="periodo" tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                <YAxis domain={[80, 100]} tick={{ fontSize: 10, fill: "#8a8886" }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #e1dfdd", borderRadius: 4 }} />
                 <Bar name="Cumplimiento %" dataKey="cumplimiento" fill="#0f6cbd" radius={[3, 3, 0, 0]} barSize={28} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
@@ -406,7 +426,7 @@ export function ComplianceModule() {
 
       {/* Regulatory risks */}
       <Card className="p-4">
-        <div className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>
+        <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>
           <Scale className="w-3.5 h-3.5 inline mr-1.5" style={{ color: "#0f6cbd" }} />
           Riesgos regulatorios identificados · {d.riesgosRegulatorios.length}
         </div>
@@ -415,12 +435,12 @@ export function ComplianceModule() {
             <div key={r.id} className="flex items-center gap-4 p-3 rounded" style={{ background: "#f3f2f1" }}>
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: RISK_COLORS[r.nivel] }} />
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-medium" style={{ color: "#201f1e" }}>{r.descripcion}</div>
-                <div className="text-[9px] mt-0.5" style={{ color: "#8a8886" }}>{r.normativa}</div>
+                <div className="text-[13px] font-medium" style={{ color: "#201f1e" }}>{r.descripcion}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: "#8a8886" }}>{r.normativa}</div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-[10px] font-medium" style={{ color: RISK_COLORS[r.nivel] }}>{r.nivel}</span>
-                <div className="flex items-center gap-1 text-[9px]" style={{ color: "#8a8886" }}>
+                <span className="text-[12px] font-medium" style={{ color: RISK_COLORS[r.nivel] }}>{r.nivel}</span>
+                <div className="flex items-center gap-1 text-[11px]" style={{ color: "#8a8886" }}>
                   <AlertTriangle className="w-3 h-3" />
                   {r.fechaLimite}
                 </div>
@@ -429,7 +449,7 @@ export function ComplianceModule() {
           ))}
         </div>
       </Card>
-      <p className="text-[10px] px-1" style={{ color: "#8a8886" }}>
+      <p className="text-[12px] px-1" style={{ color: "#8a8886" }}>
         Porcentajes, controles y estados son simulados para el prototipo académico. AI Act e ISO/IEC 42001 se muestran como referencias conceptuales; no representan certificación ni cumplimiento organizacional real.
       </p>
     </div>

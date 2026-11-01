@@ -1,9 +1,9 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi import HTTPException
 
-from api import main as api_main
+from api import database, main as api_main
 
 
 class AIGovernanceAlertTests(unittest.TestCase):
@@ -80,6 +80,27 @@ class AIGovernanceAlertTests(unittest.TestCase):
                 )
 
         self.assertEqual(raised.exception.status_code, 409)
+
+    def test_risk_history_cleanup_runs_only_for_a_new_migration(self) -> None:
+        connection = MagicMock()
+        connection.__enter__.return_value = connection
+        connection.execute.return_value.fetchone.return_value = {"migration_id": "clear-ai-governance-risk-history-2026-11"}
+
+        with patch.object(database, "connection", return_value=connection):
+            database.clear_ai_governance_risk_history_once()
+
+        self.assertEqual(connection.execute.call_count, 2)
+        self.assertIn("DELETE FROM ai_governance_risks", connection.execute.call_args_list[1].args[0])
+
+    def test_risk_history_cleanup_is_skipped_after_migration_was_applied(self) -> None:
+        connection = MagicMock()
+        connection.__enter__.return_value = connection
+        connection.execute.return_value.fetchone.return_value = None
+
+        with patch.object(database, "connection", return_value=connection):
+            database.clear_ai_governance_risk_history_once()
+
+        connection.execute.assert_called_once()
 
 
 if __name__ == "__main__":

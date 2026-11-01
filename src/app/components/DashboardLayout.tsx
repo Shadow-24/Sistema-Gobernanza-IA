@@ -45,7 +45,7 @@ export function DashboardLayout() {
               <Brain className="w-4 h-4 text-white" />
             </div>
             <div className="hidden sm:block">
-              <div className="text-white font-semibold text-[13px] leading-tight">Gobernanza</div>
+              <div className="text-white font-semibold text-[15px] leading-tight">Gobernanza</div>
             </div>
           </div>
 
@@ -57,7 +57,7 @@ export function DashboardLayout() {
                 to={item.to}
                 title={item.label}
                 className={({ isActive }) =>
-                  `flex items-center justify-center sm:justify-start gap-2.5 mx-1 sm:mx-2 px-2 sm:px-3 py-2 rounded text-[12.5px] transition-colors mb-0.5 ${
+                  `flex items-center justify-center sm:justify-start gap-2.5 mx-1 sm:mx-2 px-2 sm:px-3 py-2 rounded text-[14.5px] transition-colors mb-0.5 ${
                     isActive
                       ? "text-white font-medium"
                       : "font-normal"
@@ -104,7 +104,7 @@ export function DashboardLayout() {
           {/* Content */}
           <main className="flex-1 overflow-auto p-3 sm:p-6">
             {dataError && (
-              <div role="alert" className="mb-4 rounded px-3 py-2 text-[11px]" style={{ background: "#fdf3f4", border: "1px solid #f1b8bb", color: "#a4262c" }}>
+              <div role="alert" className="mb-4 rounded px-3 py-2 text-[13px]" style={{ background: "#fdf3f4", border: "1px solid #f1b8bb", color: "#a4262c" }}>
                 No se pudieron cargar los datos sectoriales desde PostgreSQL: {dataError}
               </div>
             )}

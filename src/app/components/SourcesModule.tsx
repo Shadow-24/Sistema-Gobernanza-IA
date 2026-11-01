@@ -74,9 +74,9 @@ function MetricCard({ title, value, detail, icon: Icon, color }: {
         <Icon className="w-4 h-4" style={{ color }} />
       </div>
       <div>
-        <div className="text-[20px] font-semibold" style={{ color: "#201f1e" }}>{value}</div>
-        <div className="text-[11px] font-medium" style={{ color: "#323130" }}>{title}</div>
-        <div className="text-[10px] mt-1" style={{ color: "#797775" }}>{detail}</div>
+        <div className="text-[22px] font-semibold" style={{ color: "#201f1e" }}>{value}</div>
+        <div className="text-[13px] font-medium" style={{ color: "#323130" }}>{title}</div>
+        <div className="text-[12px] mt-1" style={{ color: "#797775" }}>{detail}</div>
       </div>
     </div>
   );
@@ -86,14 +86,14 @@ function SummaryList({ title, items, unit }: { title: string; items: SummaryItem
   const maximum = Math.max(1, ...items.map((item) => item.records));
   return (
     <section className="bg-white rounded p-4" style={{ border: "1px solid #e1dfdd" }}>
-      <h2 className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>{title}</h2>
+      <h2 className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>{title}</h2>
       {items.length === 0 ? (
-        <p className="text-[10px]" style={{ color: "#797775" }}>No hay registros para mostrar.</p>
+        <p className="text-[12px]" style={{ color: "#797775" }}>No hay registros para mostrar.</p>
       ) : (
         <div className="space-y-2.5">
           {items.map((item) => (
             <div key={item.name}>
-              <div className="flex justify-between gap-3 text-[10px] mb-1">
+              <div className="flex justify-between gap-3 text-[12px] mb-1">
                 <span className="truncate" style={{ color: "#323130" }}>{item.name}</span>
                 <span className="flex-shrink-0 font-medium" style={{ color: "#605e5c" }}>{numberFormat.format(item.records)}{unit ? ` ${unit}` : ""}</span>
               </div>
@@ -197,15 +197,15 @@ export function SourcesModule() {
       <header>
         <div className="flex items-center gap-2 mb-1">
           <Database className="w-4 h-4" style={{ color: "#0f6cbd" }} />
-          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#0f6cbd" }}>Datos sectoriales importados</span>
+          <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "#0f6cbd" }}>Datos sectoriales importados</span>
         </div>
-        <h1 className="text-[17px] font-semibold" style={{ color: "#201f1e" }}>Fuentes de datos</h1>
-        <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>Catálogo de archivos disponibles y resúmenes derivados de los nuevos registros de transporte, ambiente y precios.</p>
+        <h1 className="text-[19px] font-semibold" style={{ color: "#201f1e" }}>Fuentes de datos</h1>
+        <p className="text-[13px] mt-1" style={{ color: "#605e5c" }}>Catálogo de archivos disponibles y resúmenes derivados de los nuevos registros de transporte, ambiente y precios.</p>
       </header>
 
-      {error && <div role="alert" className="rounded px-3 py-2 text-[11px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{error}</div>}
+      {error && <div role="alert" className="rounded px-3 py-2 text-[13px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{error}</div>}
       {loading ? (
-        <div className="flex items-center gap-2 text-[11px]" style={{ color: "#605e5c" }}><LoaderCircle className="w-4 h-4 animate-spin" />Cargando fuentes desde PostgreSQL…</div>
+        <div className="flex items-center gap-2 text-[13px]" style={{ color: "#605e5c" }}><LoaderCircle className="w-4 h-4 animate-spin" />Cargando fuentes desde PostgreSQL…</div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -229,42 +229,42 @@ export function SourcesModule() {
           </div>
 
           <section className="bg-white rounded p-4" style={{ border: "1px solid #e1dfdd" }}>
-            <h2 className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Cobertura ambiental por año</h2>
+            <h2 className="text-[14px] font-semibold mb-2" style={{ color: "#201f1e" }}>Cobertura ambiental por año</h2>
             <div className="flex flex-wrap gap-2">
               {(imported?.environmental?.byYear ?? []).map(({ year, records }) => (
-                <span key={year} className="px-2.5 py-1 rounded text-[10px]" style={{ background: "#f3f2f1", color: "#323130" }}>
+                <span key={year} className="px-2.5 py-1 rounded text-[12px]" style={{ background: "#f3f2f1", color: "#323130" }}>
                   {year}: {numberFormat.format(records)} muestras
                 </span>
               ))}
-              {(!imported?.environmental?.byYear.length) && <span className="text-[10px]" style={{ color: "#797775" }}>No hay fechas válidas en los archivos.</span>}
+              {(!imported?.environmental?.byYear.length) && <span className="text-[12px]" style={{ color: "#797775" }}>No hay fechas válidas en los archivos.</span>}
             </div>
-            <p className="text-[10px] mt-3" style={{ color: "#605e5c" }}>{imported?.environmental?.description}</p>
+            <p className="text-[12px] mt-3" style={{ color: "#605e5c" }}>{imported?.environmental?.description}</p>
           </section>
 
           <section className="bg-white rounded p-4" style={{ border: "1px solid #e1dfdd" }}>
-            <h2 className="text-[12px] font-semibold mb-3" style={{ color: "#201f1e" }}>Precios anonimizados del periodo más reciente por producto</h2>
+            <h2 className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>Precios anonimizados del periodo más reciente por producto</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
               {(imported?.prices?.latestPrices ?? []).map((price) => (
                 <div key={price.product} className="rounded p-3" style={{ background: "#faf9f8" }}>
-                  <div className="text-[10px]" style={{ color: "#605e5c" }}>{price.product} · {price.period}</div>
-                  <div className="text-[16px] font-semibold mt-1" style={{ color: "#201f1e" }}>{numberFormat.format(price.average)}</div>
-                  <div className="text-[9px] mt-1" style={{ color: "#797775" }}>
+                  <div className="text-[12px]" style={{ color: "#605e5c" }}>{price.product} · {price.period}</div>
+                  <div className="text-[18px] font-semibold mt-1" style={{ color: "#201f1e" }}>{numberFormat.format(price.average)}</div>
+                  <div className="text-[11px] mt-1" style={{ color: "#797775" }}>
                     Rango {numberFormat.format(price.minimum)}–{numberFormat.format(price.maximum)} · {numberFormat.format(price.observations)} observaciones
                   </div>
                 </div>
               ))}
-              {(!imported?.prices?.latestPrices?.length) && <span className="text-[10px]" style={{ color: "#797775" }}>No hay precios disponibles.</span>}
+              {(!imported?.prices?.latestPrices?.length) && <span className="text-[12px]" style={{ color: "#797775" }}>No hay precios disponibles.</span>}
             </div>
-            <p className="text-[10px] mt-3" style={{ color: "#605e5c" }}>{imported?.prices?.description}</p>
+            <p className="text-[12px] mt-3" style={{ color: "#605e5c" }}>{imported?.prices?.description}</p>
           </section>
 
           <section className="bg-white rounded p-4" style={{ border: "1px solid #e1dfdd" }}>
-            <h2 className="text-[12px] font-semibold mb-1" style={{ color: "#201f1e" }}>Registro de precios de distribuidores minoristas</h2>
-            <p className="text-[10px] mb-3" style={{ color: "#797775" }}>
+            <h2 className="text-[14px] font-semibold mb-1" style={{ color: "#201f1e" }}>Registro de precios de distribuidores minoristas</h2>
+            <p className="text-[12px] mb-3" style={{ color: "#797775" }}>
               {numberFormat.format(imported?.prices?.minoristRegistry?.records ?? 0)} registros · intervalo de fechas {imported?.prices?.minoristRegistry?.dateRange.from ?? "—"} a {imported?.prices?.minoristRegistry?.dateRange.to ?? "—"}. El promedio muestra el punto medio entre los precios mínimo y máximo registrados.
             </p>
             <div className="overflow-auto">
-              <table className="w-full text-left text-[10px]">
+              <table className="w-full text-left text-[12px]">
                 <thead><tr style={{ color: "#605e5c" }}><th className="py-2 pr-3 font-medium">Producto</th><th className="py-2 pr-3 font-medium">Registros</th><th className="py-2 pr-3 font-medium">Punto medio promedio</th><th className="py-2 pr-3 font-medium">Mínimo fuente</th><th className="py-2 font-medium">Máximo fuente</th></tr></thead>
                 <tbody>{(imported?.prices?.minoristRegistry?.byProduct ?? []).map((product) => (
                   <tr key={product.product} className="border-t" style={{ borderColor: "#edebe9" }}>
@@ -282,21 +282,21 @@ export function SourcesModule() {
           <section className="bg-white rounded overflow-hidden" style={{ border: "1px solid #e1dfdd" }}>
             <div className="p-4 border-b flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3" style={{ borderColor: "#edebe9" }}>
               <div>
-                <h2 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Catálogo de archivos</h2>
-                <p className="text-[10px] mt-1" style={{ color: "#797775" }}>Consulta previa de CSV y Excel disponible para archivos de hasta 20 MB; los demás se pueden descargar.</p>
+                <h2 className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Catálogo de archivos</h2>
+                <p className="text-[12px] mt-1" style={{ color: "#797775" }}>Consulta previa de CSV y Excel disponible para archivos de hasta 20 MB; los demás se pueden descargar.</p>
               </div>
               <div className="flex gap-2">
                 <label className="relative flex-1 lg:w-64">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "#797775" }} />
-                  <input aria-label="Buscar archivos" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre…" className="w-full pl-7 pr-2 py-2 rounded text-[10px]" style={{ border: "1px solid #c8c6c4" }} />
+                  <input aria-label="Buscar archivos" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre…" className="w-full pl-7 pr-2 py-2 rounded text-[12px]" style={{ border: "1px solid #c8c6c4" }} />
                 </label>
-                <select aria-label="Filtrar tipo de archivo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} className="px-2 rounded text-[10px]" style={{ border: "1px solid #c8c6c4" }}>
+                <select aria-label="Filtrar tipo de archivo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} className="px-2 rounded text-[12px]" style={{ border: "1px solid #c8c6c4" }}>
                   {SOURCE_TYPES.map((type) => <option key={type} value={type}>{type === "Todos" ? type : type.toUpperCase()}</option>)}
                 </select>
               </div>
             </div>
             <div className="overflow-auto max-h-[560px]">
-              <table className="w-full text-left text-[10px]">
+              <table className="w-full text-left text-[12px]">
                 <thead className="sticky top-0" style={{ background: "#faf9f8", color: "#605e5c" }}>
                   <tr><th className="p-2.5 font-medium">Archivo</th><th className="p-2.5 font-medium">Formato</th><th className="p-2.5 font-medium">Tamaño</th><th className="p-2.5 font-medium">Importado</th><th className="p-2.5 font-medium text-right">Acciones</th></tr>
                 </thead>
@@ -319,7 +319,7 @@ export function SourcesModule() {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-2 text-[9px]" style={{ background: "#faf9f8", color: "#797775" }}>Mostrando {numberFormat.format(filteredFiles.length)} de {numberFormat.format(files.length)} archivos. {imported?.registries?.description}</div>
+            <div className="px-4 py-2 text-[11px]" style={{ background: "#faf9f8", color: "#797775" }}>Mostrando {numberFormat.format(filteredFiles.length)} de {numberFormat.format(files.length)} archivos. {imported?.registries?.description}</div>
           </section>
         </>
       )}
@@ -329,31 +329,31 @@ export function SourcesModule() {
           <div className="bg-white rounded shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
             <div className="p-4 border-b flex items-start justify-between gap-3" style={{ borderColor: "#edebe9" }}>
               <div className="min-w-0">
-                <h2 className="text-[12px] font-semibold break-words" style={{ color: "#201f1e" }}>{selectedFile.fileName}</h2>
-                <p className="text-[10px] mt-1" style={{ color: "#797775" }}>{preview ? `${numberFormat.format(preview.totalRows)} filas informadas · muestra de hasta 100 filas` : "Vista de solo lectura"}</p>
+                <h2 className="text-[14px] font-semibold break-words" style={{ color: "#201f1e" }}>{selectedFile.fileName}</h2>
+                <p className="text-[12px] mt-1" style={{ color: "#797775" }}>{preview ? `${numberFormat.format(preview.totalRows)} filas informadas · muestra de hasta 100 filas` : "Vista de solo lectura"}</p>
               </div>
               <button type="button" onClick={closePreview} aria-label="Cerrar vista previa" className="p-1.5 rounded hover:bg-gray-100" style={{ color: "#605e5c" }}><X className="w-4 h-4" /></button>
             </div>
             {preview?.sheets.length ? (
               <div className="px-4 pt-3">
-                <label className="text-[10px] mr-2" htmlFor="source-sheet" style={{ color: "#605e5c" }}>Hoja:</label>
-                <select id="source-sheet" value={preview.selectedSheet} onChange={(event) => void openPreview(selectedFile, event.target.value)} className="px-2 py-1 rounded text-[10px]" style={{ border: "1px solid #c8c6c4" }}>
+                <label className="text-[12px] mr-2" htmlFor="source-sheet" style={{ color: "#605e5c" }}>Hoja:</label>
+                <select id="source-sheet" value={preview.selectedSheet} onChange={(event) => void openPreview(selectedFile, event.target.value)} className="px-2 py-1 rounded text-[12px]" style={{ border: "1px solid #c8c6c4" }}>
                   {preview.sheets.map((sheet) => <option key={sheet} value={sheet}>{sheet}</option>)}
                 </select>
               </div>
             ) : null}
             <div className="overflow-auto flex-1 p-4">
-              {previewLoading && <div className="flex items-center gap-2 text-[11px]" style={{ color: "#605e5c" }}><LoaderCircle className="w-4 h-4 animate-spin" />Leyendo archivo…</div>}
-              {previewError && <p role="alert" className="text-[11px]" style={{ color: "#a4262c" }}>{previewError}</p>}
+              {previewLoading && <div className="flex items-center gap-2 text-[13px]" style={{ color: "#605e5c" }}><LoaderCircle className="w-4 h-4 animate-spin" />Leyendo archivo…</div>}
+              {previewError && <p role="alert" className="text-[13px]" style={{ color: "#a4262c" }}>{previewError}</p>}
               {preview?.previewAvailable && (
-                <table className="text-left text-[9px] border-collapse">
+                <table className="text-left text-[11px] border-collapse">
                   <thead><tr>{previewColumns.map((column, index) => <th key={`${String(column)}-${index}`} className="border p-2 whitespace-nowrap" style={{ background: "#faf9f8", borderColor: "#e1dfdd", color: "#323130" }}>{column ?? `Columna ${index + 1}`}</th>)}</tr></thead>
                   <tbody>{previewRows.map((row, rowIndex) => <tr key={rowIndex}>{previewColumns.map((_, columnIndex) => <td key={columnIndex} className="border p-2 min-w-20 max-w-64 break-words" style={{ borderColor: "#edebe9", color: "#605e5c" }}>{row[columnIndex] == null ? "" : String(row[columnIndex])}</td>)}</tr>)}</tbody>
                 </table>
               )}
             </div>
             <div className="p-3 border-t flex justify-end" style={{ borderColor: "#edebe9" }}>
-              <button type="button" onClick={() => void downloadFile(selectedFile)} className="inline-flex items-center gap-1.5 rounded px-3 py-2 text-[10px] font-medium text-white" style={{ background: "#0f6cbd" }}><Download className="w-3.5 h-3.5" />Descargar</button>
+              <button type="button" onClick={() => void downloadFile(selectedFile)} className="inline-flex items-center gap-1.5 rounded px-3 py-2 text-[12px] font-medium text-white" style={{ background: "#0f6cbd" }}><Download className="w-3.5 h-3.5" />Descargar</button>
             </div>
           </div>
         </div>

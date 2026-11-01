@@ -338,15 +338,15 @@ export function AuditModule() {
   return (
     <div className="space-y-5">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>Auditoría</h1><UserStoryRefs ids={["HU-013", "HU-016", "HU-017"]} /></div>
-        <p className="text-[11px] mt-0.5" style={{ color: "#605e5c" }}>
+        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Auditoría</h1><UserStoryRefs ids={["HU-013", "HU-016", "HU-017"]} /></div>
+        <p className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>
           Último periodo de demostración disponible · {latestAuditYear} · evaluaciones de modelos simuladas cuando se indica
         </p>
-        <p className="text-[9px] mt-1" style={{ color: "#8a8886" }}>Registros de demostración; las referencias administrativas no representan auditorías reales. Los cambios de seguimiento y documentos adjuntos se guardan en PostgreSQL.</p>
+        <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>Registros de demostración; las referencias administrativas no representan auditorías reales. Los cambios de seguimiento y documentos adjuntos se guardan en PostgreSQL.</p>
       </div>
 
-      {workflowError && <p role="alert" className="rounded px-3 py-2 text-[10px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{workflowError}</p>}
-      {notice && <p role="status" className="rounded px-3 py-2 text-[10px]" style={{ background: "#f1faf1", color: "#107c10" }}>{notice}</p>}
+      {workflowError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{workflowError}</p>}
+      {notice && <p role="status" className="rounded px-3 py-2 text-[12px]" style={{ background: "#f1faf1", color: "#107c10" }}>{notice}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {(["Pendiente", "En curso", "Observada", "Completada"] as const).map(estado => {
@@ -371,8 +371,8 @@ export function AuditModule() {
                 <Icon className="w-4 h-4" style={{ color: s.text }} />
               </div>
               <div>
-                <div className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>{count}</div>
-                <div className="text-[10px]" style={{ color: "#8a8886" }}>Auditorías {estado}</div>
+                <div className="text-[20px] font-semibold" style={{ color: "#201f1e" }}>{count}</div>
+                <div className="text-[12px]" style={{ color: "#8a8886" }}>Auditorías {estado}</div>
               </div>
               </div>
             </button>
@@ -380,7 +380,7 @@ export function AuditModule() {
         })}
       </div>
       {statusFilter && (
-        <div className="flex items-center justify-between gap-2 text-[9px]" style={{ color: "#605e5c" }}>
+        <div className="flex items-center justify-between gap-2 text-[11px]" style={{ color: "#605e5c" }}>
           <span>Filtrando historial y línea de tiempo: {statusFilter}.</span>
           <button type="button" onClick={() => setStatusFilter(null)} className="font-medium" style={{ color: "#0f6cbd" }}>Quitar filtro</button>
         </div>
@@ -390,7 +390,7 @@ export function AuditModule() {
 
         {/* Audit list */}
         <div className="lg:col-span-3 space-y-3">
-          <div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Historial de Auditorías</div>
+          <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Historial de Auditorías</div>
           {filteredAudits.map(audit => {
             const s = STATE_STYLES[audit.estado];
             const Icon = s.icon;
@@ -417,43 +417,43 @@ export function AuditModule() {
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-mono" style={{ color: "#8a8886" }}>{audit.id}</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]" style={{ background: s.bg, color: s.text }}>
+                      <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{audit.id}</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px]" style={{ background: s.bg, color: s.text }}>
                         <Icon className="w-2.5 h-2.5" />{audit.estado}
                       </span>
-                      {audit.id === selectedAudit?.id && <span className="text-[9px] font-medium" style={{ color: "#0f6cbd" }}>Seleccionada</span>}
+                      {audit.id === selectedAudit?.id && <span className="text-[11px] font-medium" style={{ color: "#0f6cbd" }}>Seleccionada</span>}
                     </div>
-                    <div className="text-[12px] font-medium" style={{ color: "#201f1e" }}>{audit.tipo}</div>
-                    {audit.modelo && <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Evaluación conceptual · Simulación AI</span>}
-                    <div className="text-[11px] mt-0.5" style={{ color: "#605e5c" }}>{audit.administrado} · {audit.sector}</div>
+                    <div className="text-[14px] font-medium" style={{ color: "#201f1e" }}>{audit.tipo}</div>
+                    {audit.modelo && <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[11px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Evaluación conceptual · Simulación AI</span>}
+                    <div className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>{audit.administrado} · {audit.sector}</div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="text-[11px]" style={{ color: "#8a8886" }}>{audit.fecha}</div>
+                    <div className="text-[13px]" style={{ color: "#8a8886" }}>{audit.fecha}</div>
                   </div>
                 </div>
 
-                <p className="text-[11px] mb-3 leading-snug" style={{ color: "#605e5c" }}>{audit.hallazgos}</p>
+                <p className="text-[13px] mb-3 leading-snug" style={{ color: "#605e5c" }}>{audit.hallazgos}</p>
 
                 {audit.modelo && (
                   <details onClick={(event) => event.stopPropagation()} className="mb-3 p-3 rounded" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
-                    <summary className="cursor-pointer text-[10px] font-medium" style={{ color: "#0f6cbd" }}>Ver evaluación técnica del modelo</summary>
+                    <summary className="cursor-pointer text-[12px] font-medium" style={{ color: "#0f6cbd" }}>Ver evaluación técnica del modelo</summary>
                     <div className="pt-3">
-                    <div className="grid grid-cols-2 gap-2 text-[10px] mb-2">
+                    <div className="grid grid-cols-2 gap-2 text-[12px] mb-2">
                       <span style={{ color: "#605e5c" }}>Modelo: <strong style={{ color: "#201f1e" }}>{audit.modelo} · {audit.version}</strong></span>
                       <span style={{ color: "#605e5c" }}>Proceso: <strong style={{ color: "#201f1e" }}>{audit.proceso}</strong></span>
                       <span style={{ color: "#605e5c" }}>Resultado: <strong style={{ color: "#201f1e" }}>{audit.resultado}</strong></span>
                       <span style={{ color: "#605e5c" }}>Riesgo: <strong style={{ color: "#ca5010" }}>{audit.nivelRiesgo}</strong></span>
                     </div>
-                    <div className="text-[10px] font-semibold mb-1" style={{ color: "#201f1e" }}>Explicabilidad del modelo · simulada · confianza {audit.confianza}%</div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px]" style={{ color: "#605e5c" }}>
+                    <div className="text-[12px] font-semibold mb-1" style={{ color: "#201f1e" }}>Explicabilidad del modelo · simulada · confianza {audit.confianza}%</div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px]" style={{ color: "#605e5c" }}>
                       {audit.factores?.map((factor) => <span key={factor.name}>{factor.name}: {factor.percent}%</span>)}
                     </div>
-                    <p className="text-[9px] mt-2" style={{ color: "#8a8886" }}>Recomendación: {audit.recomendacion} Los factores no provienen de explicabilidad de un modelo real.</p>
+                    <p className="text-[11px] mt-2" style={{ color: "#8a8886" }}>Recomendación: {audit.recomendacion} Los factores no provienen de explicabilidad de un modelo real.</p>
                     </div>
                   </details>
                 )}
 
-                <div className="flex items-center gap-4 text-[10px]" style={{ color: "#8a8886" }}>
+                <div className="flex items-center gap-4 text-[12px]" style={{ color: "#8a8886" }}>
                   <span className="flex items-center gap-1">
                     <FileText className="w-3 h-3" />{audit.evidencias} referencias · demo
                   </span>
@@ -468,10 +468,10 @@ export function AuditModule() {
                 {(audit.resoluciones.length > 0 || audit.expedientes.length > 0) && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {audit.resoluciones.map(r => (
-                      <span key={r} className="px-1.5 py-0.5 rounded text-[9px] font-mono" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{r}</span>
+                      <span key={r} className="px-1.5 py-0.5 rounded text-[11px] font-mono" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{r}</span>
                     ))}
                     {audit.expedientes.map(e => (
-                      <span key={e} className="px-1.5 py-0.5 rounded text-[9px] font-mono" style={{ background: "#f1faf1", color: "#107c10" }}>{e}</span>
+                      <span key={e} className="px-1.5 py-0.5 rounded text-[11px] font-mono" style={{ background: "#f1faf1", color: "#107c10" }}>{e}</span>
                     ))}
                   </div>
                 )}
@@ -484,64 +484,64 @@ export function AuditModule() {
             <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                <h2 id="audit-follow-up-title" className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Seguimiento · {selectedAudit.id}</h2>
-                <p className="text-[9px] mt-1" style={{ color: "#8a8886" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
+                <h2 id="audit-follow-up-title" className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Seguimiento · {selectedAudit.id}</h2>
+                <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
                 </div>
-                <button type="button" onClick={() => setIsFollowUpOpen(false)} aria-label="Cerrar seguimiento de auditoría" className="rounded px-2 py-1 text-[10px]" style={{ color: "#605e5c" }}>Cerrar</button>
+                <button type="button" onClick={() => setIsFollowUpOpen(false)} aria-label="Cerrar seguimiento de auditoría" className="rounded px-2 py-1 text-[12px]" style={{ color: "#605e5c" }}>Cerrar</button>
               </div>
               <div className="mb-4 rounded p-3" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
-                <h3 className="text-[10px] font-semibold" style={{ color: "#201f1e" }}>Referencias de esta auditoría</h3>
-                <p className="mt-0.5 text-[8px]" style={{ color: "#8a8886" }}>Referencias históricas demostrativas; no son archivos adjuntos.</p>
+                <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Referencias de esta auditoría</h3>
+                <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Referencias históricas demostrativas; no son archivos adjuntos.</p>
                 <div className="mt-2 space-y-2">
                   <div>
-                    <div className="text-[8px] font-medium" style={{ color: "#605e5c" }}>Resoluciones</div>
+                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Resoluciones</div>
                     {selectedAudit.resoluciones.length ? (
-                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.resoluciones.map((resolution) => <span key={resolution} className="rounded px-1.5 py-0.5 text-[8px] font-mono" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{resolution}</span>)}</div>
-                    ) : <p className="mt-0.5 text-[8px]" style={{ color: "#8a8886" }}>Sin referencias de resolución.</p>}
+                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.resoluciones.map((resolution) => <span key={resolution} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{resolution}</span>)}</div>
+                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Sin referencias de resolución.</p>}
                   </div>
                   <div>
-                    <div className="text-[8px] font-medium" style={{ color: "#605e5c" }}>Expedientes</div>
+                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Expedientes</div>
                     {selectedAudit.expedientes.length ? (
-                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.expedientes.map((caseId) => <span key={caseId} className="rounded px-1.5 py-0.5 text-[8px] font-mono" style={{ background: "#f1faf1", color: "#107c10" }}>{caseId}</span>)}</div>
-                    ) : <p className="mt-0.5 text-[8px]" style={{ color: "#8a8886" }}>Sin referencias de expediente.</p>}
+                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.expedientes.map((caseId) => <span key={caseId} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ background: "#f1faf1", color: "#107c10" }}>{caseId}</span>)}</div>
+                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Sin referencias de expediente.</p>}
                   </div>
                   {selectedAuditRelatedEvents.length > 0 && (
                     <div>
-                      <div className="text-[8px] font-medium" style={{ color: "#605e5c" }}>Eventos relacionados de la línea de tiempo</div>
+                      <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Eventos relacionados de la línea de tiempo</div>
                       <div className="mt-1 space-y-1">
-                        {selectedAuditRelatedEvents.map((event) => <p key={event.key} className="text-[8px]" style={{ color: "#605e5c" }}>{event.fecha} · {event.evento} — {event.detalle}</p>)}
+                        {selectedAuditRelatedEvents.map((event) => <p key={event.key} className="text-[10px]" style={{ color: "#605e5c" }}>{event.fecha} · {event.evento} — {event.detalle}</p>)}
                       </div>
                     </div>
                   )}
                   <div>
-                    <div className="text-[8px] font-medium" style={{ color: "#605e5c" }}>Evidencias históricas</div>
-                    <p className="mt-0.5 text-[8px]" style={{ color: "#8a8886" }}>{selectedAudit.evidencias} referencias indicadas en el registro demostrativo. Para consultar archivos, revisa los documentos adjuntos abajo.</p>
+                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Evidencias históricas</div>
+                    <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>{selectedAudit.evidencias} referencias indicadas en el registro demostrativo. Para consultar archivos, revisa los documentos adjuntos abajo.</p>
                   </div>
                 </div>
               </div>
               <form onSubmit={(event) => void saveAuditChanges(event)} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="text-[9px] font-medium" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
                     Estado
                     <select required disabled={!canManageAudits} value={draftStatus} onChange={(event) => {
                       const status = event.target.value as AuditStatus;
                       setDraftStatus(status);
-                    }} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[10px]" style={{ borderColor: "#e1dfdd" }}>
+                    }} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "#e1dfdd" }}>
                       <option value="Pendiente">Pendiente</option>
                       <option value="En curso">En curso</option>
                       <option value="Observada">Observada</option>
                       <option value="Completada">Completada</option>
                     </select>
                   </label>
-                  <label className="text-[9px] font-medium" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
                     Etapa de la auditoría
-                    <select required disabled={!canManageAudits} value={draftPhase} onChange={(event) => setDraftPhase(event.target.value as AuditPhase)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[10px]" style={{ borderColor: "#e1dfdd" }}>
+                    <select required disabled={!canManageAudits} value={draftPhase} onChange={(event) => setDraftPhase(event.target.value as AuditPhase)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "#e1dfdd" }}>
                       {AUDIT_PHASES.map((phase) => <option key={phase} value={phase}>{phase}</option>)}
                     </select>
                   </label>
-                  <label className="text-[9px] font-medium" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
                     Responsable
-                    <select required={draftStatus !== "Pendiente"} disabled={!canManageAudits} value={draftResponsible} onChange={(event) => setDraftResponsible(event.target.value)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[10px]" style={{ borderColor: "#e1dfdd" }}>
+                    <select required={draftStatus !== "Pendiente"} disabled={!canManageAudits} value={draftResponsible} onChange={(event) => setDraftResponsible(event.target.value)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "#e1dfdd" }}>
                       <option value="">Selecciona un responsable</option>
                       {draftResponsible && !eligibleAssignees.some((account) => account.username === draftResponsible) && (
                         <option value={draftResponsible} disabled>Usuario asignado sin permiso activo</option>
@@ -554,46 +554,46 @@ export function AuditModule() {
                     {!managementError && canManageAudits && eligibleAssignees.length === 0 && <span className="mt-1 block font-normal" style={{ color: "#8a8886" }}>No hay usuarios activos con permiso de Auditoría.</span>}
                   </label>
                 </div>
-                <label className="block text-[9px] font-medium" style={{ color: "#605e5c" }}>
+                <label className="block text-[11px] font-medium" style={{ color: "#605e5c" }}>
                   Notas de seguimiento
-                  <textarea required={draftStatus !== "Pendiente"} disabled={!canManageAudits} maxLength={5000} rows={3} value={draftNotes} onChange={(event) => setDraftNotes(event.target.value)} placeholder="Acuerdos, tareas pendientes o comentarios de revisión" className="mt-1 block w-full rounded border bg-white p-2 text-[10px]" style={{ borderColor: "#e1dfdd" }} />
+                  <textarea required={draftStatus !== "Pendiente"} disabled={!canManageAudits} maxLength={5000} rows={3} value={draftNotes} onChange={(event) => setDraftNotes(event.target.value)} placeholder="Acuerdos, tareas pendientes o comentarios de revisión" className="mt-1 block w-full rounded border bg-white p-2 text-[12px]" style={{ borderColor: "#e1dfdd" }} />
                 </label>
                 {canManageAudits ? (
-                  <button type="submit" disabled={saving} className="rounded px-3 py-2 text-[10px] font-medium text-white disabled:opacity-60" style={{ background: "#0f6cbd" }}>{saving ? "Guardando…" : "Guardar seguimiento"}</button>
+                  <button type="submit" disabled={saving} className="rounded px-3 py-2 text-[12px] font-medium text-white disabled:opacity-60" style={{ background: "#0f6cbd" }}>{saving ? "Guardando…" : "Guardar seguimiento"}</button>
                 ) : (
-                  <p className="text-[9px]" style={{ color: "#8a8886" }}>Solo el Supervisor de Cumplimiento puede actualizar auditorías.</p>
+                  <p className="text-[11px]" style={{ color: "#8a8886" }}>Solo el Supervisor de Cumplimiento puede actualizar auditorías.</p>
                 )}
               </form>
 
               <div className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-[10px] font-semibold" style={{ color: "#201f1e" }}>Documentos relacionados</h3>
-                    <p className="text-[8px] mt-0.5" style={{ color: "#8a8886" }}>Adjuntos persistidos · máximo 10 MB por archivo.</p>
+                    <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Documentos relacionados</h3>
+                    <p className="text-[10px] mt-0.5" style={{ color: "#8a8886" }}>Adjuntos persistidos · máximo 10 MB por archivo.</p>
                   </div>
                   {canManageAudits && (
-                    <label className="cursor-pointer rounded border px-2 py-1.5 text-[9px] font-medium" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
+                    <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
                       {uploading ? "Subiendo…" : "Adjuntar documento"}
                       <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={uploading} onChange={(event) => void addAuditDocument(event)} />
                     </label>
                   )}
                 </div>
-                {documentsError && <p role="alert" className="mt-2 text-[9px]" style={{ color: "#a4262c" }}>{documentsError}</p>}
+                {documentsError && <p role="alert" className="mt-2 text-[11px]" style={{ color: "#a4262c" }}>{documentsError}</p>}
                 {documentsLoading ? (
-                  <p className="mt-2 text-[9px]" style={{ color: "#8a8886" }}>Cargando documentos…</p>
+                  <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Cargando documentos…</p>
                 ) : documents.length ? (
                   <div className="mt-2 space-y-1">
                     {documents.map((document) => (
                       <div key={document.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5" style={{ background: "#f9f8f7" }}>
                         <div className="min-w-0">
-                          <div className="truncate text-[9px] font-medium" style={{ color: "#201f1e" }}>{document.file_name}</div>
-                          <div className="text-[8px]" style={{ color: "#8a8886" }}>{(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by} · {new Date(document.created_at).toLocaleDateString("es-PE")}</div>
+                          <div className="truncate text-[11px] font-medium" style={{ color: "#201f1e" }}>{document.file_name}</div>
+                          <div className="text-[10px]" style={{ color: "#8a8886" }}>{(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by} · {new Date(document.created_at).toLocaleDateString("es-PE")}</div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => void previewAuditDocument(document)} className="rounded px-2 py-1 text-[9px]" style={{ color: "#0f6cbd" }}>Ver</button>
-                          <button type="button" onClick={() => void downloadAuditDocumentFile(document)} className="rounded px-2 py-1 text-[9px]" style={{ color: "#0f6cbd" }}>Descargar</button>
+                          <button type="button" onClick={() => void previewAuditDocument(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "#0f6cbd" }}>Ver</button>
+                          <button type="button" onClick={() => void downloadAuditDocumentFile(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "#0f6cbd" }}>Descargar</button>
                           {canManageAudits && (
-                            <button type="button" disabled={deletingDocumentId === document.id} onClick={() => void removeAuditDocument(document)} className="rounded px-2 py-1 text-[9px] disabled:opacity-60" style={{ color: "#a4262c" }}>
+                            <button type="button" disabled={deletingDocumentId === document.id} onClick={() => void removeAuditDocument(document)} className="rounded px-2 py-1 text-[11px] disabled:opacity-60" style={{ color: "#a4262c" }}>
                               {deletingDocumentId === document.id ? "Eliminando…" : "Eliminar"}
                             </button>
                           )}
@@ -602,7 +602,7 @@ export function AuditModule() {
                     ))}
                   </div>
                 ) : (
-                  !documentsError && <p className="mt-2 text-[9px]" style={{ color: "#8a8886" }}>Aún no hay documentos adjuntos para esta auditoría.</p>
+                  !documentsError && <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Aún no hay documentos adjuntos para esta auditoría.</p>
                 )}
               </div>
               {documentPreview && (
@@ -613,7 +613,7 @@ export function AuditModule() {
                   onClose={() => setDocumentPreview(null)}
                 />
               )}
-              {selectedWorkflow?.updated_by && <p className="mt-2 text-[8px]" style={{ color: "#8a8886" }}>Última actualización: {selectedWorkflow.updated_by} · {new Date(selectedWorkflow.updated_at).toLocaleString("es-PE")}</p>}
+              {selectedWorkflow?.updated_by && <p className="mt-2 text-[10px]" style={{ color: "#8a8886" }}>Última actualización: {selectedWorkflow.updated_by} · {new Date(selectedWorkflow.updated_at).toLocaleString("es-PE")}</p>}
             </Card>
             </div>
           )}
@@ -622,8 +622,8 @@ export function AuditModule() {
         {/* Timeline */}
         <div className="lg:col-span-2">
           <Card className="p-4">
-            <div className="text-[12px] font-semibold mb-1" style={{ color: "#201f1e" }}>Línea de tiempo · {filteredTimelineItems.length} eventos</div>
-            <p className="mb-4 text-[8px]" style={{ color: "#8a8886" }}>Las auditorías listadas aquí se pueden seleccionar; RD, expedientes y RSK son referencias relacionadas, no auditorías aparte.</p>
+            <div className="text-[14px] font-semibold mb-1" style={{ color: "#201f1e" }}>Línea de tiempo · {filteredTimelineItems.length} eventos</div>
+            <p className="mb-4 text-[10px]" style={{ color: "#8a8886" }}>Las auditorías listadas aquí se pueden seleccionar; RD, expedientes y RSK son referencias relacionadas, no auditorías aparte.</p>
             <div className="relative">
               <div className="absolute left-3 top-0 bottom-0 w-px" style={{ background: "#e1dfdd" }} />
               <div className="space-y-4">
@@ -640,13 +640,13 @@ export function AuditModule() {
                                 setSelectedAuditId(event.auditId);
                                 setIsFollowUpOpen(true);
                               }
-                            }} className="text-left text-[10px] font-medium" style={{ color: "#0f6cbd" }}>{event.evento}</button>
+                            }} className="text-left text-[12px] font-medium" style={{ color: "#0f6cbd" }}>{event.evento}</button>
                           ) : (
-                            <span className="text-[10px] font-medium" style={{ color: "#201f1e" }}>{event.evento}</span>
+                            <span className="text-[12px] font-medium" style={{ color: "#201f1e" }}>{event.evento}</span>
                           )}
-                          <span className="ml-auto text-[9px] flex-shrink-0" style={{ color: "#8a8886" }}>{event.fecha}</span>
+                          <span className="ml-auto text-[11px] flex-shrink-0" style={{ color: "#8a8886" }}>{event.fecha}</span>
                         </div>
-                        <p className="text-[10px] leading-snug" style={{ color: "#8a8886" }}>{event.detalle}</p>
+                        <p className="text-[12px] leading-snug" style={{ color: "#8a8886" }}>{event.detalle}</p>
                         {event.eventType === "update" && event.changes.length > 0 && (
                           <div className="mt-1">
                             <button
@@ -658,13 +658,13 @@ export function AuditModule() {
                                 else next.add(event.key);
                                 return next;
                               })}
-                              className="text-[9px] font-medium"
+                              className="text-[11px] font-medium"
                               style={{ color: "#0f6cbd" }}
                             >
                               {expandedTimelineEvents.has(event.key) ? "Ocultar cambios" : `Ver ${event.changes.length} cambios`}
                             </button>
                             {expandedTimelineEvents.has(event.key) && (
-                              <ul className="mt-1 space-y-1 rounded p-2 text-[9px]" style={{ background: "#f9f8f7" }}>
+                              <ul className="mt-1 space-y-1 rounded p-2 text-[11px]" style={{ background: "#f9f8f7" }}>
                                 {event.changes.map((change) => (
                                   <li key={change.field}>
                                     <span className="font-medium" style={{ color: "#605e5c" }}>{change.label}:</span>{" "}
@@ -677,14 +677,14 @@ export function AuditModule() {
                             )}
                           </div>
                         )}
-                        <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[9px]" style={{ background: t.bg, color: t.text }}>
+                        <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[11px]" style={{ background: t.bg, color: t.text }}>
                           {event.tipo === "audit" ? "Auditoría" : event.tipo === "resolution" ? "Resolución" : event.tipo === "expediente" ? "Expediente" : "Riesgo"}
                         </span>
                       </div>
                     </div>
                   );
                 }) : (
-                  <p className="pl-5 text-[9px]" style={{ color: "#8a8886" }}>No hay eventos vinculados a las auditorías de este estado.</p>
+                  <p className="pl-5 text-[11px]" style={{ color: "#8a8886" }}>No hay eventos vinculados a las auditorías de este estado.</p>
                 )}
               </div>
             </div>

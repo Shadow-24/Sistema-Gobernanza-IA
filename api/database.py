@@ -253,6 +253,12 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             """,
             "CREATE INDEX IF NOT EXISTS ai_governance_risks_updated_at_idx ON ai_governance_risks(updated_at DESC)",
             """
+            CREATE TABLE IF NOT EXISTS ai_governance_migrations (
+                migration_id TEXT PRIMARY KEY,
+                applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS ai_governance_alert_reviews (
                 alert_id TEXT PRIMARY KEY,
                 risk_id TEXT NOT NULL REFERENCES ai_governance_risks(id) ON DELETE CASCADE,
@@ -327,6 +333,42 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             "CREATE INDEX IF NOT EXISTS audit_documents_audit_idx ON audit_documents(audit_id, created_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_workflow (
+                risk_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL CHECK (status IN ('Activo', 'En análisis', 'Mitigado', 'Cerrado')),
+                phase TEXT NOT NULL DEFAULT 'Identificación',
+                responsible TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',
+                updated_by TEXT,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_workflow_events (
+                id BIGSERIAL PRIMARY KEY,
+                risk_id TEXT NOT NULL REFERENCES detected_risk_workflow(risk_id) ON DELETE CASCADE,
+                event_type TEXT NOT NULL CHECK (event_type IN ('update', 'document')),
+                detail TEXT NOT NULL,
+                username TEXT NOT NULL,
+                occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS detected_risk_workflow_events_risk_idx ON detected_risk_workflow_events(risk_id, occurred_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_documents (
+                id TEXT PRIMARY KEY,
+                risk_id TEXT NOT NULL REFERENCES detected_risk_workflow(risk_id) ON DELETE CASCADE,
+                file_name TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
+                checksum TEXT NOT NULL,
+                content BYTEA NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS detected_risk_documents_risk_idx ON detected_risk_documents(risk_id, created_at DESC)",
         )
         for statement in statements:
             conn.execute(statement)
@@ -390,6 +432,22 @@ def initialize_ai_governance_schema() -> None:
                 """,
                 controls,
             )
+    clear_ai_governance_risk_history_once()
+
+
+def clear_ai_governance_risk_history_once() -> None:
+    with connection() as conn:
+        cleanup = conn.execute(
+            """
+            INSERT INTO ai_governance_migrations (migration_id)
+            VALUES (%s)
+            ON CONFLICT (migration_id) DO NOTHING
+            RETURNING migration_id
+            """,
+            ("clear-ai-governance-risk-history-2026-11",),
+        ).fetchone()
+        if cleanup:
+            conn.execute("DELETE FROM ai_governance_risks")
 
 
 def initialize_audit_workflow() -> None:
@@ -625,6 +683,189 @@ def delete_audit_document(document_id: str, username: str) -> dict[str, str] | N
             VALUES (%s, 'document', %s, %s)
             """,
             (document["audit_id"], f"Documento eliminado: {document['file_name']}", username),
+        )
+        return document
+
+
+def list_detected_risk_workflows() -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT risk_id, status, phase, responsible, notes, updated_by, updated_at
+            FROM detected_risk_workflow
+            ORDER BY updated_at DESC
+            """
+        ).fetchall()
+
+
+def update_detected_risk_workflow(
+    risk_id: str,
+    status: str,
+    phase: str,
+    responsible: str,
+    notes: str,
+    username: str,
+) -> dict[str, Any]:
+    with connection() as conn:
+        current = conn.execute(
+            """
+            SELECT status, phase, responsible, notes
+            FROM detected_risk_workflow
+            WHERE risk_id = %s
+            FOR UPDATE
+            """,
+            (risk_id,),
+        ).fetchone()
+        if responsible and not conn.execute(
+            """
+            SELECT 1
+            FROM managed_users
+            WHERE username = %s AND active AND permissions ? 'riesgos'
+            """,
+            (responsible,),
+        ).fetchone():
+            raise ValueError("El responsable debe ser un usuario activo con permiso de Riesgos.")
+
+        if current:
+            previous_values = current
+            updated = conn.execute(
+                """
+                UPDATE detected_risk_workflow
+                SET status = %s, phase = %s, responsible = %s, notes = %s,
+                    updated_by = %s, updated_at = now()
+                WHERE risk_id = %s
+                RETURNING risk_id, status, phase, responsible, notes, updated_by, updated_at
+                """,
+                (status, phase, responsible, notes, username, risk_id),
+            ).fetchone()
+        else:
+            previous_values = {"status": status, "phase": "Identificación", "responsible": "", "notes": ""}
+            updated = conn.execute(
+                """
+                INSERT INTO detected_risk_workflow
+                    (risk_id, status, phase, responsible, notes, updated_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING risk_id, status, phase, responsible, notes, updated_by, updated_at
+                """,
+                (risk_id, status, phase, responsible, notes, username),
+            ).fetchone()
+        changes = []
+        for field, label, value in (
+            ("status", "Estado", status),
+            ("phase", "Etapa", phase),
+            ("responsible", "Responsable", responsible),
+            ("notes", "Notas de seguimiento", notes),
+        ):
+            previous = previous_values[field]
+            if previous != value:
+                changes.append({"field": field, "label": label, "before": previous, "after": value})
+        if changes:
+            conn.execute(
+                """
+                INSERT INTO detected_risk_workflow_events (risk_id, event_type, detail, username)
+                VALUES (%s, 'update', %s, %s)
+                """,
+                (risk_id, json.dumps({"changes": changes}, ensure_ascii=False), username),
+            )
+        return updated
+
+
+def list_detected_risk_workflow_events(risk_id: str) -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, risk_id, event_type, detail, username, occurred_at
+            FROM detected_risk_workflow_events
+            WHERE risk_id = %s
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT 200
+            """,
+            (risk_id,),
+        ).fetchall()
+
+
+def list_detected_risk_documents(risk_id: str) -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, risk_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
+            FROM detected_risk_documents
+            WHERE risk_id = %s
+            ORDER BY created_at DESC, id
+            """,
+            (risk_id,),
+        ).fetchall()
+
+
+def save_detected_risk_document(
+    *,
+    document_id: str,
+    risk_id: str,
+    initial_status: str,
+    file_name: str,
+    media_type: str,
+    content: bytes,
+    checksum: str,
+    username: str,
+) -> dict[str, Any]:
+    with connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO detected_risk_workflow (risk_id, status, phase)
+            VALUES (%s, %s, 'Identificación')
+            ON CONFLICT (risk_id) DO NOTHING
+            """,
+            (risk_id, initial_status),
+        )
+        document = conn.execute(
+            """
+            INSERT INTO detected_risk_documents
+                (id, risk_id, file_name, media_type, size_bytes, checksum, content, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, risk_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
+            """,
+            (document_id, risk_id, file_name, media_type, len(content), checksum, content, username),
+        ).fetchone()
+        conn.execute(
+            """
+            INSERT INTO detected_risk_workflow_events (risk_id, event_type, detail, username)
+            VALUES (%s, 'document', %s, %s)
+            """,
+            (risk_id, f"Documento adjuntado: {file_name}", username),
+        )
+        return document
+
+
+def get_detected_risk_document(document_id: str) -> dict[str, Any] | None:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, risk_id, file_name, media_type, size_bytes, checksum, content, uploaded_by, created_at
+            FROM detected_risk_documents
+            WHERE id = %s
+            """,
+            (document_id,),
+        ).fetchone()
+
+
+def delete_detected_risk_document(document_id: str, username: str) -> dict[str, str] | None:
+    with connection() as conn:
+        document = conn.execute(
+            """
+            DELETE FROM detected_risk_documents
+            WHERE id = %s
+            RETURNING risk_id, file_name
+            """,
+            (document_id,),
+        ).fetchone()
+        if not document:
+            return None
+        conn.execute(
+            """
+            INSERT INTO detected_risk_workflow_events (risk_id, event_type, detail, username)
+            VALUES (%s, 'document', %s, %s)
+            """,
+            (document["risk_id"], f"Documento eliminado: {document['file_name']}", username),
         )
         return document
 
