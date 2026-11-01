@@ -336,7 +336,8 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             """
             CREATE TABLE IF NOT EXISTS detected_risk_workflow (
                 risk_id TEXT PRIMARY KEY,
-                status TEXT NOT NULL CHECK (status IN ('Activo', 'En análisis', 'Mitigado', 'Cerrado')),
+                status TEXT CHECK (status IN ('Activo', 'En análisis', 'Mitigado', 'Cerrado')),
+                risk_level TEXT CHECK (risk_level IN ('Crítico', 'Alto', 'Medio', 'Bajo')),
                 phase TEXT NOT NULL DEFAULT 'Identificación',
                 responsible TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT '',
@@ -355,6 +356,25 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             "CREATE INDEX IF NOT EXISTS detected_risk_workflow_events_risk_idx ON detected_risk_workflow_events(risk_id, occurred_at DESC)",
+            "ALTER TABLE detected_risk_workflow ADD COLUMN IF NOT EXISTS risk_level TEXT",
+            "ALTER TABLE detected_risk_workflow ALTER COLUMN status DROP NOT NULL",
+            "ALTER TABLE detected_risk_workflow DROP CONSTRAINT IF EXISTS detected_risk_workflow_status_check",
+            """
+            ALTER TABLE detected_risk_workflow
+            ADD CONSTRAINT detected_risk_workflow_status_check
+            CHECK (status IS NULL OR status IN ('Activo', 'En análisis', 'Mitigado', 'Cerrado'))
+            """,
+            "ALTER TABLE detected_risk_workflow DROP CONSTRAINT IF EXISTS detected_risk_workflow_risk_level_check",
+            """
+            ALTER TABLE detected_risk_workflow
+            ADD CONSTRAINT detected_risk_workflow_risk_level_check
+            CHECK (risk_level IS NULL OR risk_level IN ('Crítico', 'Alto', 'Medio', 'Bajo'))
+            """,
+            """
+            UPDATE detected_risk_workflow
+            SET status = NULL
+            WHERE COALESCE(responsible, '') = '' AND COALESCE(notes, '') = ''
+            """,
             """
             CREATE TABLE IF NOT EXISTS detected_risk_documents (
                 id TEXT PRIMARY KEY,
@@ -691,7 +711,7 @@ def list_detected_risk_workflows() -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(
             """
-            SELECT risk_id, status, phase, responsible, notes, updated_by, updated_at
+            SELECT risk_id, status, risk_level, phase, responsible, notes, updated_by, updated_at
             FROM detected_risk_workflow
             ORDER BY updated_at DESC
             """
@@ -701,6 +721,7 @@ def list_detected_risk_workflows() -> list[dict[str, Any]]:
 def update_detected_risk_workflow(
     risk_id: str,
     status: str,
+    risk_level: str,
     phase: str,
     responsible: str,
     notes: str,
@@ -709,7 +730,7 @@ def update_detected_risk_workflow(
     with connection() as conn:
         current = conn.execute(
             """
-            SELECT status, phase, responsible, notes
+            SELECT status, risk_level, phase, responsible, notes
             FROM detected_risk_workflow
             WHERE risk_id = %s
             FOR UPDATE
@@ -731,34 +752,41 @@ def update_detected_risk_workflow(
             updated = conn.execute(
                 """
                 UPDATE detected_risk_workflow
-                SET status = %s, phase = %s, responsible = %s, notes = %s,
+                SET status = %s, risk_level = %s, phase = %s, responsible = %s, notes = %s,
                     updated_by = %s, updated_at = now()
                 WHERE risk_id = %s
-                RETURNING risk_id, status, phase, responsible, notes, updated_by, updated_at
+                RETURNING risk_id, status, risk_level, phase, responsible, notes, updated_by, updated_at
                 """,
-                (status, phase, responsible, notes, username, risk_id),
+                (status, risk_level, phase, responsible, notes, username, risk_id),
             ).fetchone()
         else:
-            previous_values = {"status": status, "phase": "Identificación", "responsible": "", "notes": ""}
+            previous_values = {
+                "status": None,
+                "risk_level": None,
+                "phase": "Identificación",
+                "responsible": "",
+                "notes": "",
+            }
             updated = conn.execute(
                 """
                 INSERT INTO detected_risk_workflow
-                    (risk_id, status, phase, responsible, notes, updated_by)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING risk_id, status, phase, responsible, notes, updated_by, updated_at
+                    (risk_id, status, risk_level, phase, responsible, notes, updated_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING risk_id, status, risk_level, phase, responsible, notes, updated_by, updated_at
                 """,
-                (risk_id, status, phase, responsible, notes, username),
+                (risk_id, status, risk_level, phase, responsible, notes, username),
             ).fetchone()
         changes = []
         for field, label, value in (
             ("status", "Estado", status),
+            ("risk_level", "Nivel de riesgo", risk_level),
             ("phase", "Etapa", phase),
             ("responsible", "Responsable", responsible),
             ("notes", "Notas de seguimiento", notes),
         ):
             previous = previous_values[field]
             if previous != value:
-                changes.append({"field": field, "label": label, "before": previous, "after": value})
+                changes.append({"field": field, "label": label, "before": previous or "", "after": value})
         if changes:
             conn.execute(
                 """
@@ -801,7 +829,6 @@ def save_detected_risk_document(
     *,
     document_id: str,
     risk_id: str,
-    initial_status: str,
     file_name: str,
     media_type: str,
     content: bytes,
@@ -811,11 +838,11 @@ def save_detected_risk_document(
     with connection() as conn:
         conn.execute(
             """
-            INSERT INTO detected_risk_workflow (risk_id, status, phase)
-            VALUES (%s, %s, 'Identificación')
+            INSERT INTO detected_risk_workflow (risk_id, phase)
+            VALUES (%s, 'Identificación')
             ON CONFLICT (risk_id) DO NOTHING
             """,
-            (risk_id, initial_status),
+            (risk_id,),
         )
         document = conn.execute(
             """

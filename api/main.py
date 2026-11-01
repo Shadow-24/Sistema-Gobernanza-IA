@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -309,6 +309,7 @@ class AuditWorkflowUpdate(BaseModel):
 
 class DetectedRiskWorkflowUpdate(BaseModel):
     status: Literal["Activo", "En análisis", "Mitigado", "Cerrado"]
+    risk_level: Literal["Crítico", "Alto", "Medio", "Bajo"]
     phase: Literal["Identificación", "Análisis", "Plan de tratamiento", "Implementación", "Monitoreo y cierre"]
     responsible: str = Field(min_length=2, max_length=160)
     notes: str = Field(min_length=1, max_length=5000)
@@ -1401,7 +1402,7 @@ def update_detected_risk_workflow(
         raise HTTPException(status_code=422, detail="Agrega una nota antes de guardar el seguimiento.")
     try:
         return database.update_detected_risk_workflow(
-            risk_id, request.status, request.phase, responsible, notes, user["username"]
+            risk_id, request.status, request.risk_level, request.phase, responsible, notes, user["username"]
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
@@ -1440,7 +1441,6 @@ def get_detected_risk_documents(
 async def upload_detected_risk_document(
     risk_id: str,
     file: UploadFile = File(...),
-    initial_status: Literal["Activo", "En análisis", "Mitigado", "Cerrado"] = Form(default="Activo"),
     user: dict[str, Any] = Depends(get_detected_risk_manager),
 ) -> dict[str, Any]:
     original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
@@ -1458,7 +1458,6 @@ async def upload_detected_risk_document(
         return database.save_detected_risk_document(
             document_id=str(uuid.uuid4()),
             risk_id=risk_id,
-            initial_status=initial_status,
             file_name=original_name,
             media_type=media_type,
             content=content,

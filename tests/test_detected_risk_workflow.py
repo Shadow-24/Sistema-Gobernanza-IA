@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from api import database, main as api_main
 
@@ -11,10 +12,17 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
     def test_workflow_changes_are_saved_as_one_timeline_event(self) -> None:
         connection_context = MagicMock()
         connection = connection_context.__enter__.return_value
-        current = {"status": "Activo", "phase": "Identificación", "responsible": "", "notes": ""}
+        current = {
+            "status": None,
+            "risk_level": None,
+            "phase": "Identificación",
+            "responsible": "",
+            "notes": "",
+        }
         updated = {
             "risk_id": "RSK-007",
             "status": "En análisis",
+            "risk_level": "Alto",
             "phase": "Análisis",
             "responsible": "ana",
             "notes": "Revisar el expediente relacionado",
@@ -31,6 +39,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
             result = database.update_detected_risk_workflow(
                 "RSK-007",
                 "En análisis",
+                "Alto",
                 "Análisis",
                 "ana",
                 "Revisar el expediente relacionado",
@@ -44,7 +53,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         changes = json.loads(timeline_insert.args[1][1])["changes"]
         self.assertEqual(
             [change["field"] for change in changes],
-            ["status", "phase", "responsible", "notes"],
+            ["status", "risk_level", "phase", "responsible", "notes"],
         )
 
     def test_rejects_assignee_without_risk_permission(self) -> None:
@@ -58,7 +67,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         with patch.object(database, "connection", return_value=connection_context):
             with self.assertRaises(ValueError) as raised:
                 database.update_detected_risk_workflow(
-                    "RSK-007", "En análisis", "Análisis", "inactive", "Nota", "supervisor"
+                    "RSK-007", "En análisis", "Alto", "Análisis", "inactive", "Nota", "supervisor"
                 )
 
         self.assertIn("permiso de Riesgos", str(raised.exception))
@@ -66,6 +75,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
     def test_workflow_api_requires_responsible_and_note(self) -> None:
         request = api_main.DetectedRiskWorkflowUpdate(
             status="En análisis",
+            risk_level="Alto",
             phase="Análisis",
             responsible="  ",
             notes=" ",
@@ -82,9 +92,20 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 422)
         update.assert_not_called()
 
+    def test_workflow_api_requires_explicit_status_and_risk_level(self) -> None:
+        with self.assertRaises(ValidationError):
+            api_main.DetectedRiskWorkflowUpdate(
+                status="",
+                risk_level="",
+                phase="Identificación",
+                responsible="ana",
+                notes="Revisar el hallazgo",
+            )
+
     def test_workflow_api_trims_values_and_persists_actor(self) -> None:
         request = api_main.DetectedRiskWorkflowUpdate(
             status="Mitigado",
+            risk_level="Medio",
             phase="Monitoreo y cierre",
             responsible=" ana ",
             notes=" Validación realizada ",
@@ -97,7 +118,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
 
         self.assertEqual(result, expected)
         update.assert_called_once_with(
-            "RSK-007", "Mitigado", "Monitoreo y cierre", "ana", "Validación realizada", "supervisor"
+            "RSK-007", "Mitigado", "Medio", "Monitoreo y cierre", "ana", "Validación realizada", "supervisor"
         )
 
     def test_only_supervisor_with_risk_permission_can_manage_workflow(self) -> None:
@@ -117,7 +138,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 403)
         list_workflows.assert_not_called()
 
-    def test_uploaded_document_keeps_existing_initial_risk_status(self) -> None:
+    def test_uploaded_document_does_not_assign_initial_status(self) -> None:
         connection_context = MagicMock()
         connection = connection_context.__enter__.return_value
         document = {"id": "doc-1", "risk_id": "RSK-008", "file_name": "evidence.pdf"}
@@ -131,7 +152,6 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
             saved = database.save_detected_risk_document(
                 document_id="doc-1",
                 risk_id="RSK-008",
-                initial_status="En análisis",
                 file_name="evidence.pdf",
                 media_type="application/pdf",
                 content=b"pdf",
@@ -142,7 +162,8 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         self.assertEqual(saved, document)
         initial_workflow_insert = connection.execute.call_args_list[0]
         self.assertIn("ON CONFLICT (risk_id) DO NOTHING", initial_workflow_insert.args[0])
-        self.assertEqual(initial_workflow_insert.args[1], ("RSK-008", "En análisis"))
+        self.assertNotIn("status", initial_workflow_insert.args[0])
+        self.assertEqual(initial_workflow_insert.args[1], ("RSK-008",))
 
 
 if __name__ == "__main__":

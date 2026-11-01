@@ -1,6 +1,7 @@
 import { apiFetch, apiRequest } from "./apiClient";
 
 export type DetectedRiskStatus = "Activo" | "En análisis" | "Mitigado" | "Cerrado";
+export type DetectedRiskLevel = "Crítico" | "Alto" | "Medio" | "Bajo";
 export type DetectedRiskPhase =
   | "Identificación"
   | "Análisis"
@@ -10,7 +11,8 @@ export type DetectedRiskPhase =
 
 export type DetectedRiskWorkflow = {
   risk_id: string;
-  status: DetectedRiskStatus;
+  status: DetectedRiskStatus | null;
+  risk_level: DetectedRiskLevel | null;
   phase: DetectedRiskPhase;
   responsible: string;
   notes: string;
@@ -48,7 +50,13 @@ export function loadDetectedRiskEvents(riskId: string): Promise<DetectedRiskEven
 
 export function updateDetectedRiskWorkflow(
   riskId: string,
-  workflow: Pick<DetectedRiskWorkflow, "status" | "phase" | "responsible" | "notes">,
+  workflow: {
+    status: DetectedRiskStatus;
+    risk_level: DetectedRiskLevel;
+    phase: DetectedRiskPhase;
+    responsible: string;
+    notes: string;
+  },
 ): Promise<DetectedRiskWorkflow> {
   return apiRequest<DetectedRiskWorkflow>(`/api/detected-risks/${encodeURIComponent(riskId)}/workflow`, {
     method: "PATCH",
@@ -63,11 +71,9 @@ export function loadDetectedRiskDocuments(riskId: string): Promise<DetectedRiskD
 export async function uploadDetectedRiskDocument(
   riskId: string,
   file: File,
-  initialStatus: DetectedRiskStatus,
 ): Promise<DetectedRiskDocument> {
   const form = new FormData();
   form.append("file", file);
-  form.append("initial_status", initialStatus);
   const response = await apiFetch(`/api/detected-risks/${encodeURIComponent(riskId)}/documents`, {
     method: "POST",
     body: form,
