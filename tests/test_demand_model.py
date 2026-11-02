@@ -342,6 +342,13 @@ class DemandApiRegistrationTests(unittest.TestCase):
         self.assertEqual(len(result["predictions"]), 2)
         predict_horizon.assert_called_once()
         self.assertEqual(save_prediction.call_count, 2)
+        saved_predictions = [call.kwargs for call in save_prediction.call_args_list]
+        self.assertEqual(len({prediction["forecast_id"] for prediction in saved_predictions}), 1)
+        self.assertEqual(
+            {prediction["traceability"]["forecastId"] for prediction in saved_predictions},
+            {result["forecastId"]},
+        )
+        self.assertEqual(len({prediction["traceability"]["generatedAt"] for prediction in saved_predictions}), 1)
         record_operation.assert_called_once()
 
 

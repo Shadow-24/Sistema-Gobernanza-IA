@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -190,14 +190,17 @@ def _record_demand_model_operation(
 def _persist_forecast_prediction(
     *,
     run: dict[str, Any],
+    forecast_id: str,
+    generated_at: str | None = None,
     period: str,
     value: float,
     explanation: dict[str, Any],
     username: str,
 ) -> None:
-    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    generated_at = generated_at or datetime.now(timezone.utc).isoformat(timespec="seconds")
     traceability = {
         "runId": run["runId"],
+        "forecastId": forecast_id,
         "modelVersion": run["modelVersion"],
         "targetPeriod": period,
         "source": run["source"],
@@ -209,6 +212,7 @@ def _persist_forecast_prediction(
     database.save_demand_prediction(
         prediction_id=str(uuid.uuid4()),
         run_id=run["runId"],
+        forecast_id=forecast_id,
         period=period,
         value=value,
         unit=run["unit"],
@@ -307,12 +311,20 @@ class AuditWorkflowUpdate(BaseModel):
     notes: str = Field(default="", max_length=5000)
 
 
+class AuditRegistrationRequest(BaseModel):
+    audit_ids: list[str] = Field(min_length=1, max_length=100)
+
+
 class DetectedRiskWorkflowUpdate(BaseModel):
     status: Literal["Activo", "En análisis", "Mitigado", "Cerrado"]
     risk_level: Literal["Crítico", "Alto", "Medio", "Bajo"]
     phase: Literal["Identificación", "Análisis", "Plan de tratamiento", "Implementación", "Monitoreo y cierre"]
     responsible: str = Field(min_length=2, max_length=160)
     notes: str = Field(min_length=1, max_length=5000)
+
+
+class DetectedRiskRegistrationRequest(BaseModel):
+    risk_ids: list[str] = Field(min_length=1, max_length=100)
 
 
 def _public_report(row: dict[str, Any]) -> dict[str, Any]:
@@ -1238,6 +1250,22 @@ def get_audit_workflow(user: dict[str, Any] = Depends(get_current_user)) -> list
         raise HTTPException(status_code=503, detail="No se pudo consultar el flujo de auditorías en PostgreSQL.") from error
 
 
+@app.post("/api/audits/registrations")
+def register_audits(
+    request: AuditRegistrationRequest,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_audit_read_access(user)
+    audit_ids = list(dict.fromkeys(audit_id.strip() for audit_id in request.audit_ids if audit_id.strip()))
+    if not audit_ids or any(len(audit_id) > 80 for audit_id in audit_ids):
+        raise HTTPException(status_code=422, detail="Los identificadores de auditoría no son válidos.")
+    try:
+        return database.register_audits(audit_ids)
+    except Exception as error:
+        logger.exception("No se pudieron consultar las fechas de registro de auditorías.")
+        raise HTTPException(status_code=503, detail="No se pudieron consultar las fechas de registro de auditorías.") from error
+
+
 @app.patch("/api/audits/{audit_id}/workflow")
 def update_audit_workflow(
     audit_id: str,
@@ -1303,6 +1331,7 @@ def get_audit_documents(
 async def upload_audit_document(
     audit_id: str,
     file: UploadFile = File(...),
+    category: Literal["Resoluciones", "Expedientes", "Otro documento relacionado"] = Form(...),
     user: dict[str, Any] = Depends(get_audit_manager),
 ) -> dict[str, Any]:
     original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
@@ -1320,6 +1349,7 @@ async def upload_audit_document(
         document = database.save_audit_document(
             document_id=str(uuid.uuid4()),
             audit_id=audit_id,
+            category=category,
             file_name=original_name,
             media_type=media_type,
             content=content,
@@ -1384,6 +1414,22 @@ def get_detected_risk_workflow(user: dict[str, Any] = Depends(get_current_user))
     except Exception as error:
         logger.exception("No se pudo consultar el flujo de riesgos detectados.")
         raise HTTPException(status_code=503, detail="No se pudo consultar el seguimiento de riesgos.") from error
+
+
+@app.post("/api/detected-risks/registrations")
+def register_detected_risks(
+    request: DetectedRiskRegistrationRequest,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_risk_read_access(user)
+    risk_ids = list(dict.fromkeys(risk_id.strip() for risk_id in request.risk_ids if risk_id.strip()))
+    if not risk_ids or any(len(risk_id) > 120 for risk_id in risk_ids):
+        raise HTTPException(status_code=422, detail="Los identificadores de riesgos no son válidos.")
+    try:
+        return database.register_detected_risks(risk_ids)
+    except Exception as error:
+        logger.exception("No se pudieron registrar las fechas de carga de riesgos detectados.")
+        raise HTTPException(status_code=503, detail="No se pudieron consultar las fechas de registro de riesgos.") from error
 
 
 @app.patch("/api/detected-risks/{risk_id}/workflow")
@@ -2044,6 +2090,7 @@ def _run_demand_model(user: dict[str, Any], operation: str) -> dict[str, Any]:
         database.save_demand_model_run(result, trained.model_artifact, user["username"])
         _persist_forecast_prediction(
             run=result,
+            forecast_id=str(uuid.uuid4()),
             period=result["forecast"]["period"],
             value=result["forecast"]["value"],
             explanation=result["explainability"]["forecast"],
@@ -2161,9 +2208,13 @@ def predict_demand(
             external_features=external_features,
             selected_source=selected_source,
         )
+        forecast_id = str(uuid.uuid4())
+        generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
         for prediction in predictions:
             _persist_forecast_prediction(
                 run=result,
+                forecast_id=forecast_id,
+                generated_at=generated_at,
                 period=prediction["period"],
                 value=prediction["value"],
                 explanation=prediction["explanation"],
@@ -2172,6 +2223,7 @@ def predict_demand(
         succeeded = True
         return {
             "runId": result["runId"],
+            "forecastId": forecast_id,
             "modelVersion": result["modelVersion"],
             "source": result["source"],
             "sourcePeriod": result["coverage"]["to"],

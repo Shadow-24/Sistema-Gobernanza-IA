@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   AuditDocument,
   AuditPhase,
+  AuditRegistration,
   AuditStatus,
   AuditWorkflow,
   AuditWorkflowEvent,
@@ -11,10 +12,18 @@ import {
   loadAuditDocuments,
   loadAuditWorkflow,
   loadAuditWorkflowEvents,
+  registerAudits,
   updateAuditWorkflow,
   uploadAuditDocument,
 } from "../auditsApi";
+import {
+  loadDemandModelStatus,
+  trainDemandModel,
+  type DemandModelStatus,
+} from "../demandModelApi";
 import { useAuth } from "../AuthContext";
+import { csvValue, useSectorData } from "../SectorDataContext";
+import type { CSVRow } from "../../utils/csvParser";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
 import { UserStoryRefs } from "./UserStoryRefs";
 
@@ -33,9 +42,6 @@ export const Clock = (props: any) => (
 );
 export const XCircle = (props: any) => (
   <SvgIcon {...props}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" /><path d="M15 9L9 15M9 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></SvgIcon>
-);
-export const FileText = (props: any) => (
-  <SvgIcon {...props}><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5" /><path d="M14 3v5h5" stroke="currentColor" strokeWidth="1.5" /><path d="M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></SvgIcon>
 );
 export const Link = (props: any) => (
   <SvgIcon {...props}><path d="M10 14a3 3 0 0 1 0-4l1-1a3 3 0 0 1 4 4l-1 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 10a3 3 0 0 1 0 4l-1 1a3 3 0 0 1-4-4l1-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></SvgIcon>
@@ -93,28 +99,133 @@ function getAuditEventChanges(detail: string): AuditChange[] {
   return [];
 }
 
+const AUDIT_MODEL_EVALUATIONS = new Set(["AUD-04"]);
+type AuditReference = {
+  kind: "resolution" | "case";
+  identifier: string;
+  row: CSVRow;
+};
+
+function AuditTechnicalEvaluation({
+  status,
+  loading,
+  error,
+  training,
+  canTrainDemand,
+  onTrain,
+}: {
+  status: DemandModelStatus | null;
+  loading: boolean;
+  error: string;
+  training: boolean;
+  canTrainDemand: boolean;
+  onTrain: () => void;
+}) {
+  if (loading) {
+    return <p className="text-[12px]" style={{ color: "#605e5c" }}>Consultando evaluación real del modelo…</p>;
+  }
+
+  if (error) {
+    return <p role="alert" className="text-[12px]" style={{ color: "#a4262c" }}>{error}</p>;
+  }
+
+  const metrics = status?.metrics?.xgboost;
+  const needsTraining = status?.status === "training_pending" || status?.sourceIsCurrent === false;
+  return (
+    <div className="space-y-3 text-[12px]" style={{ color: "#605e5c" }}>
+      <p><strong style={{ color: "#201f1e" }}>Modelo:</strong> {status?.model ?? "XGBoost"} · pronóstico de ventas mensuales observadas.</p>
+      {status?.status === "evaluated" && metrics ? (
+        <>
+          <p>
+            <strong>Prueba temporal:</strong> {status.evaluationPeriod?.from ?? "—"} a {status.evaluationPeriod?.to ?? "—"}
+            {" · "}{status.trainingObservations ?? "—"} observaciones de entrenamiento
+            {" · "}{status.testObservations ?? "—"} de prueba.
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span>MAE: {metrics.mae?.toLocaleString("es-PE") ?? "—"} {status.unit}</span>
+            <span>RMSE: {metrics.rmse?.toLocaleString("es-PE") ?? "—"} {status.unit}</span>
+            <span>WAPE: {metrics.wape == null ? "—" : `${metrics.wape.toFixed(2)}%`}</span>
+            <span>R²: {metrics.r2?.toFixed(3) ?? "—"}</span>
+            <span>Mejora vs. baseline: {status.metrics?.errorReductionPercent == null ? "—" : `${status.metrics.errorReductionPercent.toFixed(2)}%`}</span>
+          </div>
+          <p>Explicabilidad: {status.explainability?.evaluation.status ?? "no disponible"}.</p>
+          {status.sourceIsCurrent === false && <p role="status" style={{ color: "#8a4b08" }}>La fuente cambió desde esta evaluación; vuelve a entrenar antes de interpretar las métricas.</p>}
+          {status.warnings?.map((warning) => <p key={warning} style={{ color: "#8a4b08" }}>{warning}</p>)}
+        </>
+      ) : (
+        <p>{status?.message ?? "Aún no existe una evaluación entrenada con este modelo."}</p>
+      )}
+      {canTrainDemand && needsTraining && (
+        <button
+          type="button"
+          onClick={onTrain}
+          disabled={training}
+          className="rounded px-3 py-1.5 font-medium text-white disabled:opacity-60"
+          style={{ background: "#8764b8" }}
+        >
+          {training ? "Entrenando y evaluando…" : "Entrenar y evaluar con datos actuales"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AuditEvaluationDetails({
+  status,
+  loading,
+  error,
+  training,
+  canTrainDemand,
+  onTrain,
+}: {
+  status: DemandModelStatus | null;
+  loading: boolean;
+  error: string;
+  training: boolean;
+  canTrainDemand: boolean;
+  onTrain: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <details
+      onClick={(event) => event.stopPropagation()}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      className="mb-3 p-3 rounded"
+      style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}
+    >
+      <summary className="cursor-pointer text-[12px] font-medium" style={{ color: "#0f6cbd" }}>Ver estado y evaluación técnica</summary>
+      {isOpen && (
+        <div className="pt-3">
+          <AuditTechnicalEvaluation
+            status={status}
+            loading={loading}
+            error={error}
+            training={training}
+            canTrainDemand={canTrainDemand}
+            onTrain={onTrain}
+          />
+        </div>
+      )}
+    </details>
+  );
+}
+
 const auditoriasByYear: Record<string, {
   id: string; tipo: string; estado: keyof typeof STATE_STYLES;
-  administrado: string; sector: string; fecha: string;
-  evidencias: number; resoluciones: string[]; expedientes: string[];
-  cumplimiento: number; hallazgos: string;
-  modelo?: string; version?: string; proceso?: string; resultado?: string; nivelRiesgo?: string;
-  confianza?: number; factores?: { name: string; percent: number }[]; recomendacion?: string;
+  administrado: string; sector: string;
+  resoluciones: string[]; expedientes: string[];
+  hallazgos: string;
 }[]> = {
   "2024": [
-    { id: "AUD-2024-041", tipo: "Auditoría de Modelo AI – Predicción Incidentes", estado: "Completada", administrado: "PLUSPETROL NORTE S.A.", sector: "Hidrocarburos Mayores", fecha: "15/12/2024", evidencias: 12, resoluciones: ["0389-2024-OEFA/DFAI", "0372-2024-OEFA/DFAI"], expedientes: ["516-2024-OEFA/TFA-SE"], cumplimiento: 87, hallazgos: "Escenario conceptual de sesgo en predicción de eventos. Evaluación simulada que requiere revisión humana.", modelo: "Clasificación de Incidentes", version: "sim. 2.3", proceso: "Distribución", resultado: "Posible sesgo · resultado simulado", nivelRiesgo: "Alto", confianza: 91, factores: [{ name: "Comportamiento histórico", percent: 42 }, { name: "Condición de operación", percent: 31 }, { name: "Volumen de escenario", percent: 18 }, { name: "Otros factores", percent: 9 }], recomendacion: "Revisar representatividad de datos antes de cualquier uso operacional." },
-    { id: "AUD-2024-038", tipo: "Auditoría de Trazabilidad – Decisiones HC", estado: "Completada", administrado: "REFINERIA LA PAMPILLA S.A.A.", sector: "Hidrocarburos Mayores", fecha: "06/11/2024", evidencias: 8, resoluciones: ["0382-2024-OEFA/DFAI"], expedientes: ["411-2024-OEFA/TFA-SE", "084-2024-OEFA/TFA-SE"], cumplimiento: 92, hallazgos: "Registro de decisiones completo. Se recomienda automatizar notificaciones de resolución." },
-    { id: "AUD-2024-035", tipo: "Auditoría de Cumplimiento Normativo SINADA", estado: "Completada", administrado: "Gas Natural de Lima y Callao", sector: "Comercialización HC", fecha: "22/10/2024", evidencias: 6, resoluciones: ["0376-2024-OEFA/DFAI"], expedientes: [], cumplimiento: 96, hallazgos: "Cumplimiento dentro de parámetros. Sin observaciones críticas." },
-    { id: "AUD-2024-031", tipo: "Auditoría de Instalaciones Fijas CDCLy", estado: "En curso", administrado: "OLYMPIC PERU INC SUC. DEL PERU", sector: "Hidrocarburos Mayores", fecha: "05/10/2024", evidencias: 4, resoluciones: [], expedientes: ["239-2024-OEFA/TFA-SE"], cumplimiento: 71, hallazgos: "Pendiente verificación de 3 tanques de almacenamiento en Lote XIII-A." },
-    { id: "AUD-2024-028", tipo: "Auditoría de Modelo AI – Clasificación Denuncias", estado: "Observada", administrado: "Escenario conceptual sobre el dataset SINADA", sector: "Plataforma AI TRiSM", fecha: "18/09/2024", evidencias: 9, resoluciones: [], expedientes: [], cumplimiento: 63, hallazgos: "Deriva representada conceptualmente en la clasificación de denuncias. Resultado simulado; requiere validación con datos etiquetados.", modelo: "Clasificación de Incidentes", version: "sim. 1.0", proceso: "Clasificación de denuncias", resultado: "Deriva potencial · resultado simulado", nivelRiesgo: "Medio", confianza: 74, factores: [{ name: "Cobertura de etiquetas", percent: 42 }, { name: "Comportamiento histórico", percent: 31 }, { name: "Calidad de datos", percent: 18 }, { name: "Otros factores", percent: 9 }], recomendacion: "Validar balance y calidad de etiquetas antes de evaluar un modelo real." },
-    { id: "AUD-2024-052", tipo: "Auditoría de Modelo IA – Predicción de Demanda", estado: "En curso", administrado: "Escenario conceptual de demanda", sector: "Cadena de suministro · Demanda", fecha: "Escenario Q4 2024", evidencias: 4, resoluciones: [], expedientes: [], cumplimiento: 78, hallazgos: "Evaluación demostrativa; el diccionario disponible describe variables de precios, no una serie histórica de observaciones.", modelo: "Predicción de Demanda", version: "sim. 1.0", proceso: "Demanda", resultado: "Desviación de demanda · resultado simulado", nivelRiesgo: "Medio", confianza: 89, factores: [{ name: "Historial de escenario", percent: 42 }, { name: "Estacionalidad simulada", percent: 31 }, { name: "Volumen de escenario", percent: 18 }, { name: "Otros factores", percent: 9 }], recomendacion: "Contrastar con datos de demanda validados antes de tomar decisiones." },
-    { id: "AUD-2024-055", tipo: "Auditoría de Modelo IA – Riesgo de Transporte", estado: "En curso", administrado: "Ruta conceptual Lima - Callao", sector: "Cadena de suministro · Transporte", fecha: "Escenario Q4 2024", evidencias: 3, resoluciones: [], expedientes: [], cumplimiento: 72, hallazgos: "Escenario de ruta simulado; los datasets disponibles no contienen geometrías ni tiempos de transporte.", modelo: "Evaluación de Riesgo de Ruta", version: "sim. 1.0", proceso: "Transporte", resultado: "Riesgo de ruta · resultado simulado", nivelRiesgo: "Alto", confianza: 91, factores: [{ name: "Historial simulado", percent: 42 }, { name: "Condición de ruta simulada", percent: 31 }, { name: "Volumen de escenario", percent: 18 }, { name: "Otros factores", percent: 9 }], recomendacion: "Revisión humana de condiciones y restricciones de ruta." },
-    { id: "AUD-2024-058", tipo: "Auditoría de Modelo IA – Anomalías de Transporte", estado: "Observada", administrado: "Escenario operacional demostrativo", sector: "Cadena de suministro · Transporte", fecha: "Escenario Q4 2024", evidencias: 2, resoluciones: [], expedientes: [], cumplimiento: 68, hallazgos: "Se requiere validar la procedencia de datos operacionales antes de una evaluación real.", modelo: "Detección de Anomalías de Transporte", version: "sim. 1.0", proceso: "Transporte", resultado: "Posible retraso · resultado simulado", nivelRiesgo: "Medio", confianza: 86, factores: [{ name: "Historial simulado", percent: 42 }, { name: "Condición de ruta simulada", percent: 31 }, { name: "Volumen de escenario", percent: 18 }, { name: "Otros factores", percent: 9 }], recomendacion: "No tratar este resultado conceptual como una alerta operacional real." },
+    { id: "AUD-04", tipo: "Auditoría de Modelo IA – Predicción de Demanda", estado: "En curso", administrado: "Ventas mensuales de combustibles", sector: "Cadena de suministro · Demanda", resoluciones: [], expedientes: [], hallazgos: "Evaluación del modelo con ventas mensuales observadas y métricas de prueba temporal." },
+    { id: "AUD-05", tipo: "Auditoría de Trazabilidad – Decisiones HC", estado: "Completada", administrado: "REFINERIA LA PAMPILLA S.A.A.", sector: "Hidrocarburos Mayores", resoluciones: ["0382-2024-OEFA/DFAI"], expedientes: ["411-2024-OEFA/TFA-SE", "084-2024-OEFA/TFA-SE"], hallazgos: "Registro de decisiones completo. Se recomienda automatizar notificaciones de resolución." },
+    { id: "AUD-06", tipo: "Auditoría de Cumplimiento Normativo SINADA", estado: "Completada", administrado: "Gas Natural de Lima y Callao", sector: "Comercialización HC", resoluciones: ["0376-2024-OEFA/DFAI"], expedientes: [], hallazgos: "Cumplimiento dentro de parámetros. Sin observaciones críticas." },
+    { id: "AUD-07", tipo: "Auditoría de Instalaciones Fijas CDCLy", estado: "En curso", administrado: "OLYMPIC PERU INC SUC. DEL PERU", sector: "Hidrocarburos Mayores", resoluciones: [], expedientes: ["239-2024-OEFA/TFA-SE"], hallazgos: "Pendiente verificación de 3 tanques de almacenamiento en Lote XIII-A." },
   ],
   "2025": [
-    { id: "AUD-2025-004", tipo: "Auditoría de Medidas Correctivas – Lote 192", estado: "En curso", administrado: "PLUSPETROL NORTE S.A.", sector: "Hidrocarburos Mayores", fecha: "31/03/2025", evidencias: 3, resoluciones: ["0389-2025-OEFA/DFAI", "0372-2025-OEFA/DFAI"], expedientes: [], cumplimiento: 55, hallazgos: "Dos medidas correctivas en un trimestre. Patrón de recurrencia activa proceso de auditoría intensiva." },
-    { id: "AUD-2025-002", tipo: "Auditoría de Trazabilidad Q1 2025", estado: "En curso", administrado: "Sistema AI TRiSM – General", sector: "Plataforma AI TRiSM", fecha: "15/03/2025", evidencias: 7, resoluciones: ["0382-2025-OEFA/DFAI", "0376-2025-OEFA/DFAI"], expedientes: [], cumplimiento: 82, hallazgos: "Trazabilidad parcial. Resoluciones sin medida correctiva carecen de evidencia documental adjunta." },
-    { id: "AUD-2025-001", tipo: "Auditoría de Apertura de Período 2025", estado: "Completada", administrado: "Todos los sectores", sector: "Multi-sector", fecha: "31/01/2025", evidencias: 15, resoluciones: [], expedientes: [], cumplimiento: 91, hallazgos: "Línea base establecida. 1,672 instalaciones verificadas en CDCLy. 879 denuncias arrastradas identificadas." },
+    { id: "AUD-01", tipo: "Auditoría de Medidas Correctivas – Lote 192", estado: "En curso", administrado: "PLUSPETROL NORTE S.A.", sector: "Hidrocarburos Mayores", resoluciones: ["0389-2025-OEFA/DFAI", "0372-2025-OEFA/DFAI"], expedientes: [], hallazgos: "Dos medidas correctivas en un trimestre. Patrón de recurrencia activa proceso de auditoría intensiva." },
+    { id: "AUD-02", tipo: "Auditoría de Trazabilidad Q1 2025", estado: "En curso", administrado: "Sistema AI TRiSM – General", sector: "Plataforma AI TRiSM", resoluciones: ["0382-2025-OEFA/DFAI", "0376-2025-OEFA/DFAI"], expedientes: [], hallazgos: "Trazabilidad parcial. Resoluciones sin medida correctiva carecen de evidencia documental adjunta." },
+    { id: "AUD-03", tipo: "Auditoría de Apertura de Período 2025", estado: "Completada", administrado: "Todos los sectores", sector: "Multi-sector", resoluciones: [], expedientes: [], hallazgos: "Línea base establecida. 1,672 instalaciones verificadas en CDCLy. 879 denuncias arrastradas identificadas." },
   ],
 };
 
@@ -123,7 +234,12 @@ const timelineByYear: Record<string, { fecha: string; evento: string; tipo: "aud
   "2025": [],
 };
 
-const latestAuditYear = Object.keys(auditoriasByYear).sort((a, b) => Number(b) - Number(a))[0];
+const auditTemplates = Object.keys(auditoriasByYear)
+  .sort((a, b) => Number(b) - Number(a))
+  .flatMap((year) => auditoriasByYear[year]);
+const timeline = Object.keys(timelineByYear)
+  .sort((a, b) => Number(b) - Number(a))
+  .flatMap((year) => timelineByYear[year]);
 
 const TYPE_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
   audit:      { bg: "#eff6ff", text: "#0f6cbd", dot: "#0f6cbd" },
@@ -140,11 +256,16 @@ function timelineTimestamp(value: string): number {
 
 export function AuditModule() {
   const { user, managedUsers, managementError } = useAuth();
+  const { datasets, loading: datasetsLoading, dataError } = useSectorData();
   const canManageAudits = user?.role === "Supervisor de Cumplimiento" && user.permissions.includes("auditoria");
   const eligibleAssignees = managedUsers.filter((account) => account.active && account.permissions.includes("auditoria"));
-  const auditTemplates = auditoriasByYear[latestAuditYear];
-  const timeline = timelineByYear[latestAuditYear];
+  const [demandModelStatus, setDemandModelStatus] = useState<DemandModelStatus | null>(null);
+  const [demandModelStatusLoading, setDemandModelStatusLoading] = useState(true);
+  const [demandModelStatusError, setDemandModelStatusError] = useState("");
+  const [demandTraining, setDemandTraining] = useState(false);
   const [workflow, setWorkflow] = useState<AuditWorkflow[]>([]);
+  const [auditRegistrations, setAuditRegistrations] = useState<AuditRegistration[]>([]);
+  const [auditRegistrationError, setAuditRegistrationError] = useState("");
   const [workflowEvents, setWorkflowEvents] = useState<AuditWorkflowEvent[]>([]);
   const [expandedTimelineEvents, setExpandedTimelineEvents] = useState<Set<string>>(() => new Set());
   const [documents, setDocuments] = useState<AuditDocument[]>([]);
@@ -158,23 +279,58 @@ export function AuditModule() {
   const [draftNotes, setDraftNotes] = useState("");
   const [workflowError, setWorkflowError] = useState("");
   const [documentsError, setDocumentsError] = useState("");
+  const [selectedReference, setSelectedReference] = useState<AuditReference | null>(null);
+  const [documentCategory, setDocumentCategory] = useState<AuditDocument["category"]>("Otro documento relacionado");
   const [notice, setNotice] = useState("");
   const [documentPreview, setDocumentPreview] = useState<{ fileName: string; mediaType: string; blob: Blob } | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const demandAuditAvailable = (
+    demandModelStatus?.coverage?.months ?? 0
+  ) >= 36 && ["evaluated", "training_pending"].includes(demandModelStatus?.status ?? "");
+  const availableResolutionIds = new Set(datasets.resolutions.map((row) => csvValue(row, "NRO RESOLUCIÓN")).filter(Boolean));
+  const availableCaseResolutionIds = new Set(datasets.cases.map((row) => csvValue(row, "RESOLUCION TFA")).filter(Boolean));
   const workflowById = new Map(workflow.map((item) => [item.audit_id, item]));
-  const audits = auditTemplates.map((audit) => {
+  const auditRegistrationById = new Map(auditRegistrations.map((item) => [item.audit_id, item]));
+  const audits = auditTemplates.filter((audit) => (
+    audit.id !== "AUD-04" || (!demandModelStatusLoading && !demandModelStatusError && demandAuditAvailable)
+  )).map((audit) => {
     const saved = workflowById.get(audit.id);
+    const registeredAt = auditRegistrationById.get(audit.id)?.registered_at;
     return {
       ...audit,
+      fecha: registeredAt
+        ? new Date(registeredAt).toLocaleDateString("es-PE")
+        : "Cargando fecha…",
+      resoluciones: audit.resoluciones.filter((resolution) => availableResolutionIds.has(resolution)),
+      expedientes: audit.expedientes.filter((expediente) => availableCaseResolutionIds.has(expediente)),
       estado: saved?.status ?? "Pendiente",
     };
   });
   const filteredAudits = statusFilter ? audits.filter((audit) => audit.estado === statusFilter) : audits;
   const selectedAudit = filteredAudits.find((audit) => audit.id === selectedAuditId) ?? filteredAudits[0];
   const selectedWorkflow = selectedAudit ? workflowById.get(selectedAudit.id) : undefined;
+  const auditIdsKey = audits.map((audit) => audit.id).join("|");
+
+  useEffect(() => {
+    let active = true;
+    loadDemandModelStatus()
+      .then((status) => {
+        if (active) {
+          setDemandModelStatus(status);
+          setDemandModelStatusError("");
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) setDemandModelStatusError(error instanceof Error ? error.message : "No se pudo consultar la disponibilidad de datos.");
+      })
+      .finally(() => {
+        if (active) setDemandModelStatusLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -190,6 +346,44 @@ export function AuditModule() {
       });
     return () => { active = false; };
   }, [refreshKey]);
+
+  useEffect(() => {
+    let active = true;
+    if (!auditIdsKey) return () => { active = false; };
+    registerAudits(auditIdsKey.split("|"))
+      .then((registrations) => {
+        if (active) {
+          setAuditRegistrations(registrations);
+          setAuditRegistrationError("");
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) setAuditRegistrationError(error instanceof Error ? error.message : "No se pudieron cargar las fechas de registro.");
+      });
+    return () => { active = false; };
+  }, [auditIdsKey]);
+
+  async function trainDemandAuditModel() {
+    setDemandTraining(true);
+    setDemandModelStatusError("");
+    try {
+      setDemandModelStatus(await trainDemandModel());
+    } catch (error) {
+      setDemandModelStatusError(error instanceof Error ? error.message : "No se pudo entrenar y evaluar el modelo de demanda.");
+    } finally {
+      setDemandTraining(false);
+    }
+  }
+
+  function showAuditReference(auditId: string, kind: AuditReference["kind"], identifier: string) {
+    const row = kind === "resolution"
+      ? datasets.resolutions.find((item) => csvValue(item, "NRO RESOLUCIÓN") === identifier)
+      : datasets.cases.find((item) => csvValue(item, "RESOLUCION TFA") === identifier);
+    if (!row) return;
+    setSelectedAuditId(auditId);
+    setSelectedReference({ kind, identifier, row });
+    setIsFollowUpOpen(true);
+  }
 
   useEffect(() => {
     if (!selectedAudit) return;
@@ -252,7 +446,7 @@ export function AuditModule() {
     setUploading(true);
     setDocumentsError("");
     try {
-      const saved = await uploadAuditDocument(selectedAudit.id, file);
+      const saved = await uploadAuditDocument(selectedAudit.id, file, documentCategory);
       setDocuments((current) => [saved, ...current]);
       setRefreshKey((current) => current + 1);
       setNotice(`Documento "${saved.file_name}" adjuntado.`);
@@ -323,7 +517,7 @@ export function AuditModule() {
       key: `legacy-${index}`,
       eventType: null,
       changes: [],
-      auditId: event.tipo === "audit" ? event.evento.match(/AUD-\d{4}-\d{3}/)?.[0] : undefined,
+      auditId: event.tipo === "audit" ? event.evento.match(/AUD-\d{2}/)?.[0] : undefined,
     })),
   ].filter((event) => event.tipo !== "audit" || audits.some((audit) => audit.id === event.auditId))
     .sort((left, right) => timelineTimestamp(right.fecha) - timelineTimestamp(left.fecha));
@@ -340,13 +534,25 @@ export function AuditModule() {
       <div>
         <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Auditoría</h1><UserStoryRefs ids={["HU-013", "HU-016", "HU-017"]} /></div>
         <p className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>
-          Último periodo de demostración disponible · {latestAuditYear} · evaluaciones de modelos simuladas cuando se indica
+          Historial de auditorías · métricas de modelos disponibles en la evaluación técnica
         </p>
-        <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>Registros de demostración; las referencias administrativas no representan auditorías reales. Los cambios de seguimiento y documentos adjuntos se guardan en PostgreSQL.</p>
+        <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>Los cambios de seguimiento y los documentos adjuntos se guardan en PostgreSQL.</p>
       </div>
 
       {workflowError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{workflowError}</p>}
+      {auditRegistrationError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{auditRegistrationError}</p>}
       {notice && <p role="status" className="rounded px-3 py-2 text-[12px]" style={{ background: "#f1faf1", color: "#107c10" }}>{notice}</p>}
+      {demandModelStatusLoading && <p role="status" className="text-[11px]" style={{ color: "#605e5c" }}>Verificando datos para AUD-04…</p>}
+      {demandModelStatusError && (
+        <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>
+          No se pudo validar la disponibilidad de datos de AUD-04; se mantiene fuera del historial. {demandModelStatusError}
+        </p>
+      )}
+      {!demandModelStatusLoading && !demandModelStatusError && !demandAuditAvailable && (
+        <p role="status" className="text-[11px]" style={{ color: "#605e5c" }}>
+          AUD-04 no aparece en el historial porque requiere al menos 36 meses de ventas válidas. {demandModelStatus?.message}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {(["Pendiente", "En curso", "Observada", "Completada"] as const).map(estado => {
@@ -394,6 +600,7 @@ export function AuditModule() {
           {filteredAudits.map(audit => {
             const s = STATE_STYLES[audit.estado];
             const Icon = s.icon;
+            const hasModelEvaluation = AUDIT_MODEL_EVALUATIONS.has(audit.id);
             return (
               <Card
                 key={audit.id}
@@ -403,6 +610,7 @@ export function AuditModule() {
                 aria-label={`Abrir seguimiento de ${audit.id}: ${audit.tipo}`}
                 onClick={() => {
                   setSelectedAuditId(audit.id);
+                  setSelectedReference(null);
                   setIsFollowUpOpen(true);
                 }}
                 onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -410,6 +618,7 @@ export function AuditModule() {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     setSelectedAuditId(audit.id);
+                    setSelectedReference(null);
                     setIsFollowUpOpen(true);
                   }
                 }}
@@ -424,7 +633,7 @@ export function AuditModule() {
                       {audit.id === selectedAudit?.id && <span className="text-[11px] font-medium" style={{ color: "#0f6cbd" }}>Seleccionada</span>}
                     </div>
                     <div className="text-[14px] font-medium" style={{ color: "#201f1e" }}>{audit.tipo}</div>
-                    {audit.modelo && <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[11px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Evaluación conceptual · Simulación AI</span>}
+                    {hasModelEvaluation && <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[11px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Revisar evaluación técnica</span>}
                     <div className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>{audit.administrado} · {audit.sector}</div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -434,44 +643,53 @@ export function AuditModule() {
 
                 <p className="text-[13px] mb-3 leading-snug" style={{ color: "#605e5c" }}>{audit.hallazgos}</p>
 
-                {audit.modelo && (
-                  <details onClick={(event) => event.stopPropagation()} className="mb-3 p-3 rounded" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
-                    <summary className="cursor-pointer text-[12px] font-medium" style={{ color: "#0f6cbd" }}>Ver evaluación técnica del modelo</summary>
-                    <div className="pt-3">
-                    <div className="grid grid-cols-2 gap-2 text-[12px] mb-2">
-                      <span style={{ color: "#605e5c" }}>Modelo: <strong style={{ color: "#201f1e" }}>{audit.modelo} · {audit.version}</strong></span>
-                      <span style={{ color: "#605e5c" }}>Proceso: <strong style={{ color: "#201f1e" }}>{audit.proceso}</strong></span>
-                      <span style={{ color: "#605e5c" }}>Resultado: <strong style={{ color: "#201f1e" }}>{audit.resultado}</strong></span>
-                      <span style={{ color: "#605e5c" }}>Riesgo: <strong style={{ color: "#ca5010" }}>{audit.nivelRiesgo}</strong></span>
-                    </div>
-                    <div className="text-[12px] font-semibold mb-1" style={{ color: "#201f1e" }}>Explicabilidad del modelo · simulada · confianza {audit.confianza}%</div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px]" style={{ color: "#605e5c" }}>
-                      {audit.factores?.map((factor) => <span key={factor.name}>{factor.name}: {factor.percent}%</span>)}
-                    </div>
-                    <p className="text-[11px] mt-2" style={{ color: "#8a8886" }}>Recomendación: {audit.recomendacion} Los factores no provienen de explicabilidad de un modelo real.</p>
-                    </div>
-                  </details>
+                {hasModelEvaluation && (
+                  <AuditEvaluationDetails
+                    status={demandModelStatus}
+                    loading={demandModelStatusLoading}
+                    error={demandModelStatusError}
+                    training={demandTraining}
+                    canTrainDemand={canManageAudits}
+                    onTrain={() => void trainDemandAuditModel()}
+                  />
                 )}
 
-                <div className="flex items-center gap-4 text-[12px]" style={{ color: "#8a8886" }}>
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3 h-3" />{audit.evidencias} referencias · demo
-                  </span>
-                  {audit.resoluciones.length > 0 && <span className="flex items-center gap-1"><Link className="w-3 h-3" />{audit.resoluciones.length} resoluciones</span>}
-                  {audit.expedientes.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <ChevronRight className="w-3 h-3" />{audit.expedientes.length} expedientes
-                    </span>
-                  )}
-                </div>
+                {!datasetsLoading && !dataError && (audit.resoluciones.length > 0 || audit.expedientes.length > 0) && (
+                  <div className="flex items-center gap-4 text-[12px]" style={{ color: "#8a8886" }}>
+                    {audit.resoluciones.length > 0 && <span className="flex items-center gap-1"><Link className="w-3 h-3" />{audit.resoluciones.length} resoluciones verificadas</span>}
+                    {audit.expedientes.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <ChevronRight className="w-3 h-3" />{audit.expedientes.length} expedientes verificados
+                      </span>
+                    )}
+                  </div>
+                )}
 
-                {(audit.resoluciones.length > 0 || audit.expedientes.length > 0) && (
+                {!datasetsLoading && !dataError && (audit.resoluciones.length > 0 || audit.expedientes.length > 0) && (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {audit.resoluciones.map(r => (
-                      <span key={r} className="px-1.5 py-0.5 rounded text-[11px] font-mono" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{r}</span>
+                    {audit.resoluciones.map((resolution) => (
+                      <button
+                        key={resolution}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          showAuditReference(audit.id, "resolution", resolution);
+                        }}
+                        className="rounded px-1.5 py-0.5 text-[11px] font-mono underline"
+                        style={{ background: "#eff6ff", color: "#0f6cbd" }}
+                      >{resolution}</button>
                     ))}
-                    {audit.expedientes.map(e => (
-                      <span key={e} className="px-1.5 py-0.5 rounded text-[11px] font-mono" style={{ background: "#f1faf1", color: "#107c10" }}>{e}</span>
+                    {audit.expedientes.map((caseId) => (
+                      <button
+                        key={caseId}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          showAuditReference(audit.id, "case", caseId);
+                        }}
+                        className="rounded px-1.5 py-0.5 text-[11px] font-mono underline"
+                        style={{ background: "#f1faf1", color: "#107c10" }}
+                      >{caseId}</button>
                     ))}
                   </div>
                 )}
@@ -487,23 +705,56 @@ export function AuditModule() {
                 <h2 id="audit-follow-up-title" className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Seguimiento · {selectedAudit.id}</h2>
                 <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
                 </div>
-                <button type="button" onClick={() => setIsFollowUpOpen(false)} aria-label="Cerrar seguimiento de auditoría" className="rounded px-2 py-1 text-[12px]" style={{ color: "#605e5c" }}>Cerrar</button>
+                <button type="button" onClick={() => {
+                  setIsFollowUpOpen(false);
+                  setSelectedReference(null);
+                }} aria-label="Cerrar seguimiento de auditoría" className="rounded px-2 py-1 text-[12px]" style={{ color: "#605e5c" }}>Cerrar</button>
               </div>
               <div className="mb-4 rounded p-3" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
                 <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Referencias de esta auditoría</h3>
-                <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Referencias históricas demostrativas; no son archivos adjuntos.</p>
+                <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>
+                  {datasetsLoading
+                    ? "Consultando las fuentes de resoluciones y expedientes…"
+                    : dataError
+                      ? "No se pudieron verificar las referencias con las fuentes importadas."
+                      : "Solo se muestran referencias encontradas en las fuentes importadas."}
+                </p>
                 <div className="mt-2 space-y-2">
                   <div>
-                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Resoluciones</div>
-                    {selectedAudit.resoluciones.length ? (
-                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.resoluciones.map((resolution) => <span key={resolution} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{resolution}</span>)}</div>
-                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Sin referencias de resolución.</p>}
+                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Resoluciones verificadas</div>
+                    {datasetsLoading ? (
+                      <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Consultando…</p>
+                    ) : dataError ? (
+                      <p className="mt-0.5 text-[10px]" style={{ color: "#a4262c" }}>No se pudieron verificar las resoluciones.</p>
+                    ) : selectedAudit.resoluciones.length ? (
+                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.resoluciones.map((resolution) => (
+                        <button
+                          key={resolution}
+                          type="button"
+                          onClick={() => showAuditReference(selectedAudit.id, "resolution", resolution)}
+                          className="rounded px-1.5 py-0.5 text-[10px] font-mono underline"
+                          style={{ background: "#eff6ff", color: "#0f6cbd" }}
+                        >{resolution}</button>
+                      ))}</div>
+                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>No hay resoluciones verificadas para esta auditoría.</p>}
                   </div>
                   <div>
-                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Expedientes</div>
-                    {selectedAudit.expedientes.length ? (
-                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.expedientes.map((caseId) => <span key={caseId} className="rounded px-1.5 py-0.5 text-[10px] font-mono" style={{ background: "#f1faf1", color: "#107c10" }}>{caseId}</span>)}</div>
-                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Sin referencias de expediente.</p>}
+                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Expedientes verificados</div>
+                    {datasetsLoading ? (
+                      <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Consultando…</p>
+                    ) : dataError ? (
+                      <p className="mt-0.5 text-[10px]" style={{ color: "#a4262c" }}>No se pudieron verificar los expedientes.</p>
+                    ) : selectedAudit.expedientes.length ? (
+                      <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.expedientes.map((caseId) => (
+                        <button
+                          key={caseId}
+                          type="button"
+                          onClick={() => showAuditReference(selectedAudit.id, "case", caseId)}
+                          className="rounded px-1.5 py-0.5 text-[10px] font-mono underline"
+                          style={{ background: "#f1faf1", color: "#107c10" }}
+                        >{caseId}</button>
+                      ))}</div>
+                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>No hay expedientes verificados para esta auditoría.</p>}
                   </div>
                   {selectedAuditRelatedEvents.length > 0 && (
                     <div>
@@ -514,10 +765,43 @@ export function AuditModule() {
                     </div>
                   )}
                   <div>
-                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Evidencias históricas</div>
-                    <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>{selectedAudit.evidencias} referencias indicadas en el registro demostrativo. Para consultar archivos, revisa los documentos adjuntos abajo.</p>
+                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Documentos adjuntos</div>
+                    <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>
+                      {documentsLoading
+                        ? "Consultando archivos adjuntos…"
+                        : documentsError
+                          ? "No se pudieron consultar los archivos adjuntos."
+                          : documents.length
+                            ? `${documents.length} archivo${documents.length === 1 ? "" : "s"} adjunto${documents.length === 1 ? "" : "s"} disponible${documents.length === 1 ? "" : "s"} abajo.`
+                            : "No hay archivos adjuntos para esta auditoría."}
+                    </p>
                   </div>
                 </div>
+                {selectedReference && (
+                  <div className="mt-3 rounded border p-3" style={{ borderColor: "#cce0f5", background: "#ffffff" }}>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <h4 className="text-[11px] font-semibold" style={{ color: "#201f1e" }}>
+                        {selectedReference.kind === "resolution" ? "Detalle de resolución" : "Detalle de expediente"} · {selectedReference.identifier}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReference(null)}
+                        className="text-[10px] underline"
+                        style={{ color: "#0f6cbd" }}
+                      >Cerrar detalle</button>
+                    </div>
+                    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {Object.entries(selectedReference.row)
+                        .filter(([, value]) => value.trim())
+                        .map(([field, value]) => (
+                          <div key={field} className="min-w-0">
+                            <dt className="text-[9px] font-medium" style={{ color: "#8a8886" }}>{field}</dt>
+                            <dd className="break-words text-[10px]" style={{ color: "#323130" }}>{value}</dd>
+                          </div>
+                        ))}
+                    </dl>
+                  </div>
+                )}
               </div>
               <form onSubmit={(event) => void saveAuditChanges(event)} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -571,13 +855,29 @@ export function AuditModule() {
                     <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Documentos relacionados</h3>
                     <p className="text-[10px] mt-0.5" style={{ color: "#8a8886" }}>Adjuntos persistidos · máximo 10 MB por archivo.</p>
                   </div>
-                  {canManageAudits && (
+                </div>
+                {canManageAudits && (
+                  <div className="mt-2 flex flex-wrap items-end gap-2">
+                    <label className="text-[10px] font-medium" style={{ color: "#605e5c" }}>
+                      Tipo de documento
+                      <select
+                        value={documentCategory}
+                        onChange={(event) => setDocumentCategory(event.target.value as AuditDocument["category"])}
+                        disabled={uploading}
+                        className="mt-1 block rounded border bg-white px-2 py-1.5 text-[11px]"
+                        style={{ borderColor: "#e1dfdd" }}
+                      >
+                        <option value="Resoluciones">Resoluciones</option>
+                        <option value="Expedientes">Expedientes</option>
+                        <option value="Otro documento relacionado">Otro documento relacionado</option>
+                      </select>
+                    </label>
                     <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
-                      {uploading ? "Subiendo…" : "Adjuntar documento"}
+                      {uploading ? "Subiendo…" : "Seleccionar archivo"}
                       <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={uploading} onChange={(event) => void addAuditDocument(event)} />
                     </label>
-                  )}
-                </div>
+                  </div>
+                )}
                 {documentsError && <p role="alert" className="mt-2 text-[11px]" style={{ color: "#a4262c" }}>{documentsError}</p>}
                 {documentsLoading ? (
                   <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Cargando documentos…</p>
@@ -587,7 +887,7 @@ export function AuditModule() {
                       <div key={document.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5" style={{ background: "#f9f8f7" }}>
                         <div className="min-w-0">
                           <div className="truncate text-[11px] font-medium" style={{ color: "#201f1e" }}>{document.file_name}</div>
-                          <div className="text-[10px]" style={{ color: "#8a8886" }}>{(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by} · {new Date(document.created_at).toLocaleDateString("es-PE")}</div>
+                          <div className="text-[10px]" style={{ color: "#8a8886" }}>{document.category} · {(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by} · {new Date(document.created_at).toLocaleDateString("es-PE")}</div>
                         </div>
                         <div className="flex items-center gap-1">
                           <button type="button" onClick={() => void previewAuditDocument(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "#0f6cbd" }}>Ver</button>

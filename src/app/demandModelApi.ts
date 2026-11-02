@@ -108,12 +108,14 @@ export type DemandGovernanceMetrics = {
 export type DemandPredictionRecord = {
   id: string;
   run_id: string;
+  forecast_id?: string;
   model_version: string;
   period: string;
   predicted_value: number;
   unit: string;
   traceability: {
     runId: string;
+    forecastId?: string;
     modelVersion: string;
     targetPeriod: string;
     source: string;
@@ -133,6 +135,7 @@ export type DemandPredictionRecord = {
 
 export type DemandForecastResponse = {
   runId: string;
+  forecastId: string;
   modelVersion: string;
   source: string;
   sourcePeriod: string;
@@ -151,7 +154,7 @@ export function loadDemandModelStatus(): Promise<DemandModelStatus> {
 }
 
 export function loadDemandPredictionHistory(): Promise<{ runs: DemandModelStatus[]; predictions: DemandPredictionRecord[] }> {
-  return apiRequest<{ runs: DemandModelStatus[]; predictions: DemandPredictionRecord[] }>("/api/demand-model/history?prediction_limit=25");
+  return apiRequest<{ runs: DemandModelStatus[]; predictions: DemandPredictionRecord[] }>("/api/demand-model/history?prediction_limit=500");
 }
 
 export function loadDemandGovernanceMetrics(): Promise<DemandGovernanceMetrics> {

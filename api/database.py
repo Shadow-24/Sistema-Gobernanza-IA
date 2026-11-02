@@ -286,7 +286,14 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 responsible TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT '',
                 updated_by TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS audit_registrations (
+                audit_id TEXT PRIMARY KEY,
+                registered_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
             "ALTER TABLE audit_workflow DROP CONSTRAINT IF EXISTS audit_workflow_status_check",
@@ -296,6 +303,7 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             CHECK (status IN ('Pendiente', 'Completada', 'En curso', 'Observada'))
             """,
             "ALTER TABLE audit_workflow ADD COLUMN IF NOT EXISTS phase TEXT NOT NULL DEFAULT 'Planificación'",
+            "ALTER TABLE audit_workflow ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()",
             """
             CREATE TABLE IF NOT EXISTS audit_workflow_events (
                 id BIGSERIAL PRIMARY KEY,
@@ -323,6 +331,8 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             CREATE TABLE IF NOT EXISTS audit_documents (
                 id TEXT PRIMARY KEY,
                 audit_id TEXT NOT NULL REFERENCES audit_workflow(audit_id) ON DELETE CASCADE,
+                category TEXT NOT NULL DEFAULT 'Otro documento relacionado'
+                    CHECK (category IN ('Resoluciones', 'Expedientes', 'Otro documento relacionado')),
                 file_name TEXT NOT NULL,
                 media_type TEXT NOT NULL,
                 size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
@@ -331,6 +341,13 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 uploaded_by TEXT NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
+            """,
+            "ALTER TABLE audit_documents ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'Otro documento relacionado'",
+            "ALTER TABLE audit_documents DROP CONSTRAINT IF EXISTS audit_documents_category_check",
+            """
+            ALTER TABLE audit_documents
+            ADD CONSTRAINT audit_documents_category_check
+            CHECK (category IN ('Resoluciones', 'Expedientes', 'Otro documento relacionado'))
             """,
             "CREATE INDEX IF NOT EXISTS audit_documents_audit_idx ON audit_documents(audit_id, created_at DESC)",
             """
@@ -342,7 +359,14 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 responsible TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT '',
                 updated_by TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_registrations (
+                risk_id TEXT PRIMARY KEY,
+                registered_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
             """
@@ -366,6 +390,7 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             """,
             "CREATE INDEX IF NOT EXISTS detected_risk_workflow_events_risk_idx ON detected_risk_workflow_events(risk_id, occurred_at DESC)",
             "ALTER TABLE detected_risk_workflow ADD COLUMN IF NOT EXISTS risk_level TEXT",
+            "ALTER TABLE detected_risk_workflow ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()",
             "ALTER TABLE detected_risk_workflow ALTER COLUMN status DROP NOT NULL",
             "ALTER TABLE detected_risk_workflow DROP CONSTRAINT IF EXISTS detected_risk_workflow_status_check",
             """
@@ -480,23 +505,60 @@ def clear_ai_governance_risk_history_once() -> None:
 
 
 def initialize_audit_workflow() -> None:
+    renamed_audits = (
+        ("AUD-2025-004", "AUD-01"),
+        ("AUD-2025-002", "AUD-02"),
+        ("AUD-2025-001", "AUD-03"),
+        ("AUD-2024-052", "AUD-04"),
+        ("AUD-2024-038", "AUD-05"),
+        ("AUD-2024-035", "AUD-06"),
+        ("AUD-2024-031", "AUD-07"),
+    )
     initial_audits = tuple(
         (audit_id, "Pendiente", 0)
         for audit_id in (
-            "AUD-2024-041",
-            "AUD-2024-038",
-            "AUD-2024-035",
-            "AUD-2024-031",
-            "AUD-2024-028",
-            "AUD-2024-052",
-            "AUD-2024-055",
-            "AUD-2024-058",
-            "AUD-2025-004",
-            "AUD-2025-002",
-            "AUD-2025-001",
+            "AUD-01",
+            "AUD-02",
+            "AUD-03",
+            "AUD-04",
+            "AUD-05",
+            "AUD-06",
+            "AUD-07",
         )
     )
     with connection() as conn:
+        renamed = conn.execute(
+            """
+            INSERT INTO audit_workflow_migrations (migration_id)
+            VALUES (%s)
+            ON CONFLICT (migration_id) DO NOTHING
+            RETURNING migration_id
+            """,
+            ("rename-audit-workflow-ids-2026-11",),
+        ).fetchone()
+        if renamed:
+            for old_id, new_id in renamed_audits:
+                conn.execute(
+                    """
+                    INSERT INTO audit_workflow (
+                        audit_id, status, progress, phase, responsible, notes, updated_by, created_at, updated_at
+                    )
+                    SELECT %s, status, progress, phase, responsible, notes, updated_by, created_at, updated_at
+                    FROM audit_workflow
+                    WHERE audit_id = %s
+                    ON CONFLICT (audit_id) DO NOTHING
+                    """,
+                    (new_id, old_id),
+                )
+                conn.execute(
+                    "UPDATE audit_workflow_events SET audit_id = %s WHERE audit_id = %s",
+                    (new_id, old_id),
+                )
+                conn.execute(
+                    "UPDATE audit_documents SET audit_id = %s WHERE audit_id = %s",
+                    (new_id, old_id),
+                )
+                conn.execute("DELETE FROM audit_workflow WHERE audit_id = %s", (old_id,))
         with conn.cursor() as cursor:
             cursor.executemany(
                 """
@@ -524,11 +586,11 @@ def initialize_audit_workflow() -> None:
                 WHERE audit_id = %s
                 """
                 ,
-                ("AUD-2025-004",),
+                ("AUD-01",),
             )
             conn.execute(
                 "DELETE FROM audit_workflow_events WHERE audit_id = %s",
-                ("AUD-2025-004",),
+                ("AUD-01",),
             )
         timeline_reset = conn.execute(
             """
@@ -542,16 +604,40 @@ def initialize_audit_workflow() -> None:
         if timeline_reset:
             conn.execute(
                 "DELETE FROM audit_workflow_events WHERE audit_id = %s",
-                ("AUD-2025-004",),
+                ("AUD-01",),
             )
 def list_audit_workflow() -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(
             """
-            SELECT audit_id, status, phase, responsible, notes, updated_by, updated_at
+            SELECT audit_id, status, phase, responsible, notes, updated_by, created_at, updated_at
             FROM audit_workflow
             ORDER BY audit_id DESC
             """
+        ).fetchall()
+
+
+def register_audits(audit_ids: list[str]) -> list[dict[str, Any]]:
+    with connection() as conn:
+        for audit_id in audit_ids:
+            conn.execute(
+                """
+                INSERT INTO audit_registrations (audit_id, registered_at)
+                SELECT %s, COALESCE(
+                    (SELECT created_at FROM audit_workflow WHERE audit_id = %s),
+                    now()
+                )
+                ON CONFLICT (audit_id) DO NOTHING
+                """,
+                (audit_id, audit_id),
+            )
+        return conn.execute(
+            """
+            SELECT audit_id, registered_at
+            FROM audit_registrations
+            WHERE audit_id = ANY(%s)
+            """,
+            (audit_ids,),
         ).fetchall()
 
 
@@ -638,7 +724,7 @@ def list_audit_documents(audit_id: str) -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(
             """
-            SELECT id, audit_id, file_name, media_type, size_bytes, checksum,
+            SELECT id, audit_id, category, file_name, media_type, size_bytes, checksum,
                    uploaded_by, created_at
             FROM audit_documents
             WHERE audit_id = %s
@@ -652,6 +738,7 @@ def save_audit_document(
     *,
     document_id: str,
     audit_id: str,
+    category: str,
     file_name: str,
     media_type: str,
     content: bytes,
@@ -664,19 +751,19 @@ def save_audit_document(
         document = conn.execute(
             """
             INSERT INTO audit_documents
-                (id, audit_id, file_name, media_type, size_bytes, checksum, content, uploaded_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, audit_id, file_name, media_type, size_bytes, checksum,
+                (id, audit_id, category, file_name, media_type, size_bytes, checksum, content, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, audit_id, category, file_name, media_type, size_bytes, checksum,
                       uploaded_by, created_at
             """,
-            (document_id, audit_id, file_name, media_type, len(content), checksum, content, username),
+            (document_id, audit_id, category, file_name, media_type, len(content), checksum, content, username),
         ).fetchone()
         conn.execute(
             """
             INSERT INTO audit_workflow_events (audit_id, event_type, detail, username)
             VALUES (%s, 'document', %s, %s)
             """,
-            (audit_id, f"Documento adjuntado: {file_name}", username),
+            (audit_id, f"Documento ({category}) adjuntado: {file_name}", username),
         )
         return document
 
@@ -685,7 +772,7 @@ def get_audit_document(document_id: str) -> dict[str, Any] | None:
     with connection() as conn:
         return conn.execute(
             """
-            SELECT id, audit_id, file_name, media_type, size_bytes, checksum,
+            SELECT id, audit_id, category, file_name, media_type, size_bytes, checksum,
                    content, uploaded_by, created_at
             FROM audit_documents
             WHERE id = %s
@@ -720,10 +807,31 @@ def list_detected_risk_workflows() -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(
             """
-            SELECT risk_id, status, risk_level, phase, responsible, notes, updated_by, updated_at
+            SELECT risk_id, status, risk_level, phase, responsible, notes, updated_by, created_at, updated_at
             FROM detected_risk_workflow
             ORDER BY updated_at DESC
             """
+        ).fetchall()
+
+
+def register_detected_risks(risk_ids: list[str]) -> list[dict[str, Any]]:
+    with connection() as conn:
+        for risk_id in risk_ids:
+            conn.execute(
+                """
+                INSERT INTO detected_risk_registrations (risk_id)
+                VALUES (%s)
+                ON CONFLICT (risk_id) DO NOTHING
+                """,
+                (risk_id,),
+            )
+        return conn.execute(
+            """
+            SELECT risk_id, registered_at
+            FROM detected_risk_registrations
+            WHERE risk_id = ANY(%s)
+            """,
+            (risk_ids,),
         ).fetchall()
 
 
@@ -797,7 +905,7 @@ def update_detected_risk_workflow(
                 SET status = %s, risk_level = %s, phase = %s, responsible = %s, notes = %s,
                     updated_by = %s, updated_at = now()
                 WHERE risk_id = %s
-                RETURNING risk_id, status, risk_level, phase, responsible, notes, updated_by, updated_at
+                RETURNING risk_id, status, risk_level, phase, responsible, notes, updated_by, created_at, updated_at
                 """,
                 (status, risk_level, phase, responsible, notes, username, risk_id),
             ).fetchone()
@@ -814,7 +922,7 @@ def update_detected_risk_workflow(
                 INSERT INTO detected_risk_workflow
                     (risk_id, status, risk_level, phase, responsible, notes, updated_by)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING risk_id, status, risk_level, phase, responsible, notes, updated_by, updated_at
+                RETURNING risk_id, status, risk_level, phase, responsible, notes, updated_by, created_at, updated_at
                 """,
                 (risk_id, status, risk_level, phase, responsible, notes, username),
             ).fetchone()
@@ -1182,15 +1290,24 @@ def initialize_demand_model_schema() -> None:
         CREATE TABLE IF NOT EXISTS demand_model_predictions (
             id TEXT PRIMARY KEY,
             run_id TEXT NOT NULL REFERENCES demand_model_runs(id) ON DELETE CASCADE,
+            forecast_id TEXT NOT NULL,
             period TEXT NOT NULL,
             predicted_value DOUBLE PRECISION NOT NULL,
             unit TEXT NOT NULL,
             traceability JSONB NOT NULL,
             explanation JSONB NOT NULL,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            UNIQUE (run_id, period)
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
         """,
+        "ALTER TABLE demand_model_predictions ADD COLUMN IF NOT EXISTS forecast_id TEXT",
+        """
+        UPDATE demand_model_predictions
+        SET forecast_id = run_id || ':' || COALESCE(NULLIF(traceability ->> 'generatedAt', ''), id)
+        WHERE forecast_id IS NULL
+        """,
+        "ALTER TABLE demand_model_predictions ALTER COLUMN forecast_id SET NOT NULL",
+        "ALTER TABLE demand_model_predictions DROP CONSTRAINT IF EXISTS demand_model_predictions_run_id_period_key",
+        "CREATE UNIQUE INDEX IF NOT EXISTS demand_model_predictions_forecast_period_idx ON demand_model_predictions (forecast_id, period)",
         "CREATE INDEX IF NOT EXISTS demand_model_predictions_created_at_idx ON demand_model_predictions(created_at DESC)",
         """
         CREATE TABLE IF NOT EXISTS model_operation_events (
@@ -2003,6 +2120,7 @@ def save_demand_prediction(
     *,
     prediction_id: str,
     run_id: str,
+    forecast_id: str,
     period: str,
     value: float,
     unit: str,
@@ -2013,9 +2131,9 @@ def save_demand_prediction(
         conn.execute(
             """
             INSERT INTO demand_model_predictions
-                (id, run_id, period, predicted_value, unit, traceability, explanation)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (run_id, period) DO UPDATE SET
+                (id, run_id, forecast_id, period, predicted_value, unit, traceability, explanation)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (forecast_id, period) DO UPDATE SET
                 predicted_value = EXCLUDED.predicted_value,
                 unit = EXCLUDED.unit,
                 traceability = EXCLUDED.traceability,
@@ -2025,6 +2143,7 @@ def save_demand_prediction(
             (
                 prediction_id,
                 run_id,
+                forecast_id,
                 period,
                 value,
                 unit,
@@ -2038,7 +2157,7 @@ def list_demand_model_predictions(limit: int = 100) -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(
             """
-            SELECT p.id, p.run_id, r.model_version, p.period, p.predicted_value, p.unit,
+            SELECT p.id, p.run_id, p.forecast_id, r.model_version, p.period, p.predicted_value, p.unit,
                    p.traceability, p.explanation, p.created_at
             FROM demand_model_predictions p
             JOIN demand_model_runs r ON r.id = p.run_id

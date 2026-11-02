@@ -15,7 +15,13 @@ export type AuditWorkflow = {
   responsible: string;
   notes: string;
   updated_by: string | null;
+  created_at: string;
   updated_at: string;
+};
+
+export type AuditRegistration = {
+  audit_id: string;
+  registered_at: string;
 };
 
 export type AuditWorkflowEvent = {
@@ -30,6 +36,7 @@ export type AuditWorkflowEvent = {
 export type AuditDocument = {
   id: string;
   audit_id: string;
+  category: "Resoluciones" | "Expedientes" | "Otro documento relacionado";
   file_name: string;
   media_type: string;
   size_bytes: number;
@@ -40,6 +47,13 @@ export type AuditDocument = {
 
 export function loadAuditWorkflow(): Promise<AuditWorkflow[]> {
   return apiRequest<AuditWorkflow[]>("/api/audits/workflow");
+}
+
+export function registerAudits(auditIds: string[]): Promise<AuditRegistration[]> {
+  return apiRequest<AuditRegistration[]>("/api/audits/registrations", {
+    method: "POST",
+    body: JSON.stringify({ audit_ids: auditIds }),
+  });
 }
 
 export function loadAuditWorkflowEvents(auditId?: string): Promise<AuditWorkflowEvent[]> {
@@ -61,9 +75,14 @@ export function loadAuditDocuments(auditId: string): Promise<AuditDocument[]> {
   return apiRequest<AuditDocument[]>(`/api/audits/${encodeURIComponent(auditId)}/documents`);
 }
 
-export async function uploadAuditDocument(auditId: string, file: File): Promise<AuditDocument> {
+export async function uploadAuditDocument(
+  auditId: string,
+  file: File,
+  category: AuditDocument["category"],
+): Promise<AuditDocument> {
   const form = new FormData();
   form.append("file", file);
+  form.append("category", category);
   const response = await apiFetch(`/api/audits/${encodeURIComponent(auditId)}/documents`, {
     method: "POST",
     body: form,

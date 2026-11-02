@@ -18,7 +18,13 @@ export type DetectedRiskWorkflow = {
   responsible: string;
   notes: string;
   updated_by: string | null;
+  created_at: string;
   updated_at: string;
+};
+
+export type DetectedRiskRegistration = {
+  risk_id: string;
+  registered_at: string;
 };
 
 export type DetectedRiskEvent = {
@@ -51,6 +57,13 @@ export type DetectedRiskRoadEvaluation = {
 
 export function loadDetectedRiskWorkflows(): Promise<DetectedRiskWorkflow[]> {
   return apiRequest<DetectedRiskWorkflow[]>("/api/detected-risks/workflow");
+}
+
+export function registerDetectedRisks(riskIds: string[]): Promise<DetectedRiskRegistration[]> {
+  return apiRequest<DetectedRiskRegistration[]>("/api/detected-risks/registrations", {
+    method: "POST",
+    body: JSON.stringify({ risk_ids: riskIds }),
+  });
 }
 
 export function loadDetectedRiskEvents(riskId: string): Promise<DetectedRiskEvent[]> {

@@ -13,12 +13,14 @@ import {
   evaluateDetectedRiskRoadImpact,
   loadDetectedRiskDocuments,
   loadDetectedRiskEvents,
+  registerDetectedRisks,
   loadDetectedRiskRoadEvaluation,
   loadDetectedRiskWorkflows,
   updateDetectedRiskWorkflow,
   uploadDetectedRiskDocument,
   type DetectedRiskDocument,
   type DetectedRiskEvent,
+  type DetectedRiskRegistration,
   type DetectedRiskLevel,
   type DetectedRiskPhase,
   type DetectedRiskRoadEvaluation,
@@ -71,8 +73,7 @@ type DetectedRisk = {
   modelo?: string;
   confianza?: number;
   factores?: { name: string; percent: number }[];
-  simulado?: boolean;
-  evaluacionConceptual?: boolean;
+  requiresRoadEvaluation?: boolean;
 };
 
 type DetectedRiskChange = { label: string; before: string; after: string };
@@ -178,7 +179,7 @@ function getDetectedRiskChanges(detail: string): DetectedRiskChange[] {
 const risksByYear: Record<string, {
   id: string; nivel: DetectedRiskLevel; estado: DetectedRiskStatus; descripcion: string;
   fuente: string; departamento: string; responsable: string; fecha: string; recomendacion: string;
-  proceso?: string; modelo?: string; confianza?: number; factores?: { name: string; percent: number }[]; simulado?: boolean; evaluacionConceptual?: boolean;
+  proceso?: string; modelo?: string; confianza?: number; factores?: { name: string; percent: number }[]; requiresRoadEvaluation?: boolean;
 }[]> = {
   "2024": [
     { id: "RSK-001", nivel: "Crítico", estado: "Activo", descripcion: "Sesgo en modelo de predicción de incidentes ambientales – sector Loreto", fuente: "SINADA/OEFA", departamento: "LORETO", responsable: "Equipo AI Governance", fecha: "15/11/2024", recomendacion: "Reentrenamiento del modelo con datos 2022–2024 + validación externa." },
@@ -189,7 +190,7 @@ const risksByYear: Record<string, {
     { id: "RSK-006", nivel: "Bajo", estado: "Cerrado", descripcion: "Disponibilidad limitada de observaciones de precios de combustible", fuente: "Diccionario de datos de precios de combustibles", departamento: "NACIONAL", responsable: "Data Engineering", fecha: "03/07/2024", recomendacion: "Identificar una fuente histórica de observaciones antes de plantear análisis temporal de precios." },
   ],
   "2025": [
-    { id: "RSK-007", nivel: "Crítico", estado: "Activo", descripcion: "Doble medida correctiva PLUSPETROL Lote 192 en Q1 2025 – patrón de recurrencia", fuente: "OEFA/DFAI", departamento: "LORETO", responsable: "Equipo AI Governance", fecha: "31/03/2025", recomendacion: "Priorizar revisión humana del patrón documentado y evaluar un escenario de alerta temprana." },
+    { id: "RSK-007", nivel: "Crítico", estado: "Activo", descripcion: "Doble medida correctiva PLUSPETROL Lote 192 en Q1 2025 – patrón de recurrencia", fuente: "OEFA/DFAI", departamento: "LORETO", responsable: "Equipo AI Governance", fecha: "31/03/2025", recomendacion: "Priorizar revisión humana del patrón documentado y definir criterios de alerta temprana." },
     { id: "RSK-008", nivel: "Alto", estado: "En análisis", descripcion: "879 denuncias SINADA sin resolución arrastradas desde 2024", fuente: "SINADA", departamento: "NACIONAL", responsable: "Compliance Officer", fecha: "15/03/2025", recomendacion: "Priorización por departamento y nivel de impacto ambiental." },
     { id: "RSK-009", nivel: "Medio", estado: "En análisis", descripcion: "Incremento de resoluciones en sector Residuos Sólidos supera HC en Q1", fuente: "OEFA/DFAI", departamento: "NACIONAL", responsable: "Data Science Team", fecha: "28/02/2025", recomendacion: "Evaluar extensión del modelo de gobernanza a sector Residuos." },
     { id: "RSK-010", nivel: "Bajo", estado: "Mitigado", descripcion: "Reconsideración Corporación Alan & Hnos. – riesgo de nulidad de RD", fuente: "OEFA/DFAI", departamento: "TACNA", responsable: "Legal & Compliance", fecha: "31/03/2025", recomendacion: "Seguimiento del proceso administrativo y documentación de evidencias." },
@@ -207,6 +208,8 @@ export function RiskManagement() {
   const canManageDetectedRisks = user?.role === "Supervisor de Cumplimiento" && user.permissions.includes("riesgos");
   const eligibleRiskAssignees = managedUsers.filter((account) => account.active && account.permissions.includes("riesgos"));
   const [detectedRiskWorkflows, setDetectedRiskWorkflows] = useState<DetectedRiskWorkflow[]>([]);
+  const [detectedRiskRegistrations, setDetectedRiskRegistrations] = useState<DetectedRiskRegistration[]>([]);
+  const [detectedRiskRegistrationError, setDetectedRiskRegistrationError] = useState("");
   const [detectedRiskEvents, setDetectedRiskEvents] = useState<DetectedRiskEvent[]>([]);
   const [detectedRiskDocuments, setDetectedRiskDocuments] = useState<DetectedRiskDocument[]>([]);
   const [selectedDetectedRiskId, setSelectedDetectedRiskId] = useState<string | null>(null);
@@ -255,26 +258,47 @@ export function RiskManagement() {
       nivel: null,
       estado: null,
       responsable: "",
-      evaluacionConceptual: true,
     })),
-    ...simulatedSupplyChainRisks.map((scenario) => ({
-      id: scenario.id,
-      nivel: null,
-      estado: null,
-      descripcion: scenario.description,
-      fuente: scenario.source,
-      departamento: scenario.department,
-      responsable: "",
-      fecha: `Escenario simulado · ${latestRiskYear}`,
-      recomendacion: scenario.recommendation,
-      proceso: scenario.process,
-      modelo: scenario.model,
-      confianza: scenario.confidence,
-      factores: scenario.explanation,
-      simulado: true,
-    })),
+    ...simulatedSupplyChainRisks.map((scenario) => {
+      const neutralText = ({
+        "SIM-INV-001": {
+          description: "Verificar disponibilidad de datos de inventario para evaluar posibles anomalías.",
+          recommendation: "Confirmar la disponibilidad y calidad de registros operativos de inventario.",
+        },
+        "SIM-TRN-001": {
+          description: "Verificar disponibilidad de registros de tiempos de transporte entre Lima y Callao.",
+          recommendation: "Confirmar la disponibilidad y calidad de registros operativos de tiempos de transporte.",
+        },
+        "SIM-DMD-001": {
+          description: "Verificar disponibilidad de datos históricos para evaluar la predicción de demanda de combustibles.",
+          recommendation: "Reunir datos históricos validados antes de evaluar el desempeño de una predicción de demanda.",
+        },
+        "SIM-TRN-002": {
+          description: "Verificar disponibilidad de datos de rutas y restricciones de transporte.",
+          recommendation: "Confirmar la disponibilidad de información vial actualizada antes de evaluar riesgos de ruta.",
+        },
+      } as Record<string, { description: string; recommendation: string }>)[scenario.id] ?? {
+        description: scenario.description,
+        recommendation: scenario.recommendation,
+      };
+      return {
+        id: scenario.id,
+        nivel: null,
+        estado: null,
+        descripcion: neutralText.description,
+        fuente: scenario.source,
+        departamento: scenario.department,
+        responsable: "",
+        fecha: "",
+        recomendacion: neutralText.recommendation,
+        proceso: scenario.process,
+        modelo: "Sin modelo asociado",
+        requiresRoadEvaluation: scenario.process === "Transporte",
+      };
+    }),
   ];
   const detectedRiskWorkflowById = new Map(detectedRiskWorkflows.map((item) => [item.risk_id, item]));
+  const detectedRiskRegistrationById = new Map(detectedRiskRegistrations.map((item) => [item.risk_id, item]));
   const risks: DetectedRisk[] = riskTemplates.map((risk) => {
     const saved = detectedRiskWorkflowById.get(risk.id);
     return {
@@ -285,6 +309,17 @@ export function RiskManagement() {
     };
   });
   const selectedDetectedRisk = risks.find((risk) => risk.id === selectedDetectedRiskId);
+  const getDetectedRiskDisplayId = (riskId: string) => riskId.startsWith("SIM-") ? riskId.replace(/^SIM-/, "RSK-") : riskId;
+  const getDetectedRiskRegistrationDate = (riskId: string) => {
+    const registrationTimestamp = detectedRiskRegistrationById.get(riskId)?.registered_at;
+    return registrationTimestamp ? new Date(registrationTimestamp).toLocaleDateString("es-PE") : "Cargando fecha…";
+  };
+  const getGovernanceRiskBasisLabel = (basis: GovernanceRisk["data_basis"]) => {
+    if (basis === "observado") return "Con evidencia";
+    if (basis === "sintetico") return "Registro de prueba";
+    return "Por validar";
+  };
+  const getAIRegistrationDate = (registeredAt: string) => new Date(registeredAt).toLocaleDateString("es-PE");
   const roadScenario = selectedDetectedRisk
     ? roadScenarioDrafts[selectedDetectedRisk.id] ?? inferRoadScenario(selectedDetectedRisk, roadModel)
     : EMPTY_ROAD_SCENARIO;
@@ -315,6 +350,19 @@ export function RiskManagement() {
       });
     return () => { active = false; };
   }, []);
+
+  const riskRegistrationIdsKey = riskTemplates.map((risk) => risk.id).join("|");
+  useEffect(() => {
+    let active = true;
+    registerDetectedRisks(riskRegistrationIdsKey.split("|"))
+      .then((records) => {
+        if (active) setDetectedRiskRegistrations(records);
+      })
+      .catch((error: unknown) => {
+        if (active) setDetectedRiskRegistrationError(error instanceof Error ? error.message : "No se pudieron cargar las fechas de registro.");
+      });
+    return () => { active = false; };
+  }, [riskRegistrationIdsKey]);
 
   useEffect(() => {
     if (!selectedDetectedRisk) return;
@@ -524,7 +572,7 @@ export function RiskManagement() {
       const updated = await updateAIGovernanceRisk(risk.id, draft);
       setGovernanceRisks((current) => current.map((item) => item.id === updated.id ? updated : item));
       setRiskDrafts((current) => ({ ...current, [updated.id]: { status: updated.status, treatment: updated.treatment } }));
-      setGovernanceRiskSaved(`Se actualizó ${updated.id}.`);
+      setGovernanceRiskSaved(`Se actualizó el riesgo "${updated.category}" del modelo "${updated.model_name}".`);
     } catch (error) {
       setGovernanceRiskError(error instanceof Error ? error.message : "No se pudo actualizar el riesgo.");
     }
@@ -594,6 +642,8 @@ export function RiskManagement() {
     if (!rightUpdatedAt) return -1;
     return new Date(rightUpdatedAt).getTime() - new Date(leftUpdatedAt).getTime();
   });
+  const activeDetectedRisks = filteredRisks.filter((risk) => risk.estado !== "Cerrado");
+  const closedDetectedRisks = filteredRisks.filter((risk) => risk.estado === "Cerrado");
 
   const counts: Record<DetectedRiskLevel, number> = { Crítico: 0, Alto: 0, Medio: 0, Bajo: 0 };
   let unclassifiedCount = 0;
@@ -601,6 +651,8 @@ export function RiskManagement() {
     if (risk.nivel) counts[risk.nivel]++;
     else unclassifiedCount++;
   });
+  const activeGovernanceRisks = governanceRisks.filter((risk) => risk.status !== "cerrado");
+  const closedGovernanceRisks = governanceRisks.filter((risk) => risk.status === "cerrado");
   
   return (
     <div className="space-y-5">
@@ -654,7 +706,7 @@ export function RiskManagement() {
           <label className="text-[10px]" style={{ color: "#605e5c" }}>Sistema/modelo<select value={newGovernanceRisk.model_name} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, model_name: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]"><option value="XGBoost · Predicción de demanda de combustibles líquidos">XGBoost · Demanda</option><option value="XGBoost · Estado inicial de emergencia vial">XGBoost · Emergencia vial</option><option value="otro">Otro sistema de IA</option></select></label>
           {newGovernanceRisk.model_name === "otro" && <label className="text-[10px]" style={{ color: "#605e5c" }}>Nombre del sistema<input required minLength={2} maxLength={160} value={newGovernanceRisk.other_model_name} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, other_model_name: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" /></label>}
           <label className="text-[10px]" style={{ color: "#605e5c" }}>Categoría<input required minLength={2} maxLength={120} value={newGovernanceRisk.category} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, category: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" placeholder="Datos, deriva, sesgo, seguridad…" /></label>
-          <label className="text-[10px]" style={{ color: "#605e5c" }}>Base de información<select value={newGovernanceRisk.data_basis} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, data_basis: event.target.value as GovernanceRisk["data_basis"] }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]"><option value="observado">Observado</option><option value="sintetico">Sintético</option><option value="conceptual">Conceptual</option></select></label>
+          <label className="text-[10px]" style={{ color: "#605e5c" }}>Base de información<select value={newGovernanceRisk.data_basis} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, data_basis: event.target.value as GovernanceRisk["data_basis"] }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]"><option value="observado">Con evidencia</option><option value="sintetico">Registro de prueba</option><option value="conceptual">Por validar</option></select></label>
           <label className="text-[10px]" style={{ color: "#605e5c" }}>Responsable<input maxLength={160} value={newGovernanceRisk.owner} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, owner: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" placeholder={user?.name ?? "Responsable"} /></label>
           <label className="text-[10px] sm:col-span-2" style={{ color: "#605e5c" }}>Descripción<textarea required minLength={10} maxLength={2000} rows={2} value={newGovernanceRisk.description} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, description: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" /></label>
           <label className="text-[10px]" style={{ color: "#605e5c" }}>Evidencia o referencia{newGovernanceRisk.data_basis === "observado" && <span style={{ color: "#a4262c" }}> · obligatoria</span>}<textarea required={newGovernanceRisk.data_basis === "observado"} maxLength={5000} rows={2} value={newGovernanceRisk.evidence} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, evidence: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" placeholder="Archivo, fecha, registro o enlace interno" /></label>
@@ -665,15 +717,17 @@ export function RiskManagement() {
           <label className="text-[10px] sm:col-span-3" style={{ color: "#605e5c" }}>Tratamiento propuesto<textarea required minLength={5} maxLength={3000} rows={2} value={newGovernanceRisk.treatment} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, treatment: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" placeholder="Acción, responsable y resultado esperado" /></label>
           <div className="flex items-end"><button type="submit" className="w-full rounded px-3 py-2 text-[11px] font-medium text-white" style={{ background: "#0f6cbd" }}>Registrar riesgo</button></div>
         </form>
-        {governanceRiskLoading ? <p className="text-[11px]" style={{ color: "#8a8886" }}>Cargando registro desde PostgreSQL…</p> : governanceRisks.length === 0 ? <p className="rounded p-3 text-[11px]" style={{ background: "#f3f2f1", color: "#605e5c" }}>Todavía no hay riesgos registrados. No se precargan riesgos demostrativos como si fueran hallazgos reales.</p> : (
-          <div className="space-y-2">
-            {governanceRisks.map((risk) => {
+        {governanceRiskLoading ? <p className="text-[11px]" style={{ color: "#8a8886" }}>Cargando registro desde PostgreSQL…</p> : (
+          <div className="space-y-4">
+            <section aria-labelledby="active-ai-risks-heading" className="space-y-2">
+              <h3 id="active-ai-risks-heading" className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Riesgos en seguimiento ({activeGovernanceRisks.length})</h3>
+              {activeGovernanceRisks.length === 0 ? <p className="rounded p-3 text-[11px]" style={{ background: "#f3f2f1", color: "#605e5c" }}>{governanceRisks.length === 0 ? "Todavía no hay riesgos registrados." : "No hay riesgos en seguimiento."}</p> : activeGovernanceRisks.map((risk) => {
               const draft = riskDrafts[risk.id] ?? { status: risk.status, treatment: risk.treatment };
               return <article key={risk.id} className="rounded p-3" style={{ border: "1px solid #edebe9" }}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>{risk.description}</h3><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: risk.data_basis === "observado" ? "#f1faf1" : "#fff8f0", color: risk.data_basis === "observado" ? "#107c10" : "#986f0b" }}>{risk.data_basis}</span><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: "#f3f2f1", color: "#605e5c" }}>{risk.status.replace("_", " ")}</span></div>
-                    <p className="text-[10px] mt-1" style={{ color: "#605e5c" }}>{risk.model_name} · {risk.category} · probabilidad {risk.likelihood}/5 · impacto {risk.impact}/5 · responsable: {risk.owner}</p>
+                    <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>{risk.description}</h3><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: risk.data_basis === "observado" ? "#f1faf1" : "#fff8f0", color: risk.data_basis === "observado" ? "#107c10" : "#986f0b" }}>{getGovernanceRiskBasisLabel(risk.data_basis)}</span><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: "#f3f2f1", color: "#605e5c" }}>{risk.status.replace("_", " ")}</span></div>
+                    <p className="text-[10px] mt-1" style={{ color: "#605e5c" }}>{risk.model_name} · {risk.category} · probabilidad {risk.likelihood}/5 · impacto {risk.impact}/5 · responsable: {risk.owner} · registrado: {getAIRegistrationDate(risk.created_at)}</p>
                     <p className="text-[10px] mt-1" style={{ color: "#8a8886" }}>Evidencia: {risk.evidence || "Sin evidencia adjunta"} · registrado por {risk.created_by} · tratamiento: {risk.treatment}</p>
                   </div>
                 </div>
@@ -683,7 +737,20 @@ export function RiskManagement() {
                   <button type="button" className="rounded px-2 py-1.5 text-[11px] text-white disabled:opacity-50" style={{ background: "#0f6cbd" }} onClick={() => void saveGovernanceRisk(risk)} disabled={draft.status === risk.status && draft.treatment === risk.treatment}>Guardar seguimiento</button>
                 </div> : <p className="text-[10px] mt-2" style={{ color: "#8a8886" }}>El seguimiento y cierre requieren evaluación del Supervisor de Cumplimiento.</p>}
               </article>;
-            })}
+              })}
+            </section>
+            <section aria-labelledby="closed-ai-risks-heading" className="space-y-2">
+              <h3 id="closed-ai-risks-heading" className="text-[12px] font-semibold" style={{ color: "#605e5c" }}>Historial de riesgos cerrados ({closedGovernanceRisks.length})</h3>
+              {closedGovernanceRisks.length === 0 ? <p className="text-[10px]" style={{ color: "#8a8886" }}>Aún no hay riesgos cerrados.</p> : <ul className="divide-y rounded" style={{ border: "1px solid #edebe9" }}>
+                {closedGovernanceRisks.map((risk) => <li key={risk.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium" style={{ color: "#201f1e" }}>{risk.description}</p>
+                    <p className="text-[10px]" style={{ color: "#8a8886" }}>{risk.model_name} · {risk.category}</p>
+                  </div>
+                  <time className="shrink-0 text-[10px]" style={{ color: "#8a8886" }} dateTime={risk.created_at}>{getAIRegistrationDate(risk.created_at)}</time>
+                </li>)}
+              </ul>}
+            </section>
           </div>
         )}
       </Card>}
@@ -800,19 +867,20 @@ export function RiskManagement() {
               <option value="Sin estado">Sin estado</option>
             </select>
           </div>
+          {detectedRiskRegistrationError && <p role="alert" className="rounded px-3 py-2 text-[11px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{detectedRiskRegistrationError}</p>}
 
           <div className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>
-            Lista de riesgos detectados {filteredRisks.length > 0 && <span style={{ color: "#8a8886" }}>({filteredRisks.length})</span>}
+            Riesgos detectados en seguimiento <span style={{ color: "#8a8886" }}>({activeDetectedRisks.length})</span>
           </div>
 
           <div className="space-y-2">
-            {filteredRisks.length === 0 ? (
+            {activeDetectedRisks.length === 0 ? (
               <Card className="p-6 text-center">
                 <AlertTriangle className="w-8 h-8 mx-auto mb-2" style={{ color: "#8a8886" }} />
-                <p className="text-[14px]" style={{ color: "#8a8886" }}>No se encontraron riesgos con los criterios seleccionados</p>
+                <p className="text-[14px]" style={{ color: "#8a8886" }}>No hay riesgos en seguimiento con los criterios seleccionados.</p>
               </Card>
             ) : (
-              filteredRisks.map((risk) => {
+              activeDetectedRisks.map((risk) => {
                 const lvl = risk.nivel ? RISK_LEVEL[risk.nivel] : { bg: "#f3f2f1", text: "#605e5c", border: "#e1dfdd" };
                 const st = risk.estado ? RISK_STATE[risk.estado] : { color: "#8a8886" };
 
@@ -820,7 +888,7 @@ export function RiskManagement() {
                   <Card key={risk.id} className="p-4 transition-shadow hover:shadow-sm">
                     <button
                       type="button"
-                      aria-label={`Abrir seguimiento del riesgo ${risk.id}`}
+                      aria-label={`Abrir seguimiento del riesgo ${getDetectedRiskDisplayId(risk.id)}`}
                       onClick={() => {
                         setSelectedDetectedRiskId(risk.id);
                         setIsDetectedRiskFollowUpOpen(true);
@@ -828,7 +896,7 @@ export function RiskManagement() {
                       className="w-full text-left"
                     >
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className="text-[12px] font-mono font-medium" style={{ color: "#8a8886" }}>{risk.id}</span>
+                        <span className="text-[12px] font-mono font-medium" style={{ color: "#8a8886" }}>{getDetectedRiskDisplayId(risk.id)}</span>
                         <span className="px-2 py-0.5 rounded-full text-[12px] font-medium" style={{ background: lvl.bg, color: lvl.text, border: `1px solid ${lvl.border}` }}>
                           {risk.nivel ?? "Sin nivel"}
                         </span>
@@ -837,7 +905,7 @@ export function RiskManagement() {
                       <p className="text-[14px] font-medium leading-snug mb-2" style={{ color: "#201f1e" }}>{risk.descripcion}</p>
                       <div className="flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
                         <span className="flex items-center gap-1"><User className="w-3 h-3" />{risk.responsable || "Sin asignar"}</span>
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{risk.fecha}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{getDetectedRiskRegistrationDate(risk.id)}</span>
                         <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{risk.departamento}</span>
                       </div>
                     </button>
@@ -846,6 +914,28 @@ export function RiskManagement() {
               })
             )}
           </div>
+
+          <section aria-labelledby="closed-detected-risks-heading" className="space-y-2 pt-2">
+            <h3 id="closed-detected-risks-heading" className="text-[13px] font-semibold" style={{ color: "#605e5c" }}>
+              Historial de riesgos cerrados ({closedDetectedRisks.length})
+            </h3>
+            {closedDetectedRisks.length === 0 ? (
+              <p className="text-[11px]" style={{ color: "#8a8886" }}>Aún no hay riesgos cerrados.</p>
+            ) : (
+              <ul className="divide-y rounded" style={{ border: "1px solid #edebe9" }}>
+                {closedDetectedRisks.map((risk) => {
+                  const registrationTimestamp = detectedRiskRegistrationById.get(risk.id)?.registered_at;
+                  return <li key={risk.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium" style={{ color: "#201f1e" }}>{getDetectedRiskDisplayId(risk.id)} · {risk.descripcion}</p>
+                      <p className="text-[10px]" style={{ color: "#8a8886" }}>{risk.departamento} · {risk.responsable || "Sin asignar"}</p>
+                    </div>
+                    <time className="shrink-0 text-[10px]" style={{ color: "#8a8886" }} dateTime={registrationTimestamp}>{getDetectedRiskRegistrationDate(risk.id)}</time>
+                  </li>;
+                })}
+              </ul>
+            )}
+          </section>
         </div>
 
       </div>
@@ -855,7 +945,7 @@ export function RiskManagement() {
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h2 id="detected-risk-follow-up-title" className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>
-                  Seguimiento · {selectedDetectedRisk.id}
+                  Seguimiento · {getDetectedRiskDisplayId(selectedDetectedRisk.id)}
                 </h2>
                 <p className="mt-1 text-[12px]" style={{ color: "#605e5c" }}>{selectedDetectedRisk.descripcion}</p>
               </div>
@@ -878,9 +968,9 @@ export function RiskManagement() {
               <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#201f1e" }}>{selectedDetectedRisk.recomendacion}</p>
               <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>La recomendación es orientativa. Este prototipo no ejecuta ni registra acciones de mitigación o escalamiento.</p>
             </section>
-            {selectedDetectedRisk.simulado && selectedDetectedRisk.proceso === "Transporte" && (
+            {selectedDetectedRisk.requiresRoadEvaluation && selectedDetectedRisk.proceso === "Transporte" && (
               <section className="mb-4 space-y-3 rounded p-3" style={{ background: "#f5f9fd", border: "1px solid #cce0f5" }}>
-                <h3 className="text-[12px] font-semibold" style={{ color: "#0f6cbd" }}>Evaluación XGBoost del escenario vial</h3>
+                <h3 className="text-[12px] font-semibold" style={{ color: "#0f6cbd" }}>Evaluación XGBoost de impacto vial</h3>
                 {!roadModel && !roadModelError && <p className="text-[11px]" style={{ color: "#605e5c" }}>Cargando el modelo vial…</p>}
                 {roadModelError && <p role="alert" className="text-[11px]" style={{ color: "#a4262c" }}>{roadModelError}</p>}
                 {roadModel && !roadModel.available && !roadModelError && <p role="alert" className="text-[11px]" style={{ color: "#a4262c" }}>{roadModel.reason}</p>}
@@ -913,9 +1003,9 @@ export function RiskManagement() {
                 )}
               </section>
             )}
-            {selectedDetectedRisk.simulado && selectedDetectedRisk.proceso !== "Transporte" && (
+            {selectedDetectedRisk.requiresRoadEvaluation && selectedDetectedRisk.proceso !== "Transporte" && (
               <p className="mb-4 rounded p-2.5 text-[11px]" style={{ background: "#fffbf0", border: "1px solid #f5e2a0", color: "#605e5c" }}>
-                El modelo XGBoost disponible corresponde a emergencias viales MTC. Se requieren datos históricos etiquetados del proceso {selectedDetectedRisk.proceso ?? "asociado"} para una evaluación pertinente.
+                El modelo XGBoost disponible evalúa impactos viales. No hay un modelo asociado al proceso {selectedDetectedRisk.proceso ?? "seleccionado"}.
               </p>
             )}
 

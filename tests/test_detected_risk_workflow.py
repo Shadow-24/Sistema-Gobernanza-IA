@@ -9,6 +9,45 @@ from api import database, main as api_main
 
 
 class DetectedRiskWorkflowTests(unittest.TestCase):
+    def test_registration_date_is_created_once_and_returned(self) -> None:
+        connection_context = MagicMock()
+        connection = connection_context.__enter__.return_value
+        expected = [{"risk_id": "RSK-007", "registered_at": "2026-11-01T00:00:00Z"}]
+        connection.execute.return_value.fetchall.return_value = expected
+
+        with patch.object(database, "connection", return_value=connection_context):
+            result = database.register_detected_risks(["RSK-007", "SIM-INV-001"])
+
+        self.assertEqual(result, expected)
+        insert_sql = connection.execute.call_args_list[0].args[0]
+        self.assertIn("ON CONFLICT (risk_id) DO NOTHING", insert_sql)
+        self.assertEqual(connection.execute.call_args_list[0].args[1], ("RSK-007",))
+
+    def test_registration_endpoint_requires_risk_permission(self) -> None:
+        request = api_main.DetectedRiskRegistrationRequest(risk_ids=["RSK-007"])
+
+        with patch.object(api_main.database, "register_detected_risks") as register:
+            with self.assertRaises(HTTPException) as raised:
+                api_main.register_detected_risks(request, {"permissions": ["dashboard"]})
+
+        self.assertEqual(raised.exception.status_code, 403)
+        register.assert_not_called()
+
+    def test_workflow_list_includes_registration_timestamp(self) -> None:
+        connection_context = MagicMock()
+        connection = connection_context.__enter__.return_value
+        expected = [{
+            "risk_id": "RSK-007",
+            "created_at": "2026-11-01T00:00:00Z",
+        }]
+        connection.execute.return_value.fetchall.return_value = expected
+
+        with patch.object(database, "connection", return_value=connection_context):
+            result = database.list_detected_risk_workflows()
+
+        self.assertEqual(result, expected)
+        self.assertIn("created_at", connection.execute.call_args.args[0])
+
     def test_workflow_changes_are_saved_as_one_timeline_event(self) -> None:
         connection_context = MagicMock()
         connection = connection_context.__enter__.return_value
@@ -27,6 +66,7 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
             "responsible": "ana",
             "notes": "Revisar el expediente relacionado",
             "updated_by": "supervisor",
+            "created_at": "2026-11-01T00:00:00Z",
         }
         connection.execute.side_effect = [
             MagicMock(fetchone=MagicMock(return_value=current)),
