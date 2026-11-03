@@ -1,11 +1,11 @@
-import { FileBarChart2, FileDown, FileSpreadsheet, FileImage, Clock, CheckCircle, Eye, Download, AlertCircle, Loader, ShieldAlert, GitMerge, FileText, Building2, Truck, TrendingUp, ShieldCheck, ClipboardCheck, AlertTriangle, CloudRain, Bell } from "lucide-react";
+import { FileBarChart2, FileDown, FileSpreadsheet, Clock, CheckCircle, Eye, Download, AlertCircle, Loader, ShieldAlert, GitMerge, FileText, Building2, Truck, TrendingUp, ShieldCheck, ClipboardCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { generateExecutiveDashboardPDF, generateDashboardPreview } from "../../utils/reportGenerators/executiveDashboard";
 import { generateDetailedReportPDF } from "../../utils/reportGenerators/detailedReport";
 import { generateExcelExport } from "../../utils/reportGenerators/excelExport";
 import { generateEvidencesZip } from "../../utils/reportGenerators/evidencesZip";
-import { downloadGeneratedReport, formatReportSize, getGeneratedReportBlob, listGeneratedReports, saveGeneratedReport, type GeneratedReport, type GeneratedReportType } from "../../utils/generatedReports";
+import { downloadGeneratedReport, formatReportSize, getGeneratedReportBlob, listGeneratedReports, reportDownloadName, saveGeneratedReport, type GeneratedReport, type GeneratedReportType } from "../../utils/generatedReports";
 import { formatPeriodLabel, getDefaultSections, getReportSectionGroups, type ReportConfiguration, type ReportDetailLevel } from "../../utils/reportConfiguration";
 import { buildConfiguredReportSections } from "../../utils/reportGenerators/configuredReport";
 import { canGenerateReport, canGenerateReportWithSections } from "../reportPermissions";
@@ -21,19 +21,15 @@ type ReportCard = { icon: React.ElementType; label: GeneratedReportType; desc: s
 
 const reportTypes: ReportCard[] = [
   { icon: TrendingUp, label: "Reporte de Predicción de Demanda", desc: "Ventas observadas de combustibles, evaluación temporal XGBoost, baseline y métricas", color: "#8764b8", formato: "PDF", acceso: "Analítica" },
-  { icon: FileBarChart2, label: "Dashboard Ejecutivo", desc: "KPIs ejecutivos, gobernanza y riesgos", color: "#0f6cbd", formato: "PDF / Web", acceso: "Gerencia / Cumplimiento" },
-  { icon: ShieldAlert, label: "Reporte de Riesgos", desc: "Distribución, procesos y mitigaciones", color: "#ca5010", formato: "PDF", acceso: "Riesgos / Analítica" },
+  { icon: FileBarChart2, label: "Dashboard Ejecutivo", desc: "Demanda y modelo IA, hidrocarburos y operación sectorial", color: "#0f6cbd", formato: "PDF / Web", acceso: "Gerencia / Cumplimiento" },
+  { icon: ShieldAlert, label: "Reporte de Riesgos", desc: "Riesgos detectados (RSG) por nivel, estado y mitigación", color: "#ca5010", formato: "PDF", acceso: "Riesgos / Analítica" },
   { icon: GitMerge, label: "Reporte de Trazabilidad", desc: "Recorrido de decisiones AI TRiSM", color: "#8764b8", formato: "PDF", acceso: "Trazabilidad" },
   { icon: FileText, label: "Reporte Ejecutivo", desc: "Resumen estratégico para supervisión", color: "#107c10", formato: "PDF", acceso: "Gerencia de Operaciones" },
   { icon: Building2, label: "Reporte de Inventario", desc: "Instalaciones y capacidad registrada; sin existencias actuales", color: "#986f0b", formato: "PDF", acceso: "Analítica" },
   { icon: Truck, label: "Reporte de Transporte", desc: "Rutas y envíos conceptuales", color: "#0f6cbd", formato: "PDF", acceso: "Analítica / Campo" },
   { icon: FileSpreadsheet, label: "Reportes Analíticos", desc: "Datos históricos filtrados para análisis", color: "#986f0b", formato: "XLSX", acceso: "Analista de Datos" },
-  { icon: ShieldCheck, label: "Reporte de Cumplimiento", desc: "Indicadores y riesgos regulatorios conceptuales", color: "#107c10", formato: "PDF", acceso: "Cumplimiento" },
-  { icon: ClipboardCheck, label: "Reporte de Auditoría", desc: "Registros de auditoría disponibles y referencias", color: "#0f6cbd", formato: "PDF", acceso: "Auditoría" },
-  { icon: FileImage, label: "Evidencias Digitales", desc: "Artefactos seleccionados y resoluciones relacionadas", color: "#8764b8", formato: "ZIP / PDF", acceso: "Auditoría / Legal" },
-  { icon: AlertTriangle, label: "Reporte de Riesgos de Transporte", desc: "Evaluaciones simuladas de ruta y transporte", color: "#ca5010", formato: "PDF", acceso: "Ingeniería de Campo" },
-  { icon: CloudRain, label: "Reporte de Condiciones Ambientales", desc: "Condiciones conceptuales de ruta, sin sensores", color: "#0f6cbd", formato: "PDF", acceso: "Ingeniería de Campo" },
-  { icon: Bell, label: "Reporte de Alertas", desc: "Alertas simuladas de transporte y ambiente", color: "#a4262c", formato: "PDF", acceso: "Ingeniería de Campo" },
+  { icon: ShieldCheck, label: "Reporte de Cumplimiento", desc: "Normativas, controles y riesgos regulatorios en seguimiento", color: "#107c10", formato: "PDF", acceso: "Cumplimiento" },
+  { icon: ClipboardCheck, label: "Reporte de Auditoría", desc: "Auditorías por estado, etapa, responsable e historial", color: "#0f6cbd", formato: "PDF", acceso: "Auditoría" },
 ];
 
 const STATE_STYLES: Record<string, { icon: React.ElementType; bg: string; text: string }> = {
@@ -196,6 +192,11 @@ function ReportConfigurationModal({
                 <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
                   {([{ value: "executive", label: "Resumen ejecutivo" }, { value: "detailed", label: "Detallado" }, { value: "complete", label: "Completo" }] as const).map((option) => <label key={option.value} className="inline-flex items-center gap-1.5 font-normal"><input type="radio" name="report-detail" value={option.value} checked={detailLevel === option.value} onChange={() => setDetailLevel(option.value)} />{option.label}</label>)}
                 </div>
+                <p className="mt-1.5 text-[11px] font-normal" style={{ color: "#8a8886" }}>
+                  {detailLevel === "executive" ? "Solo indicadores y gráficos."
+                    : detailLevel === "detailed" ? "Indicadores, gráficos y lista de registros."
+                    : "Todo lo anterior, con todos los registros y las notas de cada fuente."}
+                </p>
               </fieldset>
             </div>
 
@@ -505,7 +506,7 @@ export function ReportsModule() {
             const generatedAt = new Date(report.generado).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" });
             return (
               <div key={report.id} className="grid grid-cols-12 gap-2 items-center py-2.5 px-1 rounded hover:bg-gray-50 transition-colors">
-                <div className="col-span-1 text-[11px] font-mono" style={{ color: "#8a8886" }}>{report.id.replace("RPT-", "")}</div>
+                <div className="col-span-1 text-[11px] font-mono" style={{ color: "#8a8886" }}>{report.codigo ?? report.id.slice(0, 8)}</div>
                 <div className="col-span-3 text-[13px] font-medium" style={{ color: "#201f1e" }}>{report.nombre}</div>
                 <div className="col-span-1">
                   <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: typeColor + "15", color: typeColor }}>
@@ -558,7 +559,7 @@ export function ReportsModule() {
 
       {historyPreview && (
         <DocumentPreviewModal
-          fileName={historyPreview.report.fileName}
+          fileName={reportDownloadName(historyPreview.report)}
           mediaType={historyPreview.blob.type}
           blob={historyPreview.blob}
           onClose={() => setHistoryPreview(null)}

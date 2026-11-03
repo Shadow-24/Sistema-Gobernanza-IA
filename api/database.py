@@ -205,6 +205,7 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
+            "ALTER TABLE generated_reports ADD COLUMN IF NOT EXISTS seq BIGSERIAL",
             """
             CREATE TABLE IF NOT EXISTS risk_assessments (
                 id TEXT PRIMARY KEY,

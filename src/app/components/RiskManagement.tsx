@@ -59,7 +59,7 @@ const DETECTED_RISK_PHASES: DetectedRiskPhase[] = [
   "Monitoreo y cierre",
 ];
 
-type DetectedRisk = {
+export type DetectedRisk = {
   id: string;
   nivel: DetectedRiskLevel | null;
   estado: DetectedRiskStatus | null;
@@ -208,7 +208,55 @@ const risksByYear: Record<string, {
   ],
 };
 
-const latestRiskYear = Object.keys(risksByYear).sort((a, b) => Number(b) - Number(a))[0];
+export const latestRiskYear = Object.keys(risksByYear).sort((a, b) => Number(b) - Number(a))[0];
+
+export function buildRiskTemplates(): DetectedRisk[] {
+  return [
+    ...risksByYear[latestRiskYear].map((risk) => ({
+      ...risk,
+      nivel: null,
+      estado: null,
+      responsable: "",
+    })),
+    ...simulatedSupplyChainRisks.map((scenario) => {
+      const neutralText = ({
+        "SIM-INV-001": {
+          description: "Verificar disponibilidad de datos de inventario para evaluar posibles anomalías.",
+          recommendation: "Confirmar la disponibilidad y calidad de registros operativos de inventario.",
+        },
+        "SIM-TRN-001": {
+          description: "Verificar disponibilidad de registros de tiempos de transporte entre Lima y Callao.",
+          recommendation: "Confirmar la disponibilidad y calidad de registros operativos de tiempos de transporte.",
+        },
+        "SIM-DMD-001": {
+          description: "Verificar disponibilidad de datos históricos para evaluar la predicción de demanda de combustibles.",
+          recommendation: "Reunir datos históricos validados antes de evaluar el desempeño de una predicción de demanda.",
+        },
+        "SIM-TRN-002": {
+          description: "Verificar disponibilidad de datos de rutas y restricciones de transporte.",
+          recommendation: "Confirmar la disponibilidad de información vial actualizada antes de evaluar riesgos de ruta.",
+        },
+      } as Record<string, { description: string; recommendation: string }>)[scenario.id] ?? {
+        description: scenario.description,
+        recommendation: scenario.recommendation,
+      };
+      return {
+        id: scenario.id,
+        nivel: null,
+        estado: null,
+        descripcion: neutralText.description,
+        fuente: scenario.source,
+        departamento: scenario.department,
+        responsable: "",
+        fecha: "",
+        recomendacion: neutralText.recommendation,
+        proceso: scenario.process,
+        modelo: "Sin modelo asociado",
+        requiresRoadEvaluation: scenario.process === "Transporte",
+      };
+    }),
+  ];
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -263,51 +311,7 @@ export function RiskManagement() {
   const [roadEvaluationLoadingRisk, setRoadEvaluationLoadingRisk] = useState<string | null>(null);
   const [roadModelError, setRoadModelError] = useState("");
   const [roadScenarioDrafts, setRoadScenarioDrafts] = useState<Record<string, RoadScenario>>({});
-  const riskTemplates: DetectedRisk[] = [
-    ...risksByYear[latestRiskYear].map((risk) => ({
-      ...risk,
-      nivel: null,
-      estado: null,
-      responsable: "",
-    })),
-    ...simulatedSupplyChainRisks.map((scenario) => {
-      const neutralText = ({
-        "SIM-INV-001": {
-          description: "Verificar disponibilidad de datos de inventario para evaluar posibles anomalías.",
-          recommendation: "Confirmar la disponibilidad y calidad de registros operativos de inventario.",
-        },
-        "SIM-TRN-001": {
-          description: "Verificar disponibilidad de registros de tiempos de transporte entre Lima y Callao.",
-          recommendation: "Confirmar la disponibilidad y calidad de registros operativos de tiempos de transporte.",
-        },
-        "SIM-DMD-001": {
-          description: "Verificar disponibilidad de datos históricos para evaluar la predicción de demanda de combustibles.",
-          recommendation: "Reunir datos históricos validados antes de evaluar el desempeño de una predicción de demanda.",
-        },
-        "SIM-TRN-002": {
-          description: "Verificar disponibilidad de datos de rutas y restricciones de transporte.",
-          recommendation: "Confirmar la disponibilidad de información vial actualizada antes de evaluar riesgos de ruta.",
-        },
-      } as Record<string, { description: string; recommendation: string }>)[scenario.id] ?? {
-        description: scenario.description,
-        recommendation: scenario.recommendation,
-      };
-      return {
-        id: scenario.id,
-        nivel: null,
-        estado: null,
-        descripcion: neutralText.description,
-        fuente: scenario.source,
-        departamento: scenario.department,
-        responsable: "",
-        fecha: "",
-        recomendacion: neutralText.recommendation,
-        proceso: scenario.process,
-        modelo: "Sin modelo asociado",
-        requiresRoadEvaluation: scenario.process === "Transporte",
-      };
-    }),
-  ];
+  const riskTemplates = buildRiskTemplates();
   const detectedRiskWorkflowById = new Map(detectedRiskWorkflows.map((item) => [item.risk_id, item]));
   const detectedRiskRegistrationById = new Map(detectedRiskRegistrations.map((item) => [item.risk_id, item]));
   const risks: DetectedRisk[] = riskTemplates.map((risk) => {

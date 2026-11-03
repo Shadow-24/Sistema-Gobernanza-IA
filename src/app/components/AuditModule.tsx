@@ -236,7 +236,7 @@ const timelineByYear: Record<string, { fecha: string; evento: string; tipo: "aud
   "2025": [],
 };
 
-const auditTemplates = Object.keys(auditoriasByYear)
+export const auditTemplates = Object.keys(auditoriasByYear)
   .sort((a, b) => Number(b) - Number(a))
   .flatMap((year) => auditoriasByYear[year]);
 const timeline = Object.keys(timelineByYear)

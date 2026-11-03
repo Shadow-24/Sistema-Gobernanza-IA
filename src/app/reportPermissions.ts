@@ -23,13 +23,9 @@ export const REPORT_TYPES_BY_ROLE: Record<UserRole, readonly GeneratedReportType
     "Reporte de Riesgos",
     "Reporte de Auditoría",
     "Reporte de Trazabilidad",
-    "Evidencias Digitales",
   ],
   "Ingeniero de Campo": [
     "Reporte de Transporte",
-    "Reporte de Riesgos de Transporte",
-    "Reporte de Condiciones Ambientales",
-    "Reporte de Alertas",
     "Reporte de Trazabilidad",
   ],
 };

@@ -353,6 +353,7 @@ class ComplianceRegistrationRequest(BaseModel):
 def _public_report(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": row["id"],
+        "codigo": f"RPT-{row['seq']:03d}",
         "nombre": row["name"],
         "tipo": row["report_type"],
         "generado": row["created_at"].isoformat(),
@@ -2224,8 +2225,9 @@ async def save_generated_report(
             row = conn.execute(
                 """
                 INSERT INTO generated_reports
-                    (id, file_name, name, report_type, period, username, role, sections, size_bytes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (id, file_name, name, report_type, period, username, role, sections, size_bytes, seq)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        (SELECT COALESCE(MAX(seq), 0) + 1 FROM generated_reports))
                 RETURNING *
                 """,
                 (

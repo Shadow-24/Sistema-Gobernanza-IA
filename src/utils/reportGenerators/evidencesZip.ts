@@ -274,7 +274,9 @@ async function generateConfiguredEvidencesZip(configuration: ReportConfiguration
     const folderName = section.id === 'resolution-evidence' ? 'Resoluciones'
       : section.id === 'case-evidence' ? 'Expedientes'
       : section.id === 'complaint-evidence' ? 'Denuncias_SINADA'
-      : section.id === 'risk-evidence' ? 'Riesgos_simulados'
+      : section.id === 'risk-evidence' ? 'Riesgos'
+      : section.id === 'audit-evidence' ? 'Auditorias'
+      : section.id === 'compliance-evidence' ? 'Cumplimiento'
       : 'Trazabilidad_simulada';
     records.forEach((record, index) => {
       const doc = new jsPDF();
@@ -283,7 +285,7 @@ async function generateConfiguredEvidencesZip(configuration: ReportConfiguration
       doc.text(section.title, 18, 20);
       doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      const tag = section.simulated ? 'SIMULADO · EVALUACIÓN CONCEPTUAL' : 'FUENTE CSV HISTÓRICA';
+      const tag = section.simulated ? 'SIMULADO · EVALUACIÓN CONCEPTUAL' : 'REGISTRO DEL SISTEMA';
       doc.text(tag, 18, 29);
       doc.text(`Periodo solicitado: ${configuration.startDate} – ${configuration.endDate}`, 18, 37);
       const lines = doc.splitTextToSize(record, 174);

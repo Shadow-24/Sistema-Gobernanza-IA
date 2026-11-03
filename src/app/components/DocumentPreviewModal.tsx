@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
+import { PdfCanvasViewer } from "./PdfCanvasViewer";
 
 type PreviewContent = {
   url?: string;
@@ -91,6 +92,8 @@ export function DocumentPreviewModal({
             <p className="text-[13px]" style={{ color: "#605e5c" }}>{content.message}</p>
           ) : content.url && mediaType.startsWith("image/") ? (
             <img src={content.url} alt={fileName} className="mx-auto max-h-[75vh] max-w-full object-contain" />
+          ) : extension === "pdf" ? (
+            <PdfCanvasViewer blob={blob} />
           ) : content.url ? (
             <iframe title={`Vista previa de ${fileName}`} src={content.url} className="h-[75vh] w-full border-0" />
           ) : content.sheets ? (

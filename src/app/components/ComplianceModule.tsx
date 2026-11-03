@@ -58,7 +58,7 @@ function ProgressRing({ value, color, size = 80 }: { value: number; color: strin
   );
 }
 
-const REGULATORY_NORMS = [
+export const REGULATORY_NORMS = [
   { id: "NORM-01", nombre: "Reglamento para la Protección Ambiental (D.S. 039-2014-EM)", tipo: "Ambiental" },
   { id: "NORM-02", nombre: "Normas técnicas OEFA – Hidrocarburos Mayores", tipo: "Fiscalización" },
   { id: "NORM-03", nombre: "Ley SINADA – Gestión de denuncias ambientales", tipo: "Administrativo" },
@@ -67,7 +67,7 @@ const REGULATORY_NORMS = [
   { id: "NORM-06", nombre: "ISO/IEC 42001 – Gestión de Sistemas de IA", tipo: "Referencia" },
 ];
 
-const REGULATORY_RISKS = [
+export const REGULATORY_RISKS = [
   { id: "RRG-001", descripcion: "Medidas correctivas PLUSPETROL – plazo vencido Q4 2024", normativa: "D.S. 039-2014-EM" },
   { id: "RRG-002", descripcion: "879 denuncias SINADA sin resolver – sobrepasan tiempo normativo", normativa: "Ley SINADA" },
   { id: "RRG-003", descripcion: "Referencia ISO/IEC 42001 pendiente de evaluación conceptual", normativa: "ISO/IEC 42001 · sin certificación" },
@@ -77,7 +77,7 @@ const PHASE_PROGRESS: Record<ComplianceFollowupPhase, number> = {
   "Evaluación": 10, "Plan de acción": 30, "Implementación": 60, "Verificación": 80, "Cierre": 90,
 };
 
-function followupProgress(followup?: ComplianceFollowup): number {
+export function followupProgress(followup?: ComplianceFollowup): number {
   if (!followup) return 0;
   if (followup.status === "Conforme" || followup.status === "Cerrado") return 100;
   if (followup.status === "Pendiente" || followup.status === "Brecha") return 0;

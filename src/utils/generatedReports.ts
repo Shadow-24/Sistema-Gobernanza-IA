@@ -20,6 +20,7 @@ export type GeneratedReportType =
 
 export type GeneratedReport = {
   id: string;
+  codigo?: string;
   nombre: string;
   tipo: GeneratedReportType;
   generado: string;
@@ -91,11 +92,17 @@ export async function openGeneratedReport(report: GeneratedReport): Promise<void
   }
 }
 
+export function reportDownloadName(report: GeneratedReport): string {
+  const extension = report.fileName.includes(".") ? report.fileName.split(".").pop() : "";
+  const base = report.nombre.replace(/[\\/:*?"<>|]+/g, "_").trim() || "reporte";
+  return extension && !base.toLowerCase().endsWith(`.${extension.toLowerCase()}`) ? `${base}.${extension}` : base;
+}
+
 export async function downloadGeneratedReport(report: GeneratedReport): Promise<void> {
   const objectUrl = URL.createObjectURL(await fetchGeneratedReport(report, true));
   const link = document.createElement("a");
   link.href = objectUrl;
-  link.download = report.fileName;
+  link.download = reportDownloadName(report);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
