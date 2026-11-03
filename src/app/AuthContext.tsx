@@ -41,7 +41,7 @@ type AuthContextValue = {
     role?: string,
   ) => void;
   createManagedUser: (account: { username: string; name: string; role: UserRole; password: string }) => Promise<boolean>;
-  updateManagedUser: (username: string, updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">>) => Promise<boolean>;
+  updateManagedUser: (username: string, updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">> & { password?: string }) => Promise<boolean>;
   clearAccessEvents: () => Promise<void>;
 };
 
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateManagedUser = useCallback(async (
     username: string,
-    updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">>,
+    updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">> & { password?: string },
   ) => {
     try {
       const updated = await apiRequest<ManagedUser>(`/api/users/${encodeURIComponent(username)}`, {

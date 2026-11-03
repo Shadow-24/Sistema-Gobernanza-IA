@@ -57,19 +57,17 @@ PERMISSIONS_BY_ROLE = {
 
 REPORT_TYPES_BY_ROLE = {
     "Gerente de Operaciones": [
-        "Dashboard Ejecutivo", "Reporte de Riesgos", "Reporte de Trazabilidad", "Reporte Ejecutivo",
+        "Dashboard Ejecutivo", "Reporte de Trazabilidad",
     ],
     "Analista de Datos": [
-        "Reporte de Riesgos", "Reporte de Trazabilidad", "Reporte de Inventario",
-        "Reporte de Transporte", "Reporte de Predicción de Demanda", "Reportes Analíticos",
+        "Dashboard Ejecutivo", "Reporte de Riesgos", "Reporte de Trazabilidad",
     ],
     "Supervisor de Cumplimiento": [
         "Dashboard Ejecutivo", "Reporte de Cumplimiento", "Reporte de Riesgos",
-        "Reporte de Auditoría", "Reporte de Trazabilidad", "Evidencias Digitales",
+        "Reporte de Auditoría", "Reporte de Trazabilidad",
     ],
     "Ingeniero de Campo": [
-        "Reporte de Transporte", "Reporte de Riesgos de Transporte",
-        "Reporte de Condiciones Ambientales", "Reporte de Alertas", "Reporte de Trazabilidad",
+        "Dashboard Ejecutivo", "Reporte de Riesgos", "Reporte de Trazabilidad",
     ],
 }
 

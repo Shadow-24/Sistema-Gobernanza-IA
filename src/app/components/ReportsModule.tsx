@@ -1,4 +1,4 @@
-import { FileBarChart2, FileDown, FileSpreadsheet, Clock, CheckCircle, Eye, Download, AlertCircle, Loader, ShieldAlert, GitMerge, FileText, Building2, Truck, TrendingUp, ShieldCheck, ClipboardCheck } from "lucide-react";
+import { FileBarChart2, FileDown, Clock, CheckCircle, Eye, Download, AlertCircle, Loader, ShieldAlert, GitMerge, ShieldCheck, ClipboardCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { generateExecutiveDashboardPDF, generateDashboardPreview } from "../../utils/reportGenerators/executiveDashboard";
@@ -20,16 +20,11 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 type ReportCard = { icon: React.ElementType; label: GeneratedReportType; desc: string; color: string; formato: string; acceso: string };
 
 const reportTypes: ReportCard[] = [
-  { icon: TrendingUp, label: "Reporte de Predicción de Demanda", desc: "Ventas observadas de combustibles, evaluación temporal XGBoost, baseline y métricas", color: "#8764b8", formato: "PDF", acceso: "Analítica" },
-  { icon: FileBarChart2, label: "Dashboard Ejecutivo", desc: "Demanda y modelo IA, hidrocarburos y operación sectorial", color: "#0f6cbd", formato: "PDF / Web", acceso: "Gerencia / Cumplimiento" },
-  { icon: ShieldAlert, label: "Reporte de Riesgos", desc: "Riesgos detectados (RSG) por nivel, estado y mitigación", color: "#ca5010", formato: "PDF", acceso: "Riesgos / Analítica" },
-  { icon: GitMerge, label: "Reporte de Trazabilidad", desc: "Recorrido de decisiones AI TRiSM", color: "#8764b8", formato: "PDF", acceso: "Trazabilidad" },
-  { icon: FileText, label: "Reporte Ejecutivo", desc: "Resumen estratégico para supervisión", color: "#107c10", formato: "PDF", acceso: "Gerencia de Operaciones" },
-  { icon: Building2, label: "Reporte de Inventario", desc: "Instalaciones y capacidad registrada; sin existencias actuales", color: "#986f0b", formato: "PDF", acceso: "Analítica" },
-  { icon: Truck, label: "Reporte de Transporte", desc: "Rutas y envíos conceptuales", color: "#0f6cbd", formato: "PDF", acceso: "Analítica / Campo" },
-  { icon: FileSpreadsheet, label: "Reportes Analíticos", desc: "Datos históricos filtrados para análisis", color: "#986f0b", formato: "XLSX", acceso: "Analista de Datos" },
+  { icon: FileBarChart2, label: "Dashboard Ejecutivo", desc: "Demanda y modelo IA, hidrocarburos y operación sectorial", color: "#0f6cbd", formato: "PDF / Web", acceso: "Todos los roles" },
+  { icon: ShieldAlert, label: "Reporte de Riesgos", desc: "Riesgos detectados (RSG) por nivel, estado y mitigación", color: "#ca5010", formato: "PDF", acceso: "Cumplimiento / Analista / Campo" },
+  { icon: GitMerge, label: "Reporte de Trazabilidad", desc: "Historial de pronósticos de demanda generados", color: "#8764b8", formato: "PDF", acceso: "Todos los roles" },
   { icon: ShieldCheck, label: "Reporte de Cumplimiento", desc: "Normativas, controles y riesgos regulatorios en seguimiento", color: "#107c10", formato: "PDF", acceso: "Cumplimiento" },
-  { icon: ClipboardCheck, label: "Reporte de Auditoría", desc: "Auditorías por estado, etapa, responsable e historial", color: "#0f6cbd", formato: "PDF", acceso: "Auditoría" },
+  { icon: ClipboardCheck, label: "Reporte de Auditoría", desc: "Auditorías por estado, etapa, responsable e historial", color: "#0f6cbd", formato: "PDF", acceso: "Cumplimiento" },
 ];
 
 const STATE_STYLES: Record<string, { icon: React.ElementType; bg: string; text: string }> = {
@@ -440,11 +435,6 @@ export function ReportsModule() {
               </div>
               <div className="flex flex-wrap items-center gap-1.5 mb-1">
                 <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>{rt.label}</div>
-                {rt.label === "Reporte de Predicción de Demanda" && (
-                  <span className="rounded px-1.5 py-0.5 text-[11px] font-medium" style={{ background: "#f5f0fb", color: "#8764b8" }}>
-                    XGBoost
-                  </span>
-                )}
               </div>
               <p className="text-[12px] leading-snug mb-3" style={{ color: "#8a8886" }}>{rt.desc}</p>
               <div className="flex items-center justify-between">

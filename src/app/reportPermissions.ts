@@ -5,17 +5,12 @@ import { canSelectReportSections } from "../utils/reportConfiguration";
 export const REPORT_TYPES_BY_ROLE: Record<UserRole, readonly GeneratedReportType[]> = {
   "Gerente de Operaciones": [
     "Dashboard Ejecutivo",
-    "Reporte de Riesgos",
     "Reporte de Trazabilidad",
-    "Reporte Ejecutivo",
   ],
   "Analista de Datos": [
+    "Dashboard Ejecutivo",
     "Reporte de Riesgos",
     "Reporte de Trazabilidad",
-    "Reporte de Inventario",
-    "Reporte de Transporte",
-    "Reporte de Predicción de Demanda",
-    "Reportes Analíticos",
   ],
   "Supervisor de Cumplimiento": [
     "Dashboard Ejecutivo",
@@ -25,7 +20,8 @@ export const REPORT_TYPES_BY_ROLE: Record<UserRole, readonly GeneratedReportType
     "Reporte de Trazabilidad",
   ],
   "Ingeniero de Campo": [
-    "Reporte de Transporte",
+    "Dashboard Ejecutivo",
+    "Reporte de Riesgos",
     "Reporte de Trazabilidad",
   ],
 };

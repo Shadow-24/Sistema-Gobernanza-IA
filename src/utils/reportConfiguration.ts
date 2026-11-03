@@ -127,10 +127,10 @@ const REPORT_SECTIONS_BY_TYPE: Record<GeneratedReportType, string[]> = {
 };
 
 const REPORT_SECTIONS_BY_ROLE: Record<UserRole, string[]> = {
-  "Gerente de Operaciones": ["forecast-summary", "forecast-history", "demand", "hydrocarbons", "sector-operations", "general", "risks", ...RISK_SECTIONS, "compliance", "compliance-indicators", "audits", "audits-completed", "traceability", "decision-flow", "traced-decisions", "inventory", "transport", "distribution-routes"],
-  "Analista de Datos": ["forecast-summary", "forecast-history", "hydrocarbons", "sector-operations", "general", "historical-data", ...RISK_SECTIONS, "inventory", "inventory-trace", "supply-history", "transport", "distribution-routes", "demand", "trends", "ai-models", "complaints", "cases", "resolutions", "decision-flow", "traced-decisions"],
-  "Supervisor de Cumplimiento": ["forecast-summary", "forecast-history", "demand", "hydrocarbons", "sector-operations", "inventory", "general", "risks", ...RISK_SECTIONS, "compliance", ...COMPLIANCE_SECTIONS, "audits", ...AUDIT_SECTIONS, "traceability", "decision-flow", "ai-models", "traced-decisions", "complaints", "cases", "resolutions"],
-  "Ingeniero de Campo": ["forecast-summary", "forecast-history", "traceability", "decision-flow", "ai-models", "traced-decisions", "transport", "distribution-routes"],
+  "Gerente de Operaciones": ["forecast-summary", "forecast-history", ...DASHBOARD_SECTIONS],
+  "Analista de Datos": ["forecast-summary", "forecast-history", ...DASHBOARD_SECTIONS, ...RISK_SECTIONS],
+  "Supervisor de Cumplimiento": ["forecast-summary", "forecast-history", ...DASHBOARD_SECTIONS, ...RISK_SECTIONS, ...COMPLIANCE_SECTIONS, ...AUDIT_SECTIONS],
+  "Ingeniero de Campo": ["forecast-summary", "forecast-history", ...DASHBOARD_SECTIONS, ...RISK_SECTIONS],
 };
 
 export function getReportSectionGroups(reportType: GeneratedReportType, role: UserRole): ReportSectionGroup[] {

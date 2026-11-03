@@ -55,6 +55,9 @@ export function UserAdministration() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>("Analista de Datos");
   const [search, setSearch] = useState("");
   const [resultFilter, setResultFilter] = useState("Todos");
@@ -96,6 +99,19 @@ export function UserAdministration() {
       console.error("No se pudo actualizar el usuario:", error);
       setNotice(error instanceof Error ? error.message : "No se pudo actualizar el usuario.");
     }
+  }
+
+  async function handleChangePassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedUser) return;
+    if (newPassword !== confirmPassword) {
+      setNotice("Las contraseñas no coinciden.");
+      return;
+    }
+    if (!window.confirm(`¿Cambiar la contraseña de @${selectedUser.username}? Sus sesiones abiertas se cerrarán.`)) return;
+    await updateSelected({ password: newPassword }, `Contraseña de @${selectedUser.username} actualizada.`);
+    setNewPassword("");
+    setConfirmPassword("");
   }
 
   const authorizedCount = accessEvents.filter((event) => event.result === "Permitido").length;
@@ -141,7 +157,7 @@ export function UserAdministration() {
             <span className="text-[12px]" style={{ color: "#605e5c" }}>{managedUsers.filter((account) => account.active).length} activos</span>
           </div>
           <div className="max-h-[340px] overflow-y-auto">
-            {managedUsers.map((account) => <UserRow key={account.username} user={account} selected={selectedUsername === account.username} onSelect={() => { setSelectedUsername(account.username); setNotice(""); }} />)}
+            {managedUsers.map((account) => <UserRow key={account.username} user={account} selected={selectedUsername === account.username} onSelect={() => { setSelectedUsername(account.username); setNotice(""); setNewPassword(""); setConfirmPassword(""); }} />)}
           </div>
           {selectedUser && (
             <div className="p-4 space-y-4" style={{ borderTop: "1px solid #edebe9" }}>
@@ -181,6 +197,14 @@ export function UserAdministration() {
                 </div>
                 <p className="text-[11px] mt-2" style={{ color: "#8a8886" }}>La administración permanece reservada al rol Supervisor de Cumplimiento.</p>
               </fieldset>
+              <form onSubmit={handleChangePassword} className="space-y-2 pt-3" style={{ borderTop: "1px solid #edebe9" }}>
+                <h4 className="text-[12px] font-semibold flex items-center gap-1.5" style={{ color: "#201f1e" }}><LockKeyhole className="w-3.5 h-3.5" />Cambiar contraseña</h4>
+                <input required minLength={12} type={showPassword ? "text" : "password"} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Nueva contraseña (mín. 12 caracteres)" className="w-full h-8 px-2 text-[13px] bg-white" style={inputStyle} autoComplete="new-password" aria-label="Nueva contraseña" />
+                <input required minLength={12} type={showPassword ? "text" : "password"} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirmar nueva contraseña" className="w-full h-8 px-2 text-[13px] bg-white" style={inputStyle} autoComplete="new-password" aria-label="Confirmar nueva contraseña" />
+                <label className="flex items-center gap-2 text-[12px]" style={{ color: "#605e5c" }}><input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />Mostrar lo que escribo</label>
+                {confirmPassword && newPassword !== confirmPassword && <p className="text-[11px]" style={{ color: "#a4262c" }}>Las contraseñas no coinciden.</p>}
+                <button type="submit" disabled={newPassword.length < 12 || newPassword !== confirmPassword} className="px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50" style={{ background: "#0f6cbd" }}>Cambiar contraseña</button>
+              </form>
             </div>
           )}
         </section>

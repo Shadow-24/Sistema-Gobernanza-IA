@@ -277,6 +277,7 @@ class UserUpdateRequest(BaseModel):
     ] | None = None
     permissions: list[str] | None = None
     active: bool | None = None
+    password: str | None = Field(default=None, min_length=12, max_length=1024)
 
 
 class AccessEventRequest(BaseModel):
@@ -1146,6 +1147,9 @@ def update_user(
         updates["display_name"] = updates.pop("name").strip()
         if not updates["display_name"]:
             raise HTTPException(status_code=422, detail="El nombre no puede estar vacío.")
+    password_changed = "password" in updates
+    if password_changed:
+        updates["password_hash"] = database.hash_password(updates.pop("password"))
     if "role" in updates and "permissions" not in updates:
         updates["permissions"] = database.PERMISSIONS_BY_ROLE[updates["role"]]
     if "permissions" in updates:
@@ -1156,7 +1160,7 @@ def update_user(
     if updates.get("role") == "Supervisor de Cumplimiento":
         updates["permissions"] = list(dict.fromkeys([*updates.get("permissions", []), "supervision"]))
 
-    column_names = {"display_name": "display_name", "role": "role", "permissions": "permissions", "active": "active"}
+    column_names = {"display_name": "display_name", "role": "role", "permissions": "permissions", "active": "active", "password_hash": "password_hash"}
     try:
         with database.connection() as conn:
             conn.execute("SELECT pg_advisory_xact_lock(684257139)")
@@ -1187,14 +1191,14 @@ def update_user(
                 ).fetchone()
                 if not active_supervisor:
                     raise HTTPException(status_code=409, detail="Debe permanecer al menos un supervisor activo.")
-            if not row["active"]:
+            if not row["active"] or (password_changed and username != current_user["username"]):
                 conn.execute("DELETE FROM auth_sessions WHERE username = %s", (username,))
             conn.execute(
                 """
                 INSERT INTO access_events (username, role, action, resource, result)
-                VALUES (%s, %s, 'Actualización de usuario', %s, 'Permitido')
+                VALUES (%s, %s, %s, %s, 'Permitido')
                 """,
-                (current_user["username"], current_user["role"], username),
+                (current_user["username"], current_user["role"], "Cambio de contraseña" if password_changed else "Actualización de usuario", username),
             )
         return database.public_user(row)
     except HTTPException:
