@@ -113,7 +113,6 @@ export function UserAdministration() {
           <p className="text-[13px] mt-1" style={{ color: "#605e5c" }}>Autenticación, roles, permisos y actividad de usuarios.</p>
         </div>
         <div className="text-[12px] px-3 py-2 rounded-sm" style={{ background: "#fff8f0", color: "#8a4b08", border: "1px solid #f3d7b5" }}>
-          Usuarios y permisos centralizados en PostgreSQL.
         </div>
       </div>
 

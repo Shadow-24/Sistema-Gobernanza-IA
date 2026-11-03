@@ -1,4 +1,5 @@
 import React from "react";
+import { Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   AuditDocument,
@@ -242,13 +243,6 @@ const timeline = Object.keys(timelineByYear)
   .sort((a, b) => Number(b) - Number(a))
   .flatMap((year) => timelineByYear[year]);
 
-const TYPE_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
-  audit:      { bg: "#eff6ff", text: "#0f6cbd", dot: "#0f6cbd" },
-  resolution: { bg: "#fff8f0", text: "#ca5010", dot: "#ca5010" },
-  expediente: { bg: "#f1faf1", text: "#107c10", dot: "#107c10" },
-  risk:       { bg: "#fdf3f4", text: "#a4262c", dot: "#a4262c" },
-};
-
 function timelineTimestamp(value: string): number {
   const date = value.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (date) return Date.UTC(Number(date[3]), Number(date[2]) - 1, Number(date[1]));
@@ -268,7 +262,6 @@ export function AuditModule() {
   const [auditRegistrations, setAuditRegistrations] = useState<AuditRegistration[]>([]);
   const [auditRegistrationError, setAuditRegistrationError] = useState("");
   const [workflowEvents, setWorkflowEvents] = useState<AuditWorkflowEvent[]>([]);
-  const [expandedTimelineEvents, setExpandedTimelineEvents] = useState<Set<string>>(() => new Set());
   const [documents, setDocuments] = useState<AuditDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(true);
   const [selectedAuditId, setSelectedAuditId] = useState(auditTemplates[0]?.id ?? "");
@@ -308,6 +301,7 @@ export function AuditModule() {
       resoluciones: audit.resoluciones.filter((resolution) => availableResolutionIds.has(resolution)),
       expedientes: audit.expedientes.filter((expediente) => availableCaseResolutionIds.has(expediente)),
       estado: saved?.status ?? "Pendiente",
+      responsable: saved?.responsible ?? "",
     };
   });
   const filteredAudits = statusFilter ? audits.filter((audit) => audit.estado === statusFilter) : audits;
@@ -522,13 +516,7 @@ export function AuditModule() {
     })),
   ].filter((event) => event.tipo !== "audit" || audits.some((audit) => audit.id === event.auditId))
     .sort((left, right) => timelineTimestamp(right.fecha) - timelineTimestamp(left.fecha));
-  const visibleAuditIds = new Set(filteredAudits.map((audit) => audit.id));
-  const filteredTimelineItems = timelineItems.filter((event) => (
-    event.auditId ? visibleAuditIds.has(event.auditId)
-      : event.relatedAuditId ? visibleAuditIds.has(event.relatedAuditId)
-        : statusFilter === null
-  ));
-  const selectedAuditRelatedEvents = filteredTimelineItems.filter((event) => event.relatedAuditId === selectedAudit?.id && event.tipo !== "audit");
+  const selectedAuditHistory = timelineItems.filter((event) => event.auditId === selectedAudit?.id || event.relatedAuditId === selectedAudit?.id);
 
   return (
     <div className="space-y-5">
@@ -593,10 +581,10 @@ export function AuditModule() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 items-start gap-4">
+      <div className="items-start">
 
         {/* Audit list */}
-        <div className="lg:col-span-3 space-y-3">
+        <div className="space-y-3">
           <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Historial de Auditorías</div>
           {filteredAudits.map(audit => {
             const s = STATE_STYLES[audit.estado];
@@ -624,25 +612,20 @@ export function AuditModule() {
                   }
                 }}
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{audit.id}</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px]" style={{ background: s.bg, color: s.text }}>
-                        <Icon className="w-2.5 h-2.5" />{audit.estado}
-                      </span>
-                      {audit.id === selectedAudit?.id && <span className="text-[11px] font-medium" style={{ color: "#0f6cbd" }}>Seleccionada</span>}
-                    </div>
-                    <div className="text-[14px] font-medium" style={{ color: "#201f1e" }}>{audit.tipo}</div>
-                    {hasModelEvaluation && <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[11px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Revisar evaluación técnica</span>}
-                    <div className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>{audit.administrado} · {audit.sector}</div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-[13px]" style={{ color: "#8a8886" }}>{audit.fecha}</div>
-                  </div>
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{audit.id}</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px]" style={{ background: s.bg, color: s.text }}>
+                    <Icon className="w-2.5 h-2.5" />{audit.estado}
+                  </span>
+                  {hasModelEvaluation && <span className="px-2 py-0.5 rounded-full text-[12px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Revisar evaluación técnica</span>}
                 </div>
-
-                <p className="text-[13px] mb-3 leading-snug" style={{ color: "#605e5c" }}>{audit.hallazgos}</p>
+                <p className="text-[14px] font-medium leading-snug" style={{ color: "#201f1e" }}>{audit.tipo}</p>
+                <p className="mt-1 text-[12px] leading-snug" style={{ color: "#8a8886" }}>{audit.administrado} · {audit.sector}</p>
+                <p className="mt-1 text-[12px] leading-snug" style={{ color: "#8a8886" }}>{audit.hallazgos}</p>
+                <div className="mt-2 mb-3 flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
+                  <span className="flex items-center gap-1"><User className="w-3 h-3" />{audit.responsable || "Sin asignar"}</span>
+                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{audit.fecha}</span>
+                </div>
 
                 {hasModelEvaluation && (
                   <AuditEvaluationDetails
@@ -700,11 +683,11 @@ export function AuditModule() {
 
           {selectedAudit && isFollowUpOpen && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="audit-follow-up-title">
-            <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto p-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
+            <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto p-4">
+              <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                <h2 id="audit-follow-up-title" className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Seguimiento · {selectedAudit.id}</h2>
-                <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
+                <h2 id="audit-follow-up-title" className="text-[15px] font-semibold" style={{ color: "#201f1e" }}>Seguimiento · {selectedAudit.id}</h2>
+                <p className="text-[12px] mt-1" style={{ color: "#605e5c" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
                 </div>
                 <button type="button" onClick={() => {
                   setIsFollowUpOpen(false);
@@ -757,14 +740,6 @@ export function AuditModule() {
                       ))}</div>
                     ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>No hay expedientes verificados para esta auditoría.</p>}
                   </div>
-                  {selectedAuditRelatedEvents.length > 0 && (
-                    <div>
-                      <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Eventos relacionados de la línea de tiempo</div>
-                      <div className="mt-1 space-y-1">
-                        {selectedAuditRelatedEvents.map((event) => <p key={event.key} className="text-[10px]" style={{ color: "#605e5c" }}>{event.fecha} · {event.evento} — {event.detalle}</p>)}
-                      </div>
-                    </div>
-                  )}
                   <div>
                     <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Documentos adjuntos</div>
                     <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>
@@ -804,7 +779,7 @@ export function AuditModule() {
                   </div>
                 )}
               </div>
-              <form onSubmit={(event) => void saveAuditChanges(event)} className="space-y-3">
+              <form onSubmit={(event) => void saveAuditChanges(event)} className="space-y-3 rounded p-3" style={{ background: "#f9f8f7" }}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
                     Estado
@@ -874,7 +849,7 @@ export function AuditModule() {
                       </select>
                     </label>
                     <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
-                      {uploading ? "Subiendo…" : "Seleccionar archivo"}
+                      {uploading ? "Subiendo…" : "Adjuntar documento"}
                       <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={uploading} onChange={(event) => void addAuditDocument(event)} />
                     </label>
                   </div>
@@ -915,81 +890,31 @@ export function AuditModule() {
                 />
               )}
               {selectedWorkflow?.updated_by && <p className="mt-2 text-[10px]" style={{ color: "#8a8886" }}>Última actualización: {selectedWorkflow.updated_by} · {new Date(selectedWorkflow.updated_at).toLocaleString("es-PE")}</p>}
+              <section className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
+                <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Historial de seguimiento</h3>
+                {selectedAuditHistory.length ? (
+                  <ol className="mt-2 space-y-2">
+                    {selectedAuditHistory.map((event) => (
+                      <li key={event.key} className="rounded p-2 text-[11px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
+                        <span className="font-medium">{event.fecha}</span>
+                        <p className="mt-0.5">{event.evento} — {event.detalle}</p>
+                        {event.eventType === "update" && event.changes.length > 0 && (
+                          <ul className="mt-1 space-y-0.5">
+                            {event.changes.map((change) => (
+                              <li key={change.field}>{change.label}: {change.before || "Sin asignar"} → {change.after || "Sin asignar"}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Todavía no hay cambios registrados.</p>
+                )}
+              </section>
             </Card>
             </div>
           )}
-        </div>
-
-        {/* Timeline */}
-        <div className="lg:col-span-2">
-          <Card className="p-4">
-            <div className="text-[14px] font-semibold mb-1" style={{ color: "#201f1e" }}>Línea de tiempo · {filteredTimelineItems.length} eventos</div>
-            <p className="mb-4 text-[10px]" style={{ color: "#8a8886" }}>Las auditorías listadas aquí se pueden seleccionar; RD, expedientes y RSK son referencias relacionadas, no auditorías aparte.</p>
-            <div className="relative">
-              <div className="absolute left-3 top-0 bottom-0 w-px" style={{ background: "#e1dfdd" }} />
-              <div className="space-y-4">
-                {filteredTimelineItems.length ? filteredTimelineItems.map((event) => {
-                  const t = TYPE_STYLE[event.tipo];
-                  return (
-                    <div key={event.key} className="flex gap-3 pl-2">
-                      <div className="relative z-10 flex-shrink-0 w-3 h-3 rounded-full mt-0.5 ring-2 ring-white" style={{ background: t.dot }} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          {event.auditId ? (
-                            <button type="button" onClick={() => {
-                              if (event.auditId) {
-                                setSelectedAuditId(event.auditId);
-                                setIsFollowUpOpen(true);
-                              }
-                            }} className="text-left text-[12px] font-medium" style={{ color: "#0f6cbd" }}>{event.evento}</button>
-                          ) : (
-                            <span className="text-[12px] font-medium" style={{ color: "#201f1e" }}>{event.evento}</span>
-                          )}
-                          <span className="ml-auto text-[11px] flex-shrink-0" style={{ color: "#8a8886" }}>{event.fecha}</span>
-                        </div>
-                        <p className="text-[12px] leading-snug" style={{ color: "#8a8886" }}>{event.detalle}</p>
-                        {event.eventType === "update" && event.changes.length > 0 && (
-                          <div className="mt-1">
-                            <button
-                              type="button"
-                              aria-expanded={expandedTimelineEvents.has(event.key)}
-                              onClick={() => setExpandedTimelineEvents((current) => {
-                                const next = new Set(current);
-                                if (next.has(event.key)) next.delete(event.key);
-                                else next.add(event.key);
-                                return next;
-                              })}
-                              className="text-[11px] font-medium"
-                              style={{ color: "#0f6cbd" }}
-                            >
-                              {expandedTimelineEvents.has(event.key) ? "Ocultar cambios" : `Ver ${event.changes.length} cambios`}
-                            </button>
-                            {expandedTimelineEvents.has(event.key) && (
-                              <ul className="mt-1 space-y-1 rounded p-2 text-[11px]" style={{ background: "#f9f8f7" }}>
-                                {event.changes.map((change) => (
-                                  <li key={change.field}>
-                                    <span className="font-medium" style={{ color: "#605e5c" }}>{change.label}:</span>{" "}
-                                    <span style={{ color: "#8a8886" }}>{change.before || "Sin asignar"}</span>
-                                    <span style={{ color: "#605e5c" }}> → </span>
-                                    <span style={{ color: "#201f1e" }}>{change.after || "Sin asignar"}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-                        <span className="mt-1 inline-block px-1.5 py-0.5 rounded text-[11px]" style={{ background: t.bg, color: t.text }}>
-                          {event.tipo === "audit" ? "Auditoría" : event.tipo === "resolution" ? "Resolución" : event.tipo === "expediente" ? "Expediente" : "Riesgo"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }) : (
-                  <p className="pl-5 text-[11px]" style={{ color: "#8a8886" }}>No hay eventos vinculados a las auditorías de este estado.</p>
-                )}
-              </div>
-            </div>
-          </Card>
         </div>
       </div>
 

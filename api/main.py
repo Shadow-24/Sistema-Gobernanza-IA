@@ -346,6 +346,10 @@ class DetectedRiskRegistrationRequest(BaseModel):
     risk_ids: list[str] = Field(min_length=1, max_length=100)
 
 
+class ComplianceRegistrationRequest(BaseModel):
+    item_ids: list[str] = Field(min_length=1, max_length=100)
+
+
 def _public_report(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": row["id"],
@@ -1680,6 +1684,22 @@ def _validate_compliance_item(item_type: str, item_id: str) -> None:
     expected_prefix = "NORM-" if item_type == "normativa" else "RRG-"
     if len(item_id) > 120 or not item_id.startswith(expected_prefix):
         raise HTTPException(status_code=422, detail="El identificador del elemento de cumplimiento no es válido.")
+
+
+@app.post("/api/compliance/registrations")
+def register_compliance_items(
+    request: ComplianceRegistrationRequest,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_compliance_read_access(user)
+    item_ids = list(dict.fromkeys(item_id.strip() for item_id in request.item_ids if item_id.strip()))
+    if not item_ids or any(len(item_id) > 120 or not item_id.startswith(("NORM-", "RRG-")) for item_id in item_ids):
+        raise HTTPException(status_code=422, detail="Los identificadores de cumplimiento no son válidos.")
+    try:
+        return database.register_compliance_items(item_ids)
+    except Exception as error:
+        logger.exception("No se pudieron registrar las fechas de cumplimiento.")
+        raise HTTPException(status_code=503, detail="No se pudieron consultar las fechas de registro de cumplimiento.") from error
 
 
 @app.get("/api/compliance/followups")

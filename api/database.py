@@ -400,6 +400,12 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             """
+            CREATE TABLE IF NOT EXISTS compliance_item_registrations (
+                item_id TEXT PRIMARY KEY,
+                registered_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS detected_risk_workflow_events (
                 id BIGSERIAL PRIMARY KEY,
                 risk_id TEXT NOT NULL REFERENCES detected_risk_workflow(risk_id) ON DELETE CASCADE,
@@ -913,6 +919,27 @@ def register_detected_risks(risk_ids: list[str]) -> list[dict[str, Any]]:
             WHERE risk_id = ANY(%s)
             """,
             (risk_ids,),
+        ).fetchall()
+
+
+def register_compliance_items(item_ids: list[str]) -> list[dict[str, Any]]:
+    with connection() as conn:
+        for item_id in item_ids:
+            conn.execute(
+                """
+                INSERT INTO compliance_item_registrations (item_id)
+                VALUES (%s)
+                ON CONFLICT (item_id) DO NOTHING
+                """,
+                (item_id,),
+            )
+        return conn.execute(
+            """
+            SELECT item_id, registered_at
+            FROM compliance_item_registrations
+            WHERE item_id = ANY(%s)
+            """,
+            (item_ids,),
         ).fetchall()
 
 

@@ -175,7 +175,7 @@ export function ExecutiveDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between" style={{ order: -2 }}>
         <div>
-          <h1 className="text-lg font-semibold" style={{ color: "#201f1e" }}>Resumen</h1>
+          <h1 className="text-lg font-semibold" style={{ color: "#201f1e" }}>Dashboard</h1>
         </div>
       </div>
 
@@ -193,25 +193,26 @@ export function ExecutiveDashboard() {
         ))}
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        {kpis.map((kpi, i) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={i} className="p-3 sm:p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded flex items-center justify-center" style={{ background: `${kpi.accent}18` }}>
-                  <Icon className="w-3.5 h-3.5" style={{ color: kpi.accent }} />
+      {dashboardTab === "operacion" && (
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          {kpis.map((kpi, i) => {
+            const Icon = kpi.icon;
+            return (
+              <Card key={i} className="p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded flex items-center justify-center" style={{ background: `${kpi.accent}18` }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color: kpi.accent }} />
+                  </div>
+                  <div>
+                    <div className="text-xl font-semibold leading-none" style={{ color: "#201f1e" }}>{kpi.value}</div>
+                    <div className="text-xs font-medium mt-1" style={{ color: "#605e5c" }}>{kpi.label}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xl font-semibold leading-none" style={{ color: "#201f1e" }}>{kpi.value}</div>
-                  <div className="text-xs font-medium mt-1" style={{ color: "#605e5c" }}>{kpi.label}</div>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {dashboardTab === "hidrocarburos" && <>
       <section aria-labelledby="hydrocarbon-data-title">

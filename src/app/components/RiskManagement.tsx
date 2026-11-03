@@ -97,6 +97,17 @@ const EMPTY_ROAD_SCENARIO: RoadScenario = {
   roadSection: "",
 };
 
+function formatGovernanceEvidence(evidence: string): string[] {
+  const readable = evidence
+    .replace(/Evaluación [0-9a-f-]{36} · (\S+?)\.(?=\s|$)/i, (_, date: string) => {
+      const parsed = new Date(date);
+      return `Evaluación del ${Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short", hour12: true }).replace(/\s*([ap])\.?\s?m\.?/i, (_, m: string) => ` ${m.toUpperCase()}M`)}.`;
+    })
+    .replace(/periodo de prueba=\{'to': '([^']+)', 'from': '([^']+)'\}/, "periodo de prueba: $2 a $1")
+    .replace(/R² modelo=(-?\d+\.\d+)/, (_, value: string) => `R² del modelo: ${Number(value).toFixed(2)}`);
+  return readable.split(/(?<=\.)\s+|;\s+/).map((part) => part.trim().replace(/\.$/, "")).filter(Boolean);
+}
+
 function normalizeRoadValue(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
 }
@@ -309,7 +320,10 @@ export function RiskManagement() {
     };
   });
   const selectedDetectedRisk = risks.find((risk) => risk.id === selectedDetectedRiskId);
-  const getDetectedRiskDisplayId = (riskId: string) => riskId.startsWith("SIM-") ? riskId.replace(/^SIM-/, "RSK-") : riskId;
+  const getDetectedRiskDisplayId = (riskId: string) => {
+    const index = riskTemplates.findIndex((risk) => risk.id === riskId);
+    return index >= 0 ? `RSG-${String(index + 1).padStart(3, "0")}` : riskId;
+  };
   const getDetectedRiskRegistrationDate = (riskId: string) => {
     const registrationTimestamp = detectedRiskRegistrationById.get(riskId)?.registered_at;
     return registrationTimestamp ? new Date(registrationTimestamp).toLocaleDateString("es-PE") : "Cargando fecha…";
@@ -728,7 +742,11 @@ export function RiskManagement() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>{risk.description}</h3><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: risk.data_basis === "observado" ? "#f1faf1" : "#fff8f0", color: risk.data_basis === "observado" ? "#107c10" : "#986f0b" }}>{getGovernanceRiskBasisLabel(risk.data_basis)}</span><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: "#f3f2f1", color: "#605e5c" }}>{risk.status.replace("_", " ")}</span></div>
                     <p className="text-[10px] mt-1" style={{ color: "#605e5c" }}>{risk.model_name} · {risk.category} · probabilidad {risk.likelihood}/5 · impacto {risk.impact}/5 · responsable: {risk.owner} · registrado: {getAIRegistrationDate(risk.created_at)}</p>
-                    <p className="text-[10px] mt-1" style={{ color: "#8a8886" }}>Evidencia: {risk.evidence || "Sin evidencia adjunta"} · registrado por {risk.created_by} · tratamiento: {risk.treatment}</p>
+                    <dl className="mt-2 space-y-1 text-[10px]" style={{ color: "#605e5c" }}>
+                      <div><dt className="font-semibold">Evidencia</dt><dd>{risk.evidence ? <ul className="list-disc pl-4">{formatGovernanceEvidence(risk.evidence).map((item) => <li key={item}>{item}</li>)}</ul> : "Sin evidencia adjunta"}</dd></div>
+                      <div><dt className="font-semibold">Tratamiento</dt><dd>{risk.treatment}</dd></div>
+                      <div style={{ color: "#8a8886" }}>Registrado por {risk.created_by}</div>
+                    </dl>
                   </div>
                 </div>
                 {canManageGovernanceRisk ? <div className="mt-2 grid grid-cols-1 sm:grid-cols-[150px_1fr_auto] gap-2 items-end">
@@ -760,33 +778,6 @@ export function RiskManagement() {
         <h2 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Riesgos detectados</h2>
         <p className="text-[14px] mt-1" style={{ color: "#605e5c" }}>Hallazgos identificados en los procesos y datos operativos; se presentan aparte de los riesgos propios de los sistemas de IA.</p>
       </div>
-
-      <Card className="p-4">
-        <div className="text-[13px] font-semibold mb-2" style={{ color: "#201f1e" }}>Indicadores operativos para análisis de contexto</div>
-        {operationalLoading ? (
-          <p className="text-[12px]" style={{ color: "#605e5c" }}>Cargando fuentes sectoriales…</p>
-        ) : operationalError ? (
-          <p className="text-[12px]" role="alert" style={{ color: "#a4262c" }}>{operationalError}</p>
-        ) : operationalData ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <div className="text-sm font-semibold" style={{ color: "#0f6cbd" }}>{latestTransportRecord?.packedVolume.toLocaleString("es-PE", { maximumFractionDigits: 0 }) ?? "s/d"} MMPC</div>
-              <div className="text-[11px]" style={{ color: "#605e5c" }}>Transporte TGP · {latestTransportRecord?.period ?? "sin periodo"}</div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{ color: "#ca5010" }}>{latestFineRecord?.count.toLocaleString("es-PE") ?? "s/d"} multas · {latestFineRecord?.uit.toLocaleString("es-PE", { maximumFractionDigits: 0 }) ?? "s/d"} UIT</div>
-              <div className="text-[11px]" style={{ color: "#605e5c" }}>Multas de unidades operativas · {latestFineRecord?.period ?? "sin periodo"}</div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{ color: "#8764b8" }}>S/ {latestFuelPriceRecord?.averagePrice.toFixed(2) ?? "s/d"}</div>
-              <div className="text-[11px]" style={{ color: "#605e5c" }}>Precio promedio de {latestFuelPriceRecord?.product ?? "combustibles"} · {latestFuelPriceRecord?.period ?? "sin periodo"}</div>
-            </div>
-          </div>
-        ) : null}
-        <p className="text-[11px] mt-2" style={{ color: "#8a8886" }}>
-          Son datos observados y contextualizan la revisión humana; no constituyen alertas ni puntajes automáticos de riesgo.
-        </p>
-      </Card>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -893,17 +884,17 @@ export function RiskManagement() {
                         setSelectedDetectedRiskId(risk.id);
                         setIsDetectedRiskFollowUpOpen(true);
                       }}
-                      className="w-full text-left"
+                      className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
                     >
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className="text-[12px] font-mono font-medium" style={{ color: "#8a8886" }}>{getDetectedRiskDisplayId(risk.id)}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[12px] font-medium" style={{ background: lvl.bg, color: lvl.text, border: `1px solid ${lvl.border}` }}>
+                        <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{getDetectedRiskDisplayId(risk.id)}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[12px]" style={{ background: `${st.color}1a`, color: st.color }}>{risk.estado ?? "Sin estado"}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[12px]" style={{ background: lvl.bg, color: lvl.text, border: `1px solid ${lvl.border}` }}>
                           {risk.nivel ?? "Sin nivel"}
                         </span>
-                        <span className="text-[12px] font-medium" style={{ color: st.color }}>Estado: {risk.estado ?? "Sin estado"}</span>
                       </div>
-                      <p className="text-[14px] font-medium leading-snug mb-2" style={{ color: "#201f1e" }}>{risk.descripcion}</p>
-                      <div className="flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
+                      <p className="text-[14px] font-medium leading-snug" style={{ color: "#201f1e" }}>{risk.descripcion}</p>
+                      <div className="mt-2 flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
                         <span className="flex items-center gap-1"><User className="w-3 h-3" />{risk.responsable || "Sin asignar"}</span>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{getDetectedRiskRegistrationDate(risk.id)}</span>
                         <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{risk.departamento}</span>
@@ -944,7 +935,7 @@ export function RiskManagement() {
           <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto p-4">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
-                <h2 id="detected-risk-follow-up-title" className="text-[16px] font-semibold" style={{ color: "#201f1e" }}>
+                <h2 id="detected-risk-follow-up-title"                 className="text-[15px] font-semibold" style={{ color: "#201f1e" }}>
                   Seguimiento · {getDetectedRiskDisplayId(selectedDetectedRisk.id)}
                 </h2>
                 <p className="mt-1 text-[12px]" style={{ color: "#605e5c" }}>{selectedDetectedRisk.descripcion}</p>
@@ -1012,7 +1003,7 @@ export function RiskManagement() {
             {detectedRiskError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{detectedRiskError}</p>}
             {detectedRiskNotice && <p role="status" className="mb-3 text-[12px]" style={{ color: "#107c10" }}>{detectedRiskNotice}</p>}
 
-            <form onSubmit={(event) => void saveDetectedRiskFollowUp(event)} className="space-y-3 rounded p-3" style={{ background: "#f8f8f8" }}>
+            <form onSubmit={(event) => void saveDetectedRiskFollowUp(event)} className="space-y-3 rounded p-3" style={{ background: "#f9f8f7" }}>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
                   Estado
@@ -1054,16 +1045,16 @@ export function RiskManagement() {
                 : <p className="text-[11px]" style={{ color: "#8a8886" }}>Solo el Supervisor de Cumplimiento puede actualizar el seguimiento de riesgos.</p>}
             </form>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <section className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
+            <div>
+              <section className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-[13px] font-semibold" style={{ color: "#201f1e" }}>Documentos adjuntos</h3>
+                  <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Documentos relacionados</h3>
                   {canManageDetectedRisks && <label className="cursor-pointer rounded border px-2 py-1 text-[11px]" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
                     {detectedRiskUploading ? "Subiendo…" : "Adjuntar documento"}
                     <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={detectedRiskUploading} onChange={(event) => void addDetectedRiskDocument(event)} />
                   </label>}
                 </div>
-                <p className="mt-1 text-[10px]" style={{ color: "#8a8886" }}>PDF, Word, Excel, CSV, TXT o imagen · hasta 10 MB por archivo.</p>
+                <p className="mt-1 text-[10px]" style={{ color: "#8a8886" }}>Archivos persistidos · máximo 10 MB por archivo.</p>
                 {detectedRiskDocumentsError && <p role="alert" className="mt-2 text-[11px]" style={{ color: "#a4262c" }}>{detectedRiskDocumentsError}</p>}
                 {detectedRiskWorkflowLoading ? <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Cargando documentos…</p> : detectedRiskDocuments.length === 0 ? <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>No hay documentos adjuntos.</p> : (
                   <ul className="mt-2 space-y-2">
@@ -1079,8 +1070,8 @@ export function RiskManagement() {
                 )}
               </section>
 
-              <section className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-                <h3 className="text-[13px] font-semibold" style={{ color: "#201f1e" }}>Línea de tiempo</h3>
+              <section className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
+                <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Historial de seguimiento</h3>
                 {detectedRiskWorkflowLoading ? <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Cargando historial…</p> : detectedRiskEvents.length === 0 ? <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Todavía no hay cambios registrados.</p> : (
                   <ol className="mt-2 space-y-3">
                     {detectedRiskEvents.map((timelineEvent) => {

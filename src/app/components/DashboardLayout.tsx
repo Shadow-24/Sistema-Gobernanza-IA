@@ -8,7 +8,7 @@ import { useAuth } from "../AuthContext";
 import { useSectorData } from "../SectorDataContext";
 
 const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/riesgos", icon: ShieldAlert, label: "Riesgos" },
   { to: "/auditoria", icon: ClipboardList, label: "Auditoría" },
   { to: "/trazabilidad", icon: GitBranch, label: "Trazabilidad" },

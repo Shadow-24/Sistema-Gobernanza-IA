@@ -1,4 +1,4 @@
-﻿import { CheckCircle, Clock, AlertTriangle, Scale, BookOpen, ShieldCheck, Save, Paperclip, Download, FileText } from "lucide-react";
+﻿import { CheckCircle, Clock, AlertTriangle, Scale, BookOpen, ShieldCheck, Save, Paperclip, Download, FileText, User, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { UserStoryRefs } from "./UserStoryRefs";
 import { useAuth } from "../AuthContext";
@@ -9,6 +9,7 @@ import {
   loadComplianceFollowupDocuments,
   loadComplianceFollowupEvents,
   loadComplianceFollowups,
+  registerComplianceItems,
   updateComplianceFollowup,
   uploadComplianceFollowupDocument,
   type ComplianceFollowup,
@@ -112,6 +113,7 @@ export function ComplianceModule() {
   const [selectedStandard, setSelectedStandard] = useState("");
   const [activeTab, setActiveTab] = useState<"normativas" | "controles">("normativas");
   const [complianceFollowups, setComplianceFollowups] = useState<Record<string, ComplianceFollowup>>({});
+  const [registrationDates, setRegistrationDates] = useState<Record<string, string>>({});
   const [complianceFollowupsLoading, setComplianceFollowupsLoading] = useState(true);
   const [complianceFollowupsError, setComplianceFollowupsError] = useState("");
   const [selectedFollowup, setSelectedFollowup] = useState<ComplianceFollowupTarget | null>(null);
@@ -154,6 +156,14 @@ export function ComplianceModule() {
       .catch((error: unknown) => {
         if (active) setGovernanceEvidenceError(error instanceof Error ? error.message : "No se pudieron cargar las evidencias.");
       });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    registerComplianceItems([...REGULATORY_NORMS, ...REGULATORY_RISKS].map((item) => item.id))
+      .then((records) => { if (active) setRegistrationDates(Object.fromEntries(records.map((record) => [record.item_id, record.registered_at]))); })
+      .catch(() => undefined);
     return () => { active = false; };
   }, []);
 
@@ -562,8 +572,8 @@ export function ComplianceModule() {
         {[
           { icon: ShieldCheck, label: "Cumplimiento Global", value: `${overallProgress}%`, color: progressColor(overallProgress) },
           { icon: BookOpen,    label: "Normativas en seguimiento", value: `${normsInFollowup} de ${REGULATORY_NORMS.length}`, color: "#0f6cbd" },
-          { icon: CheckCircle, label: "Normativas conformes", value: `${normsCompliant}`, color: "#107c10" },
           { icon: Clock,       label: "Normativas pendientes", value: `${REGULATORY_NORMS.length - normsCompliant}`, color: "#ca5010" },
+          { icon: CheckCircle, label: "Normativas conformes", value: `${normsCompliant}`, color: "#107c10" },
         ].map((kpi, i) => {
           const Icon = kpi.icon;
           return (
@@ -580,10 +590,10 @@ export function ComplianceModule() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div>
 
         {/* Compliance rings per normativa */}
-        <div className="xl:col-span-2 space-y-3">
+        <div className="space-y-3">
           <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Cumplimiento por Normativa</div>
           {REGULATORY_NORMS.map((norm) => {
             const tracking = complianceFollowups[norm.id];
@@ -605,29 +615,20 @@ export function ComplianceModule() {
                 style={{ border: "1px solid #e1dfdd" }}
                 disabled={complianceFollowupsLoading}
               >
-                <div className="flex flex-wrap items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
                   <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{norm.id}</span>
                   <span className="text-[12px] px-2 py-0.5 rounded-full" style={{ background: sc.bg, color: sc.text }}>{estado}</span>
                   <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: "#f3f2f1", color: "#8a8886" }}>{norm.tipo}</span>
                 </div>
-                <div className="text-[14px] font-medium" style={{ color: "#201f1e" }}>{norm.nombre}</div>
-                <div className="text-[12px] mt-1" style={{ color: tracking ? "#0f6cbd" : "#8a8886" }}>
-                  {tracking ? `Fase: ${tracking.phase} · responsable @${tracking.responsible}` : "Abrir seguimiento"}
+                <div className="text-[14px] font-medium leading-snug" style={{ color: "#201f1e" }}>{norm.nombre}</div>
+                <div className="mt-2 flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
+                  <span className="flex items-center gap-1"><User className="w-3 h-3" />{tracking?.responsible || "Sin asignar"}</span>
+                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatRegistrationDate(registrationDates[norm.id])}</span>
+                  <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{tracking ? `Fase: ${tracking.phase}` : "Seguimiento sin iniciar"}</span>
                 </div>
               </button>
             );
           })}
-        </div>
-
-        {/* Overall ring */}
-        <div className="space-y-4">
-          <Card className="p-4 flex flex-col items-center">
-            <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>Cumplimiento Global</div>
-            <ProgressRing value={overallProgress} color={progressColor(overallProgress)} size={120} />
-            <p className="text-[12px] text-center mt-3" style={{ color: "#8a8886" }}>
-              Promedio del avance de {REGULATORY_NORMS.length} normativas según su seguimiento
-            </p>
-          </Card>
         </div>
       </div>
 
@@ -650,10 +651,10 @@ export function ComplianceModule() {
                   type: "riesgo",
                   title: r.descripcion,
                   reference: r.normativa,
-                  description: `Registrado en la app: ${formatRegistrationDate(tracking?.created_at)}.`,
+                  description: `Registrado en la app: ${formatRegistrationDate(registrationDates[r.id])}.`,
                 })}
                 aria-label={`Abrir seguimiento del riesgo ${r.id}`}
-                className="flex w-full items-center gap-4 rounded p-3 text-left transition-colors hover:bg-[#edebe9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
+                className="flex w-full items-center gap-4 rounded p-3 text-left transition-all hover:bg-white hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
                 style={{ background: "#f3f2f1" }}
                 disabled={complianceFollowupsLoading}
               >
@@ -668,7 +669,7 @@ export function ComplianceModule() {
                   <span className="text-[12px] font-medium" style={{ color: RISK_COLORS[nivel] }}>{nivel}</span>
                   <div className="flex items-center gap-1 text-[11px]" style={{ color: "#8a8886" }}>
                     <AlertTriangle className="w-3 h-3" />
-                    {formatRegistrationDate(tracking?.created_at)}
+                    {formatRegistrationDate(registrationDates[r.id])}
                   </div>
                 </div>
               </button>
@@ -688,13 +689,13 @@ export function ComplianceModule() {
       )}
       {selectedFollowup && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="compliance-followup-title">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded bg-white p-4" style={{ border: "1px solid #e1dfdd" }}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded bg-white p-4" style={{ border: "1px solid #e1dfdd" }}>
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 id="compliance-followup-title" className="text-[15px] font-semibold" style={{ color: "#201f1e" }}>
                   Seguimiento · {selectedFollowup.id}
                 </h2>
-                <p className="mt-1 text-[13px]" style={{ color: "#201f1e" }}>{selectedFollowup.title}</p>
+                <p className="mt-1 text-[12px]" style={{ color: "#605e5c" }}>{selectedFollowup.title}</p>
                 <p className="mt-1 text-[11px]" style={{ color: "#605e5c" }}>{selectedFollowup.reference} · {selectedFollowup.description}</p>
               </div>
               <button

@@ -43,6 +43,15 @@ export function loadComplianceFollowups(): Promise<ComplianceFollowup[]> {
   return apiRequest<ComplianceFollowup[]>("/api/compliance/followups");
 }
 
+export type ComplianceRegistration = { item_id: string; registered_at: string };
+
+export function registerComplianceItems(itemIds: string[]): Promise<ComplianceRegistration[]> {
+  return apiRequest<ComplianceRegistration[]>("/api/compliance/registrations", {
+    method: "POST",
+    body: JSON.stringify({ item_ids: itemIds }),
+  });
+}
+
 export function updateComplianceFollowup(
   itemType: ComplianceItemType,
   itemId: string,
