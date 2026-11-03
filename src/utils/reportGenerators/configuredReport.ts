@@ -114,27 +114,32 @@ function sectionRows(sectionId: string, data: ReportPeriodData, events: StoredAc
       note: "Alertas conceptuales; no existen registros fuente de incidentes o envíos operacionales.",
     };
     case "transport-incidents": return { records: [], simulated: true, note: "No existen incidencias de transporte en los CSV; no se generan eventos ficticios." };
-    case "demand": return {
-      records: demandModel?.status === "evaluated" && demandModel.metrics ? [
-        `Objetivo observado: ventas mensuales de combustibles líquidos · unidad ${demandModel.unit}`,
-        `Prueba cronológica: ${demandModel.evaluationPeriod?.from} a ${demandModel.evaluationPeriod?.to} · ${demandModel.testObservations} observaciones`,
-        `MAE XGBoost: ${demandModel.metrics.xgboost.mae} ${demandModel.unit} · MAE baseline estacional: ${demandModel.metrics.baseline.mae} ${demandModel.unit}`,
-        `RMSE XGBoost: ${demandModel.metrics.xgboost.rmse} ${demandModel.unit} · R²: ${demandModel.metrics.xgboost.r2}`,
-        `${demandModel.metrics.xgboost.mape == null ? "WAPE" : "MAPE"} XGBoost: ${demandModel.metrics.xgboost.mape ?? demandModel.metrics.xgboost.wape}%`,
-        `Reducción del error frente al baseline: ${demandModel.metrics.errorReductionPercent == null ? "no calculable (MAE baseline cero)" : `${demandModel.metrics.errorReductionPercent}% (positivo mejora MAE; negativo lo empeora)`}`,
-        ...(demandModel.metrics.xgboost.mapeLimitation ? [demandModel.metrics.xgboost.mapeLimitation] : []),
-        `Versión: ${demandModel.modelVersion} · entrenamiento: ${demandModel.trainedAt}`,
-        `Pronóstico posterior al último dato: ${demandModel.forecast?.period} · ${demandModel.forecast?.value} ${demandModel.unit}`,
-        ...(demandModel.explainability?.evaluation.featureImportance.map((feature) =>
-          `SHAP ${feature.feature}: ${feature.meanAbsoluteShap}`,
-        ) ?? []),
-        ...(demandModel.warnings ?? []),
-      ] : [],
-      simulated: false,
-      note: demandModel?.status === "evaluated"
-        ? "Ventas observadas agregadas mensualmente; la validación es un holdout temporal. No equivale a consumo final ni a mejora operativa validada. El periodo seleccionado del reporte no altera el periodo de prueba del modelo."
-        : demandModel?.message ?? "No hay una evaluación de demanda persistida; ejecutar entrenamiento y evaluación para incluir métricas.",
-    };
+    case "demand": {
+      const metrics = demandModel?.metrics?.hybrid ?? demandModel?.metrics?.xgboost;
+      return {
+        records: demandModel?.status === "evaluated" && demandModel.metrics && metrics ? [
+          `Objetivo observado: ventas mensuales de combustibles líquidos · unidad ${demandModel.unit}`,
+          `Prueba cronológica: ${demandModel.evaluationPeriod?.from} a ${demandModel.evaluationPeriod?.to} · ${demandModel.testObservations} observaciones`,
+          `Estrategia: ${demandModel.forecastStrategy ?? "XGBoost"}`,
+          `MAE modelo: ${metrics.mae} ${demandModel.unit} · MAE baseline estacional: ${demandModel.metrics.baseline.mae} ${demandModel.unit}`,
+          `RMSE modelo: ${metrics.rmse} ${demandModel.unit} · R²: ${metrics.r2}`,
+          `${metrics.mape == null ? "WAPE" : "MAPE"} modelo: ${metrics.mape ?? metrics.wape}%`,
+          `Reducción del error frente al baseline: ${demandModel.metrics.errorReductionPercent == null ? "no calculable (MAE baseline cero)" : `${demandModel.metrics.errorReductionPercent}% (positivo mejora MAE; negativo lo empeora)`}`,
+          ...(metrics.mapeLimitation ? [metrics.mapeLimitation] : []),
+          `Validación de selección: ${demandModel.selectionValidation?.method ?? "no disponible"} · MAE mezcla ${demandModel.selectionValidation?.hybridMae ?? "no disponible"}`,
+          `Versión: ${demandModel.modelVersion} · entrenamiento: ${demandModel.trainedAt}`,
+          `Pronóstico posterior al último dato: ${demandModel.forecast?.period} · ${demandModel.forecast?.value} ${demandModel.unit}`,
+          ...(demandModel.explainability?.evaluation.featureImportance.map((feature) =>
+            `SHAP ${feature.feature}: ${feature.meanAbsoluteShap}`,
+          ) ?? []),
+          ...(demandModel.warnings ?? []),
+        ] : [],
+        simulated: false,
+        note: demandModel?.status === "evaluated"
+          ? "Ventas observadas agregadas mensualmente; la validación es un holdout temporal y la mezcla se calibra en ventanas anteriores. No equivale a consumo final ni a mejora operativa validada. El periodo seleccionado del reporte no altera el periodo de prueba del modelo."
+          : demandModel?.message ?? "No hay una evaluación de demanda persistida; ejecutar entrenamiento y evaluación para incluir métricas.",
+      };
+    }
     case "traceability":
     case "traced-decisions": return {
       records: scenarios.map((risk) => `${risk.id} · Datos recibidos → ${risk.model} (simulado) → evaluación conceptual AI TRiSM → riesgo ${risk.level} → evidencia demostrativa → revisión humana pendiente`),

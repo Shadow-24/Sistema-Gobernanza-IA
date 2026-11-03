@@ -129,7 +129,7 @@ function AuditTechnicalEvaluation({
     return <p role="alert" className="text-[12px]" style={{ color: "#a4262c" }}>{error}</p>;
   }
 
-  const metrics = status?.metrics?.xgboost;
+  const metrics = status?.metrics?.hybrid ?? status?.metrics?.xgboost;
   const needsTraining = status?.status === "training_pending" || status?.sourceIsCurrent === false;
   return (
     <div className="space-y-3 text-[12px]" style={{ color: "#605e5c" }}>
@@ -141,6 +141,7 @@ function AuditTechnicalEvaluation({
             {" · "}{status.trainingObservations ?? "—"} observaciones de entrenamiento
             {" · "}{status.testObservations ?? "—"} de prueba.
           </p>
+          <p><strong>Estrategia:</strong> {status.forecastStrategy ?? "XGBoost"}.</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <span>MAE: {metrics.mae?.toLocaleString("es-PE") ?? "—"} {status.unit}</span>
             <span>RMSE: {metrics.rmse?.toLocaleString("es-PE") ?? "—"} {status.unit}</span>

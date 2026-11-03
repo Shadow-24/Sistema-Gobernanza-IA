@@ -88,6 +88,7 @@ class DemandTrainingTests(unittest.TestCase):
         self.assertEqual(result["evaluationPeriod"]["to"], "2023-12")
         self.assertEqual(result["testObservations"], 10)
         self.assertIn("mae", result["metrics"]["xgboost"])
+        self.assertIn("mae", result["metrics"]["hybrid"])
         self.assertIn("mae", result["metrics"]["baseline"])
         baseline_mae = result["metrics"]["baseline"]["mae"]
         if baseline_mae == 0:
@@ -95,8 +96,21 @@ class DemandTrainingTests(unittest.TestCase):
         else:
             self.assertEqual(
                 result["metrics"]["errorReductionPercent"],
-                (baseline_mae - result["metrics"]["xgboost"]["mae"]) / baseline_mae * 100,
+                (baseline_mae - result["metrics"]["hybrid"]["mae"]) / baseline_mae * 100,
             )
+        self.assertTrue(result["selectionValidation"]["folds"])
+        self.assertTrue(all(
+            fold["to"] < result["evaluationPeriod"]["from"]
+            for fold in result["selectionValidation"]["folds"]
+        ))
+        hybrid_predictions = np.asarray([
+            item["hybrid"] for item in result["testPredictions"]
+        ])
+        actual = np.asarray([item["actual"] for item in result["testPredictions"]])
+        self.assertAlmostEqual(
+            demand_model._metric_set(actual, hybrid_predictions)["mae"],
+            result["metrics"]["hybrid"]["mae"],
+        )
         self.assertEqual(result["testPredictions"][0]["period"], "2023-03")
 
     def test_features_use_only_observations_before_the_target_period(self) -> None:
@@ -107,10 +121,27 @@ class DemandTrainingTests(unittest.TestCase):
 
     def test_model_artifact_loads_and_predicts_with_shap_explanation(self) -> None:
         model = demand_model.load_model(self.result.model_artifact)
+        self.assertEqual(
+            model.rolling_mean_weight,
+            self.result.public_result["selectionValidation"]["rollingMeanWeight"],
+        )
         predictions = demand_model.predict_horizon(model, self.series, 2)
         self.assertEqual([item["period"] for item in predictions], ["2024-01", "2024-02"])
         self.assertTrue(all(item["value"] >= 0 for item in predictions))
         self.assertEqual(len(self.result.model_artifact) > 0, True)
+
+    def test_legacy_xgboost_artifact_loads_without_blending(self) -> None:
+        legacy_model = demand_model._new_model()
+        train_indices = list(range(max(demand_model.LAGS), len(self.series)))
+        legacy_model.fit(
+            demand_model._feature_frame(self.series, train_indices),
+            self.series.iloc[train_indices].to_numpy(dtype=float),
+        )
+        artifact = bytes(legacy_model.get_booster().save_raw(raw_format="json"))
+
+        loaded = demand_model.load_model(artifact)
+
+        self.assertEqual(loaded.rolling_mean_weight, 0.0)
 
     def test_future_predictions_carry_forward_external_price_with_explicit_warning(self) -> None:
         class FakeModel:

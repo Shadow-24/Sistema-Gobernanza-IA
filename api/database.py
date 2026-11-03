@@ -101,6 +101,36 @@ def wait_for_connection(max_attempts: int = 30) -> None:
             time.sleep(1)
 
 
+LEGACY_COMPLIANCE_NORM_IDS = {
+    "NORM-ENV-039": "NORM-01",
+    "NORM-OEFA-MAYORES": "NORM-02",
+    "NORM-SINADA": "NORM-03",
+    "NORM-CDCLY": "NORM-04",
+    "NORM-AI-ACT": "NORM-05",
+    "NORM-ISO-42001": "NORM-06",
+}
+
+
+def _rename_legacy_compliance_followups(conn: Any) -> None:
+    for old_id, new_id in LEGACY_COMPLIANCE_NORM_IDS.items():
+        if not conn.execute("SELECT 1 FROM compliance_followups WHERE item_id = %s", (old_id,)).fetchone():
+            continue
+        if conn.execute("SELECT 1 FROM compliance_followups WHERE item_id = %s", (new_id,)).fetchone():
+            continue
+        conn.execute(
+            """
+            INSERT INTO compliance_followups
+                (item_id, item_type, status, phase, responsible, notes, risk_level, updated_by, created_at, updated_at)
+            SELECT %s, item_type, status, phase, responsible, notes, risk_level, updated_by, created_at, updated_at
+            FROM compliance_followups WHERE item_id = %s
+            """,
+            (new_id, old_id),
+        )
+        conn.execute("UPDATE compliance_followup_events SET item_id = %s WHERE item_id = %s", (new_id, old_id))
+        conn.execute("UPDATE compliance_followup_documents SET item_id = %s WHERE item_id = %s", (new_id, old_id))
+        conn.execute("DELETE FROM compliance_followups WHERE item_id = %s", (old_id,))
+
+
 def initialize_database(on_authentication_ready: Callable[[], None] | None = None) -> None:
     startup_started = time.perf_counter()
     logger.info("Esperando conexión con PostgreSQL.")
@@ -423,9 +453,51 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             "CREATE INDEX IF NOT EXISTS detected_risk_documents_risk_idx ON detected_risk_documents(risk_id, created_at DESC)",
+            """
+            CREATE TABLE IF NOT EXISTS compliance_followups (
+                item_id TEXT PRIMARY KEY,
+                item_type TEXT NOT NULL CHECK (item_type IN ('normativa', 'riesgo')),
+                status TEXT NOT NULL DEFAULT 'Pendiente'
+                    CHECK (status IN ('Pendiente', 'En curso', 'Conforme', 'Brecha', 'Mitigado', 'Cerrado')),
+                phase TEXT NOT NULL DEFAULT 'Evaluación'
+                    CHECK (phase IN ('Evaluación', 'Plan de acción', 'Implementación', 'Verificación', 'Cierre')),
+                responsible TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',
+                updated_by TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS compliance_followup_events (
+                id BIGSERIAL PRIMARY KEY,
+                item_id TEXT NOT NULL REFERENCES compliance_followups(item_id) ON DELETE CASCADE,
+                event_type TEXT NOT NULL CHECK (event_type IN ('update', 'document')),
+                detail TEXT NOT NULL,
+                username TEXT NOT NULL,
+                occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS compliance_followup_documents (
+                id TEXT PRIMARY KEY,
+                item_id TEXT NOT NULL REFERENCES compliance_followups(item_id) ON DELETE CASCADE,
+                file_name TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
+                checksum TEXT NOT NULL,
+                content BYTEA NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "ALTER TABLE compliance_followups ADD COLUMN IF NOT EXISTS risk_level TEXT CHECK (risk_level IS NULL OR risk_level IN ('Crítico', 'Alto', 'Medio', 'Bajo'))",
+            "CREATE INDEX IF NOT EXISTS compliance_followup_events_item_idx ON compliance_followup_events(item_id, occurred_at DESC)",
+            "CREATE INDEX IF NOT EXISTS compliance_followup_documents_item_idx ON compliance_followup_documents(item_id, created_at DESC)",
         )
         for statement in statements:
             conn.execute(statement)
+        _rename_legacy_compliance_followups(conn)
 
     initialize_audit_workflow()
     initialize_demand_model_schema()
@@ -467,12 +539,21 @@ def initialize_ai_governance_schema() -> None:
         ("27001-monitor", "ISO/IEC 27001:2022", "ambos", "Monitoreo e incidentes", "Definir cómo detectar, registrar y atender incidentes de seguridad o fallas del sistema de IA."),
         ("38507-accountability", "ISO/IEC 38507:2022", "ambos", "Responsabilidad de gobernanza", "Asignar responsables organizacionales para aprobar, supervisar y revisar el uso de IA."),
         ("38507-human-oversight", "ISO/IEC 38507:2022", "ambos", "Supervisión y decisión humana", "Establecer cuándo una recomendación requiere revisión humana y quién puede aceptarla o descartarla."),
-        ("38507-risk-impact", "ISO/IEC 38507:2022", "ambos", "Riesgo e impacto", "Evaluar impactos, límites de uso, incertidumbre y riesgos del sistema durante su ciclo de vida."),
         ("9001-quality-objectives", "ISO 9001:2026", "demanda", "Calidad predictiva de demanda", "Registrar MAE, RMSE, MAPE/WAPE y R² en una prueba temporal y compararlos con el baseline."),
         ("9001-road-quality", "ISO 9001:2026", "vial", "Calidad y alcance del modelo vial", "Documentar la métrica frente al baseline y que el objetivo es clasificar emergencias reportadas, no estimar riesgo por viaje."),
-        ("9001-improvement", "ISO 9001:2026", "ambos", "No conformidad y mejora", "Registrar desviaciones, acciones correctivas, responsables y revisión de su eficacia."),
     )
+    # Estos temas ya se gestionan en Riesgos; solo se retiran si nunca se evaluaron ni tienen evidencia.
+    retired_controls = ("38507-risk-impact", "9001-improvement")
     with connection() as conn:
+        conn.execute(
+            """
+            DELETE FROM ai_governance_controls c
+            WHERE c.control_id = ANY(%s)
+              AND NOT EXISTS (SELECT 1 FROM ai_governance_events e WHERE e.control_id = c.control_id)
+              AND NOT EXISTS (SELECT 1 FROM ai_governance_evidence_files f WHERE f.control_id = c.control_id)
+            """,
+            (list(retired_controls),),
+        )
         with conn.cursor() as cursor:
             cursor.executemany(
                 """
@@ -1043,6 +1124,207 @@ def delete_detected_risk_document(document_id: str, username: str) -> dict[str, 
             VALUES (%s, 'document', %s, %s)
             """,
             (document["risk_id"], f"Documento eliminado: {document['file_name']}", username),
+        )
+        return document
+
+
+def list_compliance_followups() -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT item_id, item_type, status, phase, responsible, notes, risk_level, updated_by, created_at, updated_at
+            FROM compliance_followups
+            ORDER BY updated_at DESC
+            """
+        ).fetchall()
+
+
+def update_compliance_followup(
+    item_id: str,
+    item_type: str,
+    status: str,
+    phase: str,
+    responsible: str,
+    notes: str,
+    username: str,
+    risk_level: str | None = None,
+) -> dict[str, Any]:
+    with connection() as conn:
+        current = conn.execute(
+            """
+            SELECT item_type, status, phase, responsible, notes, risk_level
+            FROM compliance_followups
+            WHERE item_id = %s
+            FOR UPDATE
+            """,
+            (item_id,),
+        ).fetchone()
+        if current and current["item_type"] != item_type:
+            raise ValueError("El identificador ya está asociado a otro tipo de seguimiento.")
+        if not conn.execute(
+            """
+            SELECT 1
+            FROM managed_users
+            WHERE username = %s AND active AND permissions ? 'cumplimiento'
+            """,
+            (responsible,),
+        ).fetchone():
+            raise ValueError("El responsable debe ser un usuario activo con permiso de Cumplimiento.")
+
+        if current:
+            previous_values = current
+            updated = conn.execute(
+                """
+                UPDATE compliance_followups
+                SET status = %s, phase = %s, responsible = %s, notes = %s, risk_level = %s,
+                    updated_by = %s, updated_at = now()
+                WHERE item_id = %s
+                RETURNING item_id, item_type, status, phase, responsible, notes, risk_level, updated_by, created_at, updated_at
+                """,
+                (status, phase, responsible, notes, risk_level, username, item_id),
+            ).fetchone()
+        else:
+            previous_values = {
+                "status": "Pendiente",
+                "phase": "Evaluación",
+                "responsible": "",
+                "notes": "",
+                "risk_level": None,
+            }
+            updated = conn.execute(
+                """
+                INSERT INTO compliance_followups
+                    (item_id, item_type, status, phase, responsible, notes, risk_level, updated_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING item_id, item_type, status, phase, responsible, notes, risk_level, updated_by, created_at, updated_at
+                """,
+                (item_id, item_type, status, phase, responsible, notes, risk_level, username),
+            ).fetchone()
+
+        changes = []
+        for field, label, value in (
+            ("status", "Estado", status),
+            ("phase", "Fase", phase),
+            ("responsible", "Responsable", responsible),
+            ("notes", "Notas de seguimiento", notes),
+            ("risk_level", "Nivel de riesgo", risk_level),
+        ):
+            previous = previous_values[field]
+            if previous != value:
+                changes.append({"field": field, "label": label, "before": previous or "", "after": value or ""})
+        if changes:
+            conn.execute(
+                """
+                INSERT INTO compliance_followup_events (item_id, event_type, detail, username)
+                VALUES (%s, 'update', %s, %s)
+                """,
+                (item_id, json.dumps({"changes": changes}, ensure_ascii=False), username),
+            )
+        return updated
+
+
+def list_compliance_followup_events(item_id: str) -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, item_id, event_type, detail, username, occurred_at
+            FROM compliance_followup_events
+            WHERE item_id = %s
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT 200
+            """,
+            (item_id,),
+        ).fetchall()
+
+
+def list_compliance_followup_documents(item_id: str) -> list[dict[str, Any]]:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, item_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
+            FROM compliance_followup_documents
+            WHERE item_id = %s
+            ORDER BY created_at DESC, id
+            """,
+            (item_id,),
+        ).fetchall()
+
+
+def save_compliance_followup_document(
+    *,
+    document_id: str,
+    item_id: str,
+    item_type: str,
+    file_name: str,
+    media_type: str,
+    content: bytes,
+    checksum: str,
+    username: str,
+) -> dict[str, Any]:
+    with connection() as conn:
+        current = conn.execute(
+            "SELECT item_type FROM compliance_followups WHERE item_id = %s FOR UPDATE",
+            (item_id,),
+        ).fetchone()
+        if current and current["item_type"] != item_type:
+            raise ValueError("El identificador ya está asociado a otro tipo de seguimiento.")
+        conn.execute(
+            """
+            INSERT INTO compliance_followups (item_id, item_type)
+            VALUES (%s, %s)
+            ON CONFLICT (item_id) DO NOTHING
+            """,
+            (item_id, item_type),
+        )
+        document = conn.execute(
+            """
+            INSERT INTO compliance_followup_documents
+                (id, item_id, file_name, media_type, size_bytes, checksum, content, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, item_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
+            """,
+            (document_id, item_id, file_name, media_type, len(content), checksum, content, username),
+        ).fetchone()
+        conn.execute(
+            """
+            INSERT INTO compliance_followup_events (item_id, event_type, detail, username)
+            VALUES (%s, 'document', %s, %s)
+            """,
+            (item_id, f"Documento adjuntado: {file_name}", username),
+        )
+        return document
+
+
+def get_compliance_followup_document(document_id: str) -> dict[str, Any] | None:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, item_id, file_name, media_type, size_bytes, checksum, content, uploaded_by, created_at
+            FROM compliance_followup_documents
+            WHERE id = %s
+            """,
+            (document_id,),
+        ).fetchone()
+
+
+def delete_compliance_followup_document(document_id: str, username: str) -> dict[str, str] | None:
+    with connection() as conn:
+        document = conn.execute(
+            """
+            DELETE FROM compliance_followup_documents
+            WHERE id = %s
+            RETURNING item_id, file_name
+            """,
+            (document_id,),
+        ).fetchone()
+        if not document:
+            return None
+        conn.execute(
+            """
+            INSERT INTO compliance_followup_events (item_id, event_type, detail, username)
+            VALUES (%s, 'document', %s, %s)
+            """,
+            (document["item_id"], f"Documento eliminado: {document['file_name']}", username),
         )
         return document
 

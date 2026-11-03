@@ -6,11 +6,9 @@ import { UserStoryRefs } from "./UserStoryRefs";
 import { ModelGovernancePanel } from "./ModelGovernancePanel";
 import { csvValue, groupCount, useSectorData } from "../SectorDataContext";
 import {
-  loadDemandGovernanceMetrics,
   loadDemandModelStatus,
   predictDemandModel,
   trainDemandModel,
-  type DemandGovernanceMetrics,
   type DemandForecastResponse,
   type DemandModelStatus,
 } from "../demandModelApi";
@@ -39,7 +37,7 @@ function formatMetric(value: number | null | undefined, suffix = ""): string {
 
 export function ExecutiveDashboard() {
   const { user } = useAuth();
-  const [dashboardTab, setDashboardTab] = useState<"operacion" | "hidrocarburos" | "demanda">("operacion");
+  const [dashboardTab, setDashboardTab] = useState<"operacion" | "hidrocarburos" | "demanda">("demanda");
   const {
     datasets,
     loading,
@@ -51,7 +49,6 @@ export function ExecutiveDashboard() {
     operationalError,
   } = useSectorData();
   const [demandModelStatus, setDemandModelStatus] = useState<DemandModelStatus | null>(null);
-  const [demandGovernance, setDemandGovernance] = useState<DemandGovernanceMetrics | null>(null);
   const [demandModelError, setDemandModelError] = useState<string | null>(null);
   const [demandTraining, setDemandTraining] = useState(false);
   const [demandPredictionLoading, setDemandPredictionLoading] = useState(false);
@@ -59,11 +56,10 @@ export function ExecutiveDashboard() {
   const [demandPredictions, setDemandPredictions] = useState<DemandForecastResponse["predictions"]>([]);
   useEffect(() => {
     let active = true;
-    Promise.all([loadDemandModelStatus(), loadDemandGovernanceMetrics()])
-      .then(([status, governance]) => {
+    loadDemandModelStatus()
+      .then((status) => {
         if (!active) return;
         setDemandModelStatus(status);
-        setDemandGovernance(governance);
         if (status.forecast) {
           setDemandPredictions([{
             ...status.forecast,
@@ -82,9 +78,7 @@ export function ExecutiveDashboard() {
     setDemandModelError(null);
     try {
       const result = await trainDemandModel();
-      const governance = await loadDemandGovernanceMetrics();
       setDemandModelStatus(result);
-      setDemandGovernance(governance);
       if (result.forecast) {
         setDemandPredictions([{
           ...result.forecast,
@@ -103,9 +97,7 @@ export function ExecutiveDashboard() {
     setDemandModelError(null);
     try {
       const forecast = await predictDemandModel(demandHorizon);
-      const governance = await loadDemandGovernanceMetrics();
       setDemandPredictions(forecast.predictions);
-      setDemandGovernance(governance);
     } catch (error) {
       setDemandModelError(error instanceof Error ? error.message : "No se pudo generar el pronóstico de demanda.");
     } finally {
@@ -172,35 +164,10 @@ export function ExecutiveDashboard() {
     .filter((row) => row.period === (operationalData?.liquidFuels.priceStructure ?? []).slice(-1)[0]?.period)
     .slice(0, 6);
   const canTrainDemandModel = user?.role === "Analista de Datos" || user?.role === "Supervisor de Cumplimiento";
-  const demandMetrics = demandModelStatus?.metrics?.xgboost;
-  const mapeValue = demandMetrics?.mape;
-  const mapeInterpretation = mapeValue == null
-    ? "No calculable en esta prueba."
-    : mapeValue < 10 ? "< 10% · excelente como referencia."
-      : mapeValue < 20 ? "10–20% · bueno como referencia."
-        : mapeValue <= 50 ? "20–50% · moderado como referencia."
-          : "> 50% · débil como referencia.";
-  const wapeValue = demandMetrics?.wape;
-  const wapeInterpretation = wapeValue == null
-    ? "No calculable: el total observado del periodo de prueba es cero."
-    : wapeValue < 10 ? "< 10% · error pequeño frente a la demanda media; excelente como referencia."
-      : wapeValue < 20 ? "10–20% · bueno como referencia."
-        : wapeValue <= 50 ? "20–50% · moderado como referencia."
-          : "> 50% · débil como referencia.";
-  const r2Value = demandMetrics?.r2;
-  const r2Interpretation = r2Value == null
-    ? "No disponible."
-    : r2Value >= 0.8 ? "≥ 0.80 · prometedor como referencia."
-      : r2Value >= 0.6 ? "0.60–0.80 · razonable como referencia."
-        : "< 0.60 · requiere analizar datos y baseline.";
-  const baselineR2Value = demandModelStatus?.metrics?.baseline.r2;
-  const r2Comparison = r2Value == null || baselineR2Value == null
-    ? "No se puede comparar porque falta un R² en esta evaluación."
-    : r2Value > baselineR2Value
-      ? "XGBoost explica más variación que el baseline estacional en este periodo."
-      : r2Value < baselineR2Value
-        ? "El baseline estacional explica más variación que XGBoost en este periodo."
-        : "XGBoost y el baseline estacional obtuvieron el mismo R² en este periodo.";
+  const demandMetrics = demandModelStatus?.metrics?.hybrid ?? demandModelStatus?.metrics?.xgboost;
+  const selectedDemandSources = (demandModelStatus?.dataSources ?? []).filter(
+    (source) => source.provider === "U.S. Energy Information Administration" && source.status === "selected",
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -214,9 +181,9 @@ export function ExecutiveDashboard() {
 
       <div role="tablist" aria-label="Secciones del resumen" className="flex flex-wrap gap-2 border-b" style={{ borderColor: "#e1dfdd" }}>
         {([
+          { id: "demanda", label: "Demanda y modelo IA", stories: ["HU-009", "HU-010"] },
           { id: "hidrocarburos", label: "Hidrocarburos", stories: ["HU-003", "HU-004"] },
           { id: "operacion", label: "Operación sectorial", stories: ["HU-001", "HU-002", "HU-003", "HU-004"] },
-          { id: "demanda", label: "Demanda y modelo IA", stories: ["HU-009", "HU-010"] },
         ] as const).map(({ id: tab, label, stories }) => (
           <button key={tab} type="button" role="tab" aria-selected={dashboardTab === tab} onClick={() => setDashboardTab(tab)}
             className="px-3 py-2 text-[13px] font-medium border-b-2 transition-colors"
@@ -533,11 +500,6 @@ export function ExecutiveDashboard() {
             <p className="text-[12px] mt-1" style={{ color: "#605e5c" }}>
               Objetivo: ventas mensuales observadas (galones); se usan como indicador de demanda, no como consumo final.
             </p>
-            {demandModelStatus && (
-              <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>
-                Fuente: {demandModelStatus.source} · cobertura {demandModelStatus.coverage?.from ?? "—"} a {demandModelStatus.coverage?.to ?? "—"}
-              </p>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {demandModelStatus?.status === "evaluated" && (
@@ -604,105 +566,27 @@ export function ExecutiveDashboard() {
                 {demandPredictions.map((prediction) => (
                   <span key={prediction.period} className="flex flex-col text-[11px]" style={{ color: "#201f1e" }}>
                     <span>{prediction.period} · {prediction.value.toLocaleString("es-PE", { maximumFractionDigits: 0 })} {prediction.unit}</span>
-                    {prediction.warnings?.map((warning) => (
-                      <span key={warning} className="mt-0.5" style={{ color: "#8a8886" }}>{warning}</span>
-                    ))}
                   </span>
                 ))}
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2">
-              {[
-                {
-                  label: "MAE · XGBoost",
-                  value: formatMetric(demandModelStatus.metrics.xgboost.mae, ` ${demandModelStatus.unit}`),
-                  interpretation: "Cuanto menor, mejor. Error promedio; debe ser pequeño frente a la demanda habitual. Sin umbral universal: depende de la unidad y escala.",
-                },
-                {
-                  label: "RMSE · XGBoost",
-                  value: formatMetric(demandModelStatus.metrics.xgboost.rmse, ` ${demandModelStatus.unit}`),
-                  interpretation: "Cuanto menor, mejor. Mide el tamaño de los errores y penaliza más los errores grandes.",
-                },
-                {
-                  label: "MAPE · XGBoost",
-                  value: formatMetric(demandModelStatus.metrics.xgboost.mape, "%"),
-                  interpretation: demandModelStatus.metrics.xgboost.mape == null
-                    ? "No calculable porque la prueba contiene ventas reales iguales a cero; consulta el WAPE."
-                    : `${mapeInterpretation} Rangos orientativos, no universales. No es fiable con valores reales cero o cercanos a cero.`,
-                },
-                {
-                  label: "MAE relativo a demanda media · WAPE",
-                  value: formatMetric(demandModelStatus.metrics.xgboost.wape, "%"),
-                  interpretation: `${wapeInterpretation} Equivale al MAE relativo al volumen medio observado. Referencia orientativa, no umbral universal.`,
-                },
-                {
-                  label: "R² · XGBoost",
-                  value: formatMetric(demandModelStatus.metrics.xgboost.r2),
-                  interpretation: `Cerca de 1 es mejor. ${r2Interpretation} Referencia inicial, no umbral universal.`,
-                },
-              ].map((metric) => (
-                <div key={metric.label} className="rounded p-2" style={{ background: "#f9f8f7" }}>
-                  <div className="text-[11px]" style={{ color: "#8a8886" }}>{metric.label}</div>
-                  <div className="text-[14px] font-semibold mt-1" style={{ color: "#201f1e" }}>{metric.value}</div>
-                  <p className="text-[11px] leading-snug mt-1" style={{ color: "#605e5c" }}>{metric.interpretation}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="rounded p-3" style={{ background: "#f9f8f7" }}>
+                <div className="text-[11px]" style={{ color: "#8a8886" }}>Error promedio (MAE)</div>
+                <div className="text-[15px] font-semibold mt-1" style={{ color: "#201f1e" }}>
+                  {formatMetric(demandMetrics?.mae, ` ${demandModelStatus.unit}`)}
                 </div>
-              ))}
-            </div>
-            <div className="rounded p-2 text-[12px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
-              R² en el mismo periodo de prueba: XGBoost {formatMetric(demandModelStatus.metrics.xgboost.r2)} · baseline estacional {formatMetric(demandModelStatus.metrics.baseline.r2)}. {r2Comparison}
-            </div>
-            <div className="flex flex-wrap justify-between gap-2 text-[11px]" style={{ color: "#605e5c" }}>
-              <span>
-                Entrenamiento: {demandModelStatus.trainingPeriod?.from} a {demandModelStatus.trainingPeriod?.to}
-                {" · "}{demandModelStatus.trainingObservations} filas entrenables tras rezagos
-              </span>
-              <span>
-                Prueba: {demandModelStatus.evaluationPeriod?.from} a {demandModelStatus.evaluationPeriod?.to}
-                {" · "}{demandModelStatus.testObservations} observaciones
-              </span>
-              <span>Entrenado: {demandModelStatus.trainedAt ? new Date(demandModelStatus.trainedAt).toLocaleString("es-PE") : "—"}</span>
-              <span>Versión: {demandModelStatus.modelVersion}</span>
-            </div>
-            {demandModelStatus.dataQuality && (
-              <p className="text-[11px]" style={{ color: "#8a8886" }}>
-                Calidad de fuente: {formatMetric(demandModelStatus.dataQuality.validRows)} filas válidas
-                {" · "}{formatMetric(demandModelStatus.dataQuality.duplicateRowsRemoved)} duplicados exactos retirados
-                {" · "}{formatMetric(demandModelStatus.dataQuality.invalidDateRows)} fechas inválidas
-                {" · "}{formatMetric(demandModelStatus.dataQuality.invalidValueRows)} valores inválidos
-                {" · "}{formatMetric(demandModelStatus.dataQuality.negativeRowsRemoved)} ventas negativas retiradas
-              </p>
-            )}
-            <div className="rounded p-2 text-[12px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
-              MAE baseline estacional: {formatMetric(demandModelStatus.metrics.baseline.mae, ` ${demandModelStatus.unit}`)}
-              {" · "}reducción de error frente al baseline: {formatMetric(demandModelStatus.metrics.errorReductionPercent, "%")}
-              {demandModelStatus.metrics.errorReductionPercent != null && demandModelStatus.metrics.errorReductionPercent <= 0
-                ? " (XGBoost no mejoró el MAE baseline en esta prueba)."
-                : demandModelStatus.metrics.errorReductionPercent != null
-                  ? " (medición de holdout; no implica una mejora operativa validada)."
-                  : " (no calculable porque el MAE baseline es cero)."}
-            </div>
-            {demandModelStatus.metrics.xgboost.mapeLimitation && (
-              <p className="text-[11px]" style={{ color: "#8a8886" }}>{demandModelStatus.metrics.xgboost.mapeLimitation}</p>
-            )}
-            <div className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-              <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Cobertura y aporte de las fuentes EIA</div>
-              {(demandModelStatus.dataSources ?? []).filter((source) => source.provider === "U.S. Energy Information Administration").length > 0 ? (
-                <div className="space-y-2">
-                  {(demandModelStatus.dataSources ?? []).filter((source) => source.provider === "U.S. Energy Information Administration").map((source) => (
-                    <div key={source.seriesId ?? source.source} className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-[11px]" style={{ color: "#605e5c" }}>
-                      <span><strong>{source.source}</strong> · {source.status}</span>
-                      <span>Entrenamiento: {source.trainingObservations ?? 0} · prueba: {source.testObservations ?? 0} · última observación: {source.latestFeaturePeriod ?? "s/d"}</span>
-                      <span>{source.reason}{source.errorReductionPercent != null ? ` Reducción de MAE: ${source.errorReductionPercent.toFixed(2)}%.` : ""}</span>
-                    </div>
-                  ))}
+              </div>
+              <div className="rounded p-3" style={{ background: "#f9f8f7" }}>
+                <div className="text-[11px]" style={{ color: "#8a8886" }}>Error relativo (WAPE)</div>
+                <div className="text-[15px] font-semibold mt-1" style={{ color: "#201f1e" }}>
+                  {formatMetric(demandMetrics?.wape, "%")}
                 </div>
-              ) : (
-                <p className="text-[11px]" style={{ color: "#8a8886" }}>Esta evaluación no contiene resultados de cobertura EIA; vuelve a entrenar para registrar la evaluación actual.</p>
-              )}
+              </div>
             </div>
             {demandModelStatus.testPredictions && demandModelStatus.testPredictions.length > 0 && (
               <div>
-                <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Valores reales frente a predicciones en el periodo de prueba</div>
+                <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Demanda real y estimada</div>
                 <ResponsiveContainer width="100%" height={210}>
                   <LineChart data={demandModelStatus.testPredictions}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#edebe9" />
@@ -710,66 +594,52 @@ export function ExecutiveDashboard() {
                     <YAxis tick={{ fontSize: 11, fill: "#8a8886" }} tickFormatter={(value: number) => `${(value / 1_000_000).toFixed(0)}M`} />
                     <Tooltip formatter={(value: number) => value.toLocaleString("es-PE", { maximumFractionDigits: 0 })} />
                     <Line name="Real" dataKey="actual" stroke="#107c10" strokeWidth={2} dot={false} />
-                    <Line name="XGBoost" dataKey="xgboost" stroke="#8764b8" strokeWidth={2} dot={false} />
-                    <Line name="Baseline" dataKey="baseline" stroke="#0f6cbd" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                    <Line
+                      name="Modelo"
+                      dataKey={demandModelStatus.metrics.hybrid ? "hybrid" : "xgboost"}
+                      stroke="#8764b8"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line name="Referencia estacional" dataKey="baseline" stroke="#0f6cbd" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <div className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-                <div className="mb-2 flex flex-wrap items-center gap-2"><div className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Explicabilidad SHAP</div><UserStoryRefs ids={["HU-016"]} /></div>
-                {demandModelStatus.explainability?.evaluation.status === "available" ? (
-                  <div className="space-y-1">
-                    {demandModelStatus.explainability.evaluation.featureImportance.slice(0, 5).map((feature) => (
-                      <div key={feature.feature} className="flex justify-between gap-2 text-[11px]" style={{ color: "#605e5c" }}>
-                        <span>{feature.feature}</span>
-                        <span>{feature.meanAbsoluteShap.toLocaleString("es-PE", { maximumFractionDigits: 2 })}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[11px]" style={{ color: "#8a8886" }}>
-                    Explicación SHAP no disponible; no se atribuyen explicaciones inexistentes.
-                  </p>
-                )}
+            <details className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
+              <summary className="cursor-pointer text-[12px] font-medium" style={{ color: "#201f1e" }}>
+                Ver detalles de evaluación, fuentes y gobernanza
+              </summary>
+              <div className="mt-4 space-y-3">
+                <div className="text-[11px]" style={{ color: "#605e5c" }}>
+                  <span className="font-medium">Periodo evaluado: </span>
+                  {demandModelStatus.evaluationPeriod?.from ?? "—"} a {demandModelStatus.evaluationPeriod?.to ?? "—"}
+                  {demandModelStatus.testObservations != null && ` · ${demandModelStatus.testObservations} meses`}
+                </div>
+                <div className="rounded p-2 text-[11px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
+                  <span className="font-medium">Frente a la referencia estacional: </span>
+                  {demandModelStatus.metrics.errorReductionPercent == null
+                    ? "comparación no disponible."
+                    : demandModelStatus.metrics.errorReductionPercent > 0
+                      ? `el error se redujo ${formatMetric(demandModelStatus.metrics.errorReductionPercent, "%")} en la prueba.`
+                      : demandModelStatus.metrics.errorReductionPercent < 0
+                        ? `el error aumentó ${formatMetric(Math.abs(demandModelStatus.metrics.errorReductionPercent), "%")} en la prueba.`
+                        : "el error fue igual en la prueba."}
+                  {" "}Esta comparación no implica una mejora operativa validada.
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium mb-1" style={{ color: "#605e5c" }}>Fuentes externas consideradas</div>
+                  {selectedDemandSources.length > 0 ? (
+                    <ul className="list-disc pl-5 text-[11px]" style={{ color: "#605e5c" }}>
+                      {selectedDemandSources.map((source) => <li key={source.seriesId ?? source.source}>{source.source}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="text-[11px]" style={{ color: "#8a8886" }}>No se seleccionaron fuentes EIA para este pronóstico.</p>
+                  )}
+                </div>
+                <ModelGovernancePanel scope="demanda" modelName="XGBoost · Predicción de demanda de combustibles líquidos" />
               </div>
-              <div className="rounded p-3" style={{ border: "1px solid #e1dfdd" }}>
-                <div className="text-[12px] font-semibold mb-2" style={{ color: "#201f1e" }}>Gobernanza y operación</div>
-                {demandGovernance ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {[
-                      { label: "Trazabilidad", metric: demandGovernance.governanceAndSystem.predictionTraceability },
-                      { label: "Cobertura SHAP", metric: demandGovernance.governanceAndSystem.explainabilityCoverage },
-                      { label: "Controles con evidencia conforme", metric: demandGovernance.governanceAndSystem.governanceControlsCompliance },
-                      { label: "Detección de riesgos", metric: demandGovernance.governanceAndSystem.riskDetectionTime },
-                      { label: "Éxito de operaciones", metric: demandGovernance.governanceAndSystem.systemOperations },
-                      { label: "Pruebas de seguridad", metric: demandGovernance.governanceAndSystem.securityTestPassRate },
-                      { label: "Detección de riesgos IA", metric: demandGovernance.governanceAndSystem.aiRiskDetectionRate },
-                      { label: "Utilidad percibida", metric: demandGovernance.governanceAndSystem.perceivedUtility },
-                    ].map(({ label, metric }) => (
-                      <div key={label} className="text-[11px]" style={{ color: "#605e5c" }}>
-                        <span className="font-medium">{label}: </span>
-                        {metric.status === "measured"
-                          ? label === "Detección de riesgos"
-                            ? `${formatMetric(metric.meanMinutes)} min`
-                            : label === "Éxito de operaciones"
-                                ? `${formatMetric(metric.percent ?? metric.successRatePercent, "%")} (${metric.succeeded}/${metric.executed}) · ${formatMetric(metric.meanResponseTimeMs)} ms`
-                                : `${formatMetric(metric.percent, "%")}${metric.totalPredictions != null ? ` (${metric.completePredictions ?? metric.explainedPredictions}/${metric.totalPredictions})` : ""}`
-                          : metric.status === "pending" ? "Pendiente de datos"
-                            : "No disponible"}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[11px]" style={{ color: "#8a8886" }}>Cargando métricas verificables…</p>
-                )}
-              </div>
-            </div>
-            <ModelGovernancePanel scope="demanda" modelName="XGBoost · Predicción de demanda de combustibles líquidos" />
-            {demandModelStatus.warnings?.map((warning) => (
-              <p key={warning} className="text-[11px]" style={{ color: "#8a8886" }}>{warning}</p>
-            ))}
+            </details>
           </div>
         )}
       </Card>

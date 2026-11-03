@@ -164,6 +164,17 @@ def get_detected_risk_manager(user: dict[str, Any] = Depends(get_current_user)) 
     return user
 
 
+def get_compliance_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if user["role"] != "Supervisor de Cumplimiento" or "cumplimiento" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento con permiso de Cumplimiento.")
+    return user
+
+
+def _require_compliance_read_access(user: dict[str, Any]) -> None:
+    if "cumplimiento" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar cumplimiento.")
+
+
 def get_demand_model_analyst(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     if user["role"] not in {"Analista de Datos", "Supervisor de Cumplimiento"}:
         raise HTTPException(status_code=403, detail="Se requiere el rol Analista de Datos o Supervisor de Cumplimiento.")
@@ -321,6 +332,14 @@ class DetectedRiskWorkflowUpdate(BaseModel):
     phase: Literal["Identificación", "Análisis", "Plan de tratamiento", "Implementación", "Monitoreo y cierre"]
     responsible: str = Field(min_length=2, max_length=160)
     notes: str = Field(min_length=1, max_length=5000)
+
+
+class ComplianceFollowupUpdate(BaseModel):
+    status: Literal["Pendiente", "En curso", "Conforme", "Brecha", "Mitigado", "Cerrado"]
+    phase: Literal["Evaluación", "Plan de acción", "Implementación", "Verificación", "Cierre"]
+    responsible: str = Field(min_length=2, max_length=160)
+    notes: str = Field(min_length=1, max_length=5000)
+    risk_level: Literal["Crítico", "Alto", "Medio", "Bajo"] | None = None
 
 
 class DetectedRiskRegistrationRequest(BaseModel):
@@ -1657,6 +1676,165 @@ def update_ai_governance_control(
     return control
 
 
+def _validate_compliance_item(item_type: str, item_id: str) -> None:
+    expected_prefix = "NORM-" if item_type == "normativa" else "RRG-"
+    if len(item_id) > 120 or not item_id.startswith(expected_prefix):
+        raise HTTPException(status_code=422, detail="El identificador del elemento de cumplimiento no es válido.")
+
+
+@app.get("/api/compliance/followups")
+def get_compliance_followups(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    _require_compliance_read_access(user)
+    try:
+        return database.list_compliance_followups()
+    except Exception as error:
+        logger.exception("No se pudieron consultar los seguimientos de cumplimiento.")
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los seguimientos de cumplimiento.") from error
+
+
+@app.patch("/api/compliance/followups/{item_type}/{item_id}")
+def update_compliance_followup(
+    item_type: Literal["normativa", "riesgo"],
+    item_id: str,
+    request: ComplianceFollowupUpdate,
+    user: dict[str, Any] = Depends(get_compliance_manager),
+) -> dict[str, Any]:
+    _validate_compliance_item(item_type, item_id)
+    responsible = request.responsible.strip()
+    notes = request.notes.strip()
+    if not responsible:
+        raise HTTPException(status_code=422, detail="Asigna un responsable antes de guardar el seguimiento.")
+    if not notes:
+        raise HTTPException(status_code=422, detail="Agrega una nota antes de guardar el seguimiento.")
+    allowed_statuses = (
+        {"Pendiente", "En curso", "Brecha", "Conforme"}
+        if item_type == "normativa"
+        else {"Pendiente", "En curso", "Mitigado", "Cerrado"}
+    )
+    if request.status not in allowed_statuses:
+        raise HTTPException(status_code=422, detail=f"El estado {request.status} no aplica a este tipo de seguimiento.")
+    if request.status == "Conforme" and request.phase not in {"Verificación", "Cierre"}:
+        raise HTTPException(status_code=422, detail="Una normativa Conforme debe estar en fase Verificación o Cierre.")
+    if request.status == "Cerrado" and request.phase != "Cierre":
+        raise HTTPException(status_code=422, detail="Un riesgo Cerrado debe estar en fase Cierre.")
+    if item_type == "normativa" and request.risk_level:
+        raise HTTPException(status_code=422, detail="El nivel de riesgo solo aplica a riesgos regulatorios.")
+    try:
+        return database.update_compliance_followup(
+            item_id, item_type, request.status, request.phase, responsible, notes, user["username"],
+            request.risk_level,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo actualizar el seguimiento de cumplimiento %s.", item_id)
+        raise HTTPException(status_code=503, detail="No se pudo actualizar el seguimiento de cumplimiento.") from error
+
+
+@app.get("/api/compliance/followups/{item_type}/{item_id}/events")
+def get_compliance_followup_events(
+    item_type: Literal["normativa", "riesgo"],
+    item_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_compliance_read_access(user)
+    _validate_compliance_item(item_type, item_id)
+    try:
+        return database.list_compliance_followup_events(item_id)
+    except Exception as error:
+        logger.exception("No se pudo consultar el historial de cumplimiento %s.", item_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el historial del seguimiento.") from error
+
+
+@app.get("/api/compliance/followups/{item_type}/{item_id}/documents")
+def get_compliance_followup_documents(
+    item_type: Literal["normativa", "riesgo"],
+    item_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_compliance_read_access(user)
+    _validate_compliance_item(item_type, item_id)
+    try:
+        return database.list_compliance_followup_documents(item_id)
+    except Exception as error:
+        logger.exception("No se pudieron consultar documentos de cumplimiento %s.", item_id)
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los documentos del seguimiento.") from error
+
+
+@app.post("/api/compliance/followups/{item_type}/{item_id}/documents", status_code=201)
+async def upload_compliance_followup_document(
+    item_type: Literal["normativa", "riesgo"],
+    item_id: str,
+    file: UploadFile = File(...),
+    user: dict[str, Any] = Depends(get_compliance_manager),
+) -> dict[str, Any]:
+    _validate_compliance_item(item_type, item_id)
+    original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    media_type = AI_EVIDENCE_MEDIA_TYPES.get(Path(original_name).suffix.lower())
+    if not original_name or len(original_name) > 255 or not media_type:
+        await file.close()
+        raise HTTPException(status_code=415, detail="Formato no admitido. Usa PDF, Word, Excel, CSV, TXT, PNG o JPG.")
+    content = await file.read(MAX_AI_EVIDENCE_BYTES + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(status_code=422, detail="El archivo está vacío.")
+    if len(content) > MAX_AI_EVIDENCE_BYTES:
+        raise HTTPException(status_code=413, detail="El tamaño máximo por documento es 10 MB.")
+    try:
+        return database.save_compliance_followup_document(
+            document_id=str(uuid.uuid4()),
+            item_id=item_id,
+            item_type=item_type,
+            file_name=original_name,
+            media_type=media_type,
+            content=content,
+            checksum=hashlib.sha256(content).hexdigest(),
+            username=user["username"],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo adjuntar un documento al seguimiento %s.", item_id)
+        raise HTTPException(status_code=503, detail="No se pudo guardar el documento del seguimiento.") from error
+
+
+@app.get("/api/compliance/followups/documents/{document_id}/download")
+def download_compliance_followup_document(
+    document_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> Response:
+    _require_compliance_read_access(user)
+    try:
+        document = database.get_compliance_followup_document(document_id)
+    except Exception as error:
+        logger.exception("No se pudo consultar el documento de seguimiento %s.", document_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el documento del seguimiento.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"compliance-document\"; filename*=UTF-8''{quote(document['file_name'])}",
+        "Content-Length": str(document["size_bytes"]),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+    }
+    return Response(content=document["content"], media_type=document["media_type"], headers=headers)
+
+
+@app.delete("/api/compliance/followups/documents/{document_id}", status_code=204)
+def delete_compliance_followup_document(
+    document_id: str,
+    user: dict[str, Any] = Depends(get_compliance_manager),
+) -> Response:
+    try:
+        document = database.delete_compliance_followup_document(document_id, user["username"])
+    except Exception as error:
+        logger.exception("No se pudo eliminar el documento de seguimiento %s.", document_id)
+        raise HTTPException(status_code=503, detail="No se pudo eliminar el documento del seguimiento.") from error
+    if not document:
+        raise HTTPException(status_code=404, detail="No se encontró el documento solicitado.")
+    return Response(status_code=204)
+
+
 def _require_ai_evidence_read_access(user: dict[str, Any]) -> None:
     if not {"cumplimiento", "dashboard", "riesgos"}.intersection(user["permissions"]):
         raise HTTPException(status_code=403, detail="No tienes permiso para consultar las evidencias de gobernanza.")
@@ -1762,8 +1940,9 @@ def _ai_governance_alerts() -> list[dict[str, Any]]:
 
     result = latest["result"]
     metrics = result.get("metrics") or {}
-    xgboost_metrics = metrics.get("xgboost") or {}
+    xgboost_metrics = metrics.get("hybrid") or metrics.get("xgboost") or {}
     baseline_metrics = metrics.get("baseline") or {}
+    forecast_strategy = result.get("forecastStrategy", "XGBoost")
     run_id = result.get("runId", latest["id"])
     evaluated_at = result.get("trainedAt", "fecha no disponible")
     evidence_prefix = f"Evaluación {run_id} · {evaluated_at}."
@@ -1799,8 +1978,8 @@ def _ai_governance_alerts() -> list[dict[str, Any]]:
             "id": f"demand-r2-low-{run_id}",
             "modelName": demand_model_name,
             "category": "Desempeño predictivo",
-            "description": f"El R² de la evaluación temporal es {r2:.3f}, por debajo de la referencia inicial de 0.60.",
-            "evidence": f"{evidence_prefix} R² XGBoost={r2:.6f}; periodo de prueba={result.get('evaluationPeriod')}.",
+            "description": f"El R² de {forecast_strategy} en la evaluación temporal es {r2:.3f}, por debajo de la referencia inicial de 0.60.",
+            "evidence": f"{evidence_prefix} R² modelo={r2:.6f}; periodo de prueba={result.get('evaluationPeriod')}.",
             "likelihood": 4,
             "impact": 4,
             "treatment": "Revisar cobertura, variables, partición temporal y desempeño frente al baseline antes de usar el pronóstico.",
@@ -1812,8 +1991,8 @@ def _ai_governance_alerts() -> list[dict[str, Any]]:
             "id": f"demand-baseline-not-improved-{run_id}",
             "modelName": demand_model_name,
             "category": "Comparación con baseline",
-            "description": "XGBoost no redujo el MAE frente al baseline estacional en la evaluación temporal.",
-            "evidence": f"{evidence_prefix} MAE XGBoost={xgboost_metrics.get('mae')}; MAE baseline={baseline_metrics.get('mae')}; reducción={reduction:.4f}%.",
+            "description": f"{forecast_strategy} no redujo el MAE frente al baseline estacional en la evaluación temporal.",
+            "evidence": f"{evidence_prefix} MAE modelo={xgboost_metrics.get('mae')}; MAE baseline={baseline_metrics.get('mae')}; reducción={reduction:.4f}%.",
             "likelihood": 4,
             "impact": 3,
             "treatment": "Revisar variables y configuración; conservar el baseline como referencia hasta demostrar una mejora reproducible.",
@@ -2271,7 +2450,11 @@ def get_demand_model_governance_metrics(_: dict[str, Any] = Depends(get_current_
                 "metric": "MAE",
                 "unit": latest["result"]["unit"] if latest else demand_model.TARGET_UNIT,
                 "asIs": None,
-                "toBe": predictive_metrics["xgboost"]["mae"] if predictive_metrics else None,
+                "toBe": (
+                    (predictive_metrics.get("hybrid") or predictive_metrics["xgboost"])["mae"]
+                    if predictive_metrics
+                    else None
+                ),
                 "toBeStatus": "measured" if predictive_metrics else "pending",
             },
             {

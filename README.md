@@ -87,8 +87,14 @@ Las ventas se consideran un indicador de demanda, no consumo final. La
 preparación valida fechas y valores, elimina filas duplicadas exactas, conserva
 los ceros observados y rechaza huecos mensuales en vez de imputarlos como cero.
 El modelo crea rezagos y variables de calendario usando solo meses anteriores.
-La evaluación separa cronológicamente los meses de prueba y compara XGBoost
-con un baseline estacional de 12 meses sobre esas mismas observaciones.
+El modelo compara XGBoost puro con una mezcla de XGBoost y la media móvil de
+tres meses. El peso de la media móvil se calibra por MAE en ventanas temporales
+walk-forward del tramo de entrenamiento; el holdout final no se usa para elegir
+ese peso. Si no hay suficientes ventanas o la mezcla no mejora el MAE, se usa
+XGBoost puro. La evaluación final compara XGBoost puro, la estrategia elegida y
+un baseline estacional de 12 meses sobre las mismas observaciones. El peso
+seleccionado se guarda junto al artefacto para que los pronósticos posteriores
+usen la misma estrategia.
 
 Antes de entrenar, se revisan todos los archivos de `public/imports` y se
 clasifican como objetivo, candidatos o excluidos con el motivo. Los precios de
@@ -117,8 +123,11 @@ en el portal oficial de EIA.
 
 En **Dashboard Ejecutivo**, los roles Analista de Datos y Supervisor de
 Cumplimiento pueden usar **Entrenar y evaluar**. El resultado incluye MAE,
-RMSE, MAPE (o WAPE cuando hay reales iguales a cero), R², comparación MAE con
-baseline, predicciones del periodo de prueba, SHAP, versión, fecha y cobertura.
+RMSE, MAPE (o WAPE cuando hay reales iguales a cero), R², comparación entre
+XGBoost puro, la estrategia híbrida y el baseline, ventanas de calibración,
+predicciones del periodo de prueba, SHAP del componente XGBoost, versión, fecha
+y cobertura. Las ventanas son históricas y pocas; su mejora no garantiza igual
+desempeño futuro ni elimina la necesidad de actualizar la fuente.
 Los modelos, métricas, predicciones trazables y tiempos de las operaciones del
 modelo se guardan en PostgreSQL. La inicialización crea las tablas nuevas sin
 eliminar tablas existentes.
@@ -138,11 +147,14 @@ AI TRiSM no se implementa como otro modelo. Sus revisiones se presentan junto a 
 
 - La pantalla Demanda muestra trazabilidad, cobertura SHAP y controles con alcance de demanda; Gestión de Riesgos muestra los controles asociados al modelo vial junto a su evaluación y limitaciones.
 - La matriz de Cumplimiento registra objetivos alineados por tema con ISO/IEC 27001:2022, ISO/IEC 38507:2022 e ISO 9001:2026. Cada control identifica si aplica a demanda, al modelo vial o a ambos; guarda estado, evidencia, usuario y fecha.
+- El resumen inferior de Cumplimiento permite abrir el seguimiento de cada normativa y riesgo regulatorio: estado, fase, responsable, notas, documentos e historial se guardan en PostgreSQL. Solo el Supervisor de Cumplimiento con permiso de Cumplimiento puede modificarlos; la consulta requiere ese permiso.
 - Cada control permite adjuntar PDF, Word, Excel, CSV, TXT o im?genes de hasta 10 MB. Los archivos se almacenan en PostgreSQL, se asocian al control, se registran con una huella SHA-256 y pueden descargarse con autenticaci?n. La carga queda restringida al Supervisor de Cumplimiento.
 - El registro de riesgos de IA guarda sistema afectado, categoría, procedencia (observada, sintética o conceptual), evidencia, probabilidad, impacto, responsable y tratamiento. No precarga riesgos ficticios.
 - Los usuarios con permiso de Riesgos pueden registrar riesgos; el Supervisor de Cumplimiento actualiza estado y tratamiento. Solo este rol puede evaluar controles y marcarlos conformes, y el servidor exige evidencia para hacerlo.
 
 Endpoints autenticados: `GET /api/ai-governance/controls?scope=demanda|vial|todos` (scope opcional), `PATCH /api/ai-governance/controls/{control_id}`, `GET /api/ai-governance/risks`, `POST /api/ai-governance/risks` y `PATCH /api/ai-governance/risks/{risk_id}`. PostgreSQL crea las tablas al iniciar, sin borrar datos existentes.
+
+El seguimiento de normativas y riesgos regulatorios usa `GET /api/compliance/followups`, `PATCH /api/compliance/followups/{item_type}/{item_id}`, `GET /api/compliance/followups/{item_type}/{item_id}/events` y las rutas `/documents` asociadas para adjuntar, descargar y eliminar evidencia.
 
 Las relaciones con ISO son una matriz temática académica, no una transcripción oficial de cláusulas ni evidencia de conformidad organizacional, certificación o auditoría independiente. “Conforme” es una autoevaluación del supervisor con evidencia referenciada. XGBoost vial no estima accidentes por viaje ni riesgos genéricos y no elige mitigaciones. La métrica de controles representa la proporción marcada conforme con evidencia; el tiempo de detección sigue no disponible porque aún no hay marcas de tiempo verificables.
 

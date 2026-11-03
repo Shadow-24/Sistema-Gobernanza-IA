@@ -44,11 +44,20 @@ export type DemandModelStatus = {
   coverage?: { months: number; from: string; to: string };
   metrics?: {
     xgboost: DemandMetricSet;
+    hybrid?: DemandMetricSet;
     baseline: DemandMetricSet;
     errorReductionPercent: number | null;
     comparisonMetric: string;
   } | null;
-  testPredictions?: { period: string; actual: number; xgboost: number; baseline: number }[];
+  forecastStrategy?: string;
+  selectionValidation?: {
+    rollingMeanWeight: number;
+    method: string;
+    folds: { from: string; to: string }[];
+    xgboostMae: number | null;
+    hybridMae: number | null;
+  };
+  testPredictions?: { period: string; actual: number; xgboost: number; hybrid?: number; baseline: number }[];
   forecast?: { period: string; value: number; unit: string };
   explainability?: {
     evaluation: {

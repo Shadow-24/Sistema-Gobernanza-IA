@@ -41,6 +41,10 @@ TEST_MONTHS = 12
 MIN_EXTERNAL_TRAIN_OBSERVATIONS = 24
 MIN_EXTERNAL_TEST_OBSERVATIONS = 6
 MAX_EXTERNAL_FEATURE_STALENESS_MONTHS = 2
+BLEND_VALIDATION_HORIZON = 6
+BLEND_VALIDATION_STEP = 3
+BLEND_WEIGHTS = tuple(np.round(np.arange(0.0, 1.01, 0.1), 1))
+MODEL_ARTIFACT_MAGIC = b"DEMAND_XGB_ENSEMBLE_V1\n"
 LAGS = (1, 2, 3, 6, 12)
 FEATURE_NAMES = (
     "lag_1", "lag_2", "lag_3", "lag_6", "lag_12",
@@ -74,6 +78,12 @@ MODEL_CONFIG: dict[str, Any] = {
 class TrainingResult:
     public_result: dict[str, Any]
     model_artifact: bytes
+
+
+@dataclass
+class DemandForecastModel:
+    estimator: XGBRegressor
+    rolling_mean_weight: float = 0.0
 
 
 def _column_name(value: Any) -> str:
@@ -474,6 +484,86 @@ def _metric_set(actual: np.ndarray, predicted: np.ndarray) -> dict[str, float | 
     }
 
 
+def _blend_predictions(
+    model: XGBRegressor,
+    features: pd.DataFrame,
+    rolling_mean_weight: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    xgboost_prediction = np.maximum(0, model.predict(features))
+    if rolling_mean_weight == 0:
+        return xgboost_prediction, xgboost_prediction
+    rolling_mean = features["rolling_mean_3"].to_numpy(dtype=float)
+    blended = np.maximum(
+        0,
+        (1 - rolling_mean_weight) * xgboost_prediction + rolling_mean_weight * rolling_mean,
+    )
+    return xgboost_prediction, blended
+
+
+def _select_rolling_mean_weight(
+    series: pd.Series,
+    training_cutoff: int,
+) -> dict[str, Any]:
+    fold_predictions: list[tuple[np.ndarray, np.ndarray]] = []
+    fold_actual: list[np.ndarray] = []
+    fold_periods: list[dict[str, str]] = []
+    first_fold = max(24, max(LAGS) + 12)
+    for start in range(first_fold, training_cutoff - BLEND_VALIDATION_HORIZON + 1, BLEND_VALIDATION_STEP):
+        stop = start + BLEND_VALIDATION_HORIZON
+        train_indices = list(range(max(LAGS), start))
+        test_indices = list(range(start, stop))
+        if len(train_indices) < 12:
+            continue
+        model = _new_model()
+        model.fit(
+            _feature_frame(series, train_indices),
+            series.iloc[train_indices].to_numpy(dtype=float),
+        )
+        features = _feature_frame(series, test_indices)
+        xgboost_prediction = np.maximum(0, model.predict(features))
+        rolling_mean = features["rolling_mean_3"].to_numpy(dtype=float)
+        fold_predictions.append((xgboost_prediction, rolling_mean))
+        fold_actual.append(series.iloc[test_indices].to_numpy(dtype=float))
+        fold_periods.append({
+            "from": str(series.index[start]),
+            "to": str(series.index[stop - 1]),
+        })
+
+    if len(fold_predictions) < 2:
+        return {
+            "rollingMeanWeight": 0.0,
+            "method": "Expanding-window validation; insufficient folds, XGBoost retained",
+            "folds": fold_periods,
+            "xgboostMae": None,
+            "hybridMae": None,
+        }
+
+    actual = np.concatenate(fold_actual)
+    raw_predictions = np.concatenate([fold[0] for fold in fold_predictions])
+    rolling_predictions = np.concatenate([fold[1] for fold in fold_predictions])
+    weight = min(
+        BLEND_WEIGHTS,
+        key=lambda candidate: mean_absolute_error(
+            actual,
+            np.maximum(0, (1 - candidate) * raw_predictions + candidate * rolling_predictions),
+        ),
+    )
+    hybrid_predictions = np.maximum(
+        0,
+        (1 - weight) * raw_predictions + weight * rolling_predictions,
+    )
+    return {
+        "rollingMeanWeight": float(weight),
+        "method": (
+            f"MAE en {len(fold_predictions)} ventanas walk-forward de "
+            f"{BLEND_VALIDATION_HORIZON} meses (paso de {BLEND_VALIDATION_STEP})"
+        ),
+        "folds": fold_periods,
+        "xgboostMae": float(mean_absolute_error(actual, raw_predictions)),
+        "hybridMae": float(mean_absolute_error(actual, hybrid_predictions)),
+    }
+
+
 def _explain(model: XGBRegressor, features: pd.DataFrame) -> dict[str, Any]:
     try:
         import shap
@@ -533,14 +623,21 @@ def train_and_evaluate(
     if len(train_indices) < 12 or len(test_indices) < 2:
         raise ValueError("No hay suficientes meses para separar entrenamiento y prueba cronológicamente.")
 
+    blend_validation = _select_rolling_mean_weight(series, split_index)
+    rolling_mean_weight = blend_validation["rollingMeanWeight"]
     train_x = _feature_frame(series, train_indices)
     test_x = _feature_frame(series, test_indices)
     train_y = series.iloc[train_indices].to_numpy(dtype=float)
     test_y = series.iloc[test_indices].to_numpy(dtype=float)
     evaluation_model = _new_model()
     evaluation_model.fit(train_x, train_y)
-    baseline_xgboost = np.maximum(0, evaluation_model.predict(test_x))
+    raw_xgboost_prediction, baseline_xgboost = _blend_predictions(
+        evaluation_model,
+        test_x,
+        rolling_mean_weight,
+    )
     baseline = np.asarray([series.iloc[index - 12] for index in test_indices], dtype=float)
+    raw_xgboost_metrics = _metric_set(test_y, raw_xgboost_prediction)
     model_metrics = _metric_set(test_y, baseline_xgboost)
     baseline_metrics = _metric_set(test_y, baseline)
     candidate_evaluations: list[dict[str, Any]] = []
@@ -605,7 +702,11 @@ def train_and_evaluate(
                 train_y,
             )
             candidate_actual = series.iloc[candidate_test_indices].to_numpy(dtype=float)
-            candidate_prediction = np.maximum(0, candidate_model.predict(candidate_test_x))
+            _, candidate_prediction = _blend_predictions(
+                candidate_model,
+                candidate_test_x,
+                rolling_mean_weight,
+            )
             matching_baseline = baseline_xgboost[available_test_positions]
             candidate_mae = float(mean_absolute_error(candidate_actual, candidate_prediction))
             no_feature_mae = float(mean_absolute_error(candidate_actual, matching_baseline))
@@ -625,9 +726,9 @@ def train_and_evaluate(
                     f"el dato para el pronóstico está desactualizado por {staleness} meses."
                 )
             elif candidate_mae >= no_feature_mae:
-                evaluation["reason"] = "No redujo el MAE frente al XGBoost evaluado sin esta variable."
+                evaluation["reason"] = "No redujo el MAE frente a la estrategia de pronóstico sin esta variable."
             else:
-                evaluation["reason"] = "Redujo el MAE en la prueba temporal y cumple los requisitos de cobertura."
+                evaluation["reason"] = "Redujo el MAE de la estrategia híbrida en la prueba temporal y cumple los requisitos de cobertura."
                 if improvement > best_candidate_improvement:
                     best_candidate_improvement = improvement
                     selected_source = source
@@ -662,8 +763,13 @@ def train_and_evaluate(
             ),
             train_y,
         )
-        predicted = np.maximum(0, evaluation_model.predict(test_x))
+        raw_xgboost_prediction, predicted = _blend_predictions(
+            evaluation_model,
+            test_x,
+            rolling_mean_weight,
+        )
         baseline = np.asarray([series.iloc[index - 12] for index in selected_test_indices], dtype=float)
+        raw_xgboost_metrics = _metric_set(test_y, raw_xgboost_prediction)
         model_metrics = _metric_set(test_y, predicted)
         baseline_metrics = _metric_set(test_y, baseline)
         evaluation_periods = [str(series.index[index]) for index in selected_test_indices]
@@ -697,9 +803,14 @@ def train_and_evaluate(
         external_features=external_features,
         selected_source=selected_source,
     )
-    forecast_value = max(0.0, float(model.predict(future_features)[0]))
+    _, blended_forecast = _blend_predictions(model, future_features, rolling_mean_weight)
+    forecast_value = float(blended_forecast[0])
     explainability = _explain(evaluation_model, test_x)
     forecast_explanation = _explain(model, future_features)
+    forecast_explanation["method"] = (
+        "SHAP TreeExplainer para el componente XGBoost; el pronóstico combina "
+        f"{(1 - rolling_mean_weight):.0%} XGBoost y {rolling_mean_weight:.0%} media móvil de 3 meses."
+    )
     run_id = str(uuid.uuid4())
     trained_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     if selected_source is None:
@@ -710,10 +821,17 @@ def train_and_evaluate(
         {
             "period": period,
             "actual": float(actual),
-            "xgboost": float(model_prediction),
+            "xgboost": float(raw_prediction),
+            "hybrid": float(model_prediction),
             "baseline": float(baseline_prediction),
         }
-        for period, actual, model_prediction, baseline_prediction in zip(periods, test_y, predicted, baseline)
+        for period, actual, raw_prediction, model_prediction, baseline_prediction in zip(
+            periods,
+            test_y,
+            raw_xgboost_prediction,
+            predicted,
+            baseline,
+        )
     ]
     data_sources = (
         assess_import_sources(imports_path, candidate_evaluations, feature_errors)
@@ -734,7 +852,17 @@ def train_and_evaluate(
 
     public_result = {
         "runId": run_id,
-        "model": "XGBoost",
+        "model": (
+            "XGBoost + media móvil de 3 meses"
+            if rolling_mean_weight > 0
+            else "XGBoost"
+        ),
+        "forecastStrategy": (
+            f"{(1 - rolling_mean_weight):.0%} XGBoost + {rolling_mean_weight:.0%} media móvil de 3 meses"
+            if rolling_mean_weight > 0
+            else "XGBoost puro (sin mezcla seleccionada por validación)"
+        ),
+        "selectionValidation": blend_validation,
         "modelVersion": f"xgboost-{xgboost.__version__}-{run_id[:8]}",
         "xgboostVersion": xgboost.__version__,
         "status": "evaluated",
@@ -754,7 +882,8 @@ def train_and_evaluate(
         "selectedSources": [selected_source] if selected_source else [],
         "config": MODEL_CONFIG,
         "metrics": {
-            "xgboost": model_metrics,
+            "xgboost": raw_xgboost_metrics,
+            "hybrid": model_metrics,
             "baseline": baseline_metrics,
             "errorReductionPercent": error_reduction,
             "comparisonMetric": "MAE",
@@ -789,20 +918,46 @@ def train_and_evaluate(
             ),
         ],
     }
-    artifact = bytes(model.get_booster().save_raw(raw_format="json"))
+    raw_model = bytes(model.get_booster().save_raw(raw_format="json"))
+    metadata = json.dumps({"rollingMeanWeight": rolling_mean_weight}).encode("utf-8")
+    artifact = (
+        MODEL_ARTIFACT_MAGIC
+        + len(metadata).to_bytes(4, byteorder="big")
+        + metadata
+        + raw_model
+    )
     return TrainingResult(public_result=public_result, model_artifact=artifact)
 
 
-def load_model(artifact: bytes) -> XGBRegressor:
+def load_model(artifact: bytes) -> DemandForecastModel:
     from xgboost import XGBRegressor
 
+    rolling_mean_weight = 0.0
+    model_bytes = artifact
+    if artifact.startswith(MODEL_ARTIFACT_MAGIC):
+        metadata_length_start = len(MODEL_ARTIFACT_MAGIC)
+        metadata_length_end = metadata_length_start + 4
+        if len(artifact) < metadata_length_end:
+            raise ValueError("El artefacto del modelo está incompleto.")
+        metadata_length = int.from_bytes(
+            artifact[metadata_length_start:metadata_length_end],
+            byteorder="big",
+        )
+        metadata_end = metadata_length_end + metadata_length
+        if metadata_end > len(artifact):
+            raise ValueError("Los metadatos del artefacto del modelo están incompletos.")
+        metadata = json.loads(artifact[metadata_length_end:metadata_end].decode("utf-8"))
+        rolling_mean_weight = float(metadata["rollingMeanWeight"])
+        if not 0 <= rolling_mean_weight <= 1:
+            raise ValueError("El peso de la media móvil en el artefacto no es válido.")
+        model_bytes = artifact[metadata_end:]
     model = XGBRegressor()
-    model.load_model(bytearray(artifact))
-    return model
+    model.load_model(bytearray(model_bytes))
+    return DemandForecastModel(model, rolling_mean_weight)
 
 
 def predict_horizon(
-    model: XGBRegressor,
+    model: XGBRegressor | DemandForecastModel,
     series: pd.Series,
     horizon_months: int,
     *,
@@ -811,6 +966,8 @@ def predict_horizon(
 ) -> list[dict[str, Any]]:
     if not 1 <= horizon_months <= MAX_FORECAST_HORIZON:
         raise ValueError(f"El horizonte debe estar entre 1 y {MAX_FORECAST_HORIZON} meses.")
+    estimator = model.estimator if isinstance(model, DemandForecastModel) else model
+    rolling_mean_weight = model.rolling_mean_weight if isinstance(model, DemandForecastModel) else 0.0
     history = [float(value) for value in series.to_list()]
     predictions: list[dict[str, Any]] = []
     next_period = series.index[-1] + 1
@@ -833,8 +990,14 @@ def predict_horizon(
             selected_source=selected_source,
             feature_cutoff=next_period,
         )
-        value = max(0.0, float(model.predict(features)[0]))
-        explanation = _explain(model, features)
+        _, blended_prediction = _blend_predictions(estimator, features, rolling_mean_weight)
+        value = float(blended_prediction[0])
+        explanation = _explain(estimator, features)
+        if rolling_mean_weight > 0:
+            explanation["method"] = (
+                "SHAP TreeExplainer para el componente XGBoost; el pronóstico combina "
+                f"{(1 - rolling_mean_weight):.0%} XGBoost y {rolling_mean_weight:.0%} media móvil de 3 meses."
+            )
         prediction = {
             "period": str(period),
             "value": value,
@@ -849,4 +1012,3 @@ def predict_horizon(
         predictions.append(prediction)
         history.append(value)
     return predictions
-
