@@ -28,7 +28,11 @@ CATEGORICAL_FEATURES = [
     "TRAMO_AFECADO",
     "MONTH",
 ]
+MODEL_FEATURES = [column for column in CATEGORICAL_FEATURES if column != "MONTH"]
 TARGET = "ESTADO_INICIAL"
+MIN_CATEGORY_FREQUENCY = 8
+MINORITY_CLASS_WEIGHT = 1.5
+DECISION_THRESHOLDS = tuple(0.35 + index * 0.025 for index in range(19))
 
 
 def _prepare(path: Path) -> pd.DataFrame:
@@ -55,12 +59,12 @@ def _build_pipeline() -> Pipeline:
     from xgboost import XGBClassifier
 
     preprocess = ColumnTransformer(
-        [("categorical", OneHotEncoder(handle_unknown="ignore", min_frequency=3), CATEGORICAL_FEATURES)],
+        [("categorical", OneHotEncoder(handle_unknown="ignore", min_frequency=MIN_CATEGORY_FREQUENCY), MODEL_FEATURES)],
         remainder="drop",
     )
     model = XGBClassifier(
         n_estimators=250,
-        max_depth=4,
+        max_depth=3,
         learning_rate=0.05,
         subsample=0.85,
         colsample_bytree=0.85,
@@ -70,6 +74,116 @@ def _build_pipeline() -> Pipeline:
         n_jobs=2,
     )
     return Pipeline([("features", preprocess), ("classifier", model)])
+
+
+def _class_roles(labels: pd.Series) -> tuple[str, str]:
+    counts = labels.value_counts()
+    ordered = counts.sort_values(ascending=False, kind="stable").index.tolist()
+    majority = ordered[0]
+    minority = next(label for label in ordered if label != majority)
+    return majority, minority
+
+
+def _fit_pipeline(train: pd.DataFrame, train_classes: list[str]) -> Pipeline:
+    target_indexes = {label: index for index, label in enumerate(train_classes)}
+    train_targets = train[TARGET].map(target_indexes).astype(int)
+    sample_weights = [1.0] * len(train)
+    if len(train_classes) == 2:
+        _, minority = _class_roles(train[TARGET])
+        sample_weights = [
+            MINORITY_CLASS_WEIGHT if label == minority else 1.0
+            for label in train[TARGET]
+        ]
+    pipeline = _build_pipeline()
+    pipeline.fit(
+        train[MODEL_FEATURES],
+        train_targets,
+        classifier__sample_weight=sample_weights,
+    )
+    return pipeline
+
+
+def _calibrate_threshold(
+    data: pd.DataFrame,
+    date_cutoff_index: int,
+    majority_class: str,
+    minority_class: str,
+) -> tuple[float, int, float]:
+    dates = sorted(data["DATE"].unique())
+    boundaries = [int(len(dates) * fraction) for fraction in (0.5, 0.6, 0.7, 0.8)]
+    if date_cutoff_index != boundaries[-1] or len(set(boundaries)) != len(boundaries):
+        return 0.5, 0, 0.0
+
+    actual: list[str] = []
+    majority_probabilities: list[float] = []
+    for start_index, end_index in zip(boundaries, boundaries[1:]):
+        train = data[data["DATE"] < dates[start_index]]
+        validation = data[
+            (data["DATE"] >= dates[start_index])
+            & (data["DATE"] < dates[end_index])
+        ]
+        if (
+            len(train) < 30
+            or validation.empty
+            or set(train[TARGET].unique()) != {majority_class, minority_class}
+            or not set(validation[TARGET].unique()).issubset(set(train[TARGET].unique()))
+        ):
+            continue
+
+        train_classes = sorted(train[TARGET].unique().tolist())
+        pipeline = _fit_pipeline(train, train_classes)
+        class_indexes = list(pipeline.named_steps["classifier"].classes_)
+        majority_index = class_indexes.index(train_classes.index(majority_class))
+        probabilities = pipeline.predict_proba(validation[MODEL_FEATURES])
+        actual.extend(validation[TARGET].tolist())
+        majority_probabilities.extend(probabilities[:, majority_index].tolist())
+
+    if not actual or minority_class not in actual:
+        return 0.5, len(actual), 0.0
+
+    best_threshold = 0.5
+    best_score = (-1.0, -1.0)
+    for threshold in DECISION_THRESHOLDS:
+        predictions = [
+            minority_class if probability < threshold else majority_class
+            for probability in majority_probabilities
+        ]
+        score = (
+            f1_score(
+                actual,
+                predictions,
+                labels=[minority_class, majority_class],
+                average="macro",
+                zero_division=0,
+            ),
+            balanced_accuracy_score(actual, predictions),
+        )
+        if score > best_score:
+            best_score = score
+            best_threshold = threshold
+    return best_threshold, len(actual), best_score[0]
+
+
+def _predict_labels(
+    pipeline: Pipeline,
+    features: pd.DataFrame,
+    train_classes: list[str],
+    *,
+    threshold: float,
+    threshold_target: str | None,
+) -> list[str]:
+    if len(train_classes) == 2 and threshold_target is not None:
+        class_indexes = list(pipeline.named_steps["classifier"].classes_)
+        target_index = train_classes.index(threshold_target)
+        target_column = class_indexes.index(target_index)
+        other_class = next(label for label in train_classes if label != threshold_target)
+        probabilities = pipeline.predict_proba(features)
+        return [
+            threshold_target if probability >= threshold else other_class
+            for probability in probabilities[:, target_column]
+        ]
+    predicted_indexes = pipeline.predict(features)
+    return [train_classes[int(index)] for index in predicted_indexes]
 
 
 @lru_cache(maxsize=2)
@@ -87,13 +201,23 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
         raise ValueError("El tramo de entrenamiento no contiene al menos dos estados viales.")
 
     train_classes = sorted(train[TARGET].unique().tolist())
-    target_indexes = {label: index for index, label in enumerate(train_classes)}
-    train_targets = train[TARGET].map(target_indexes).astype(int)
-    pipeline = _build_pipeline()
-    pipeline.fit(train[CATEGORICAL_FEATURES], train_targets)
-    predicted_indexes = pipeline.predict(test[CATEGORICAL_FEATURES])
-    predictions = [train_classes[int(index)] for index in predicted_indexes]
-    majority = train[TARGET].value_counts().idxmax()
+    pipeline = _fit_pipeline(train, train_classes)
+    majority, minority = _class_roles(train[TARGET])
+    threshold, calibration_records, calibration_macro_f1 = (0.5, 0, 0.0)
+    if len(train_classes) == 2:
+        threshold, calibration_records, calibration_macro_f1 = _calibrate_threshold(
+            data,
+            date_cutoff_index,
+            majority,
+            minority,
+        )
+    predictions = _predict_labels(
+        pipeline,
+        test[MODEL_FEATURES],
+        train_classes,
+        threshold=threshold,
+        threshold_target=majority if len(train_classes) == 2 else None,
+    )
     labels = sorted(data[TARGET].unique().tolist())
     metrics = {
         "source": SOURCE_NAME,
@@ -104,7 +228,7 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
         "testRecords": int(len(test)),
         "dateFrom": data["DATE"].min().date().isoformat(),
         "dateTo": data["DATE"].max().date().isoformat(),
-        "split": "temporal 80/20; entrenamiento con fechas anteriores a prueba",
+        "split": "holdout temporal 80/20; umbral calibrado en ventanas temporales anteriores",
         "classes": {str(k): int(v) for k, v in data[TARGET].value_counts().sort_index().items()},
         "categories": {
             column: data[column].value_counts().head(100).index.tolist()
@@ -115,6 +239,18 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
             "balancedAccuracy": float(balanced_accuracy_score(test[TARGET], predictions)),
             "macroF1": float(f1_score(test[TARGET], predictions, average="macro", zero_division=0)),
             "majorityBaselineAccuracy": float(accuracy_score(test[TARGET], [majority] * len(test))),
+            "minorityClass": minority,
+            "minorityRecall": float(
+                sum(
+                    actual == minority and predicted == minority
+                    for actual, predicted in zip(test[TARGET], predictions)
+                )
+                / sum(actual == minority for actual in test[TARGET])
+            ) if (test[TARGET] == minority).any() else None,
+            "decisionThreshold": threshold,
+            "thresholdTargetClass": majority if len(train_classes) == 2 else None,
+            "thresholdCalibrationRecords": calibration_records,
+            "thresholdCalibrationMacroF1": calibration_macro_f1,
         },
         "testClasses": sorted(test[TARGET].unique().tolist()),
         "labels": labels,
@@ -150,12 +286,24 @@ def predict_road_state(imports_path: Path, scenario: dict[str, Any]) -> dict[str
         "TRAMO_AFECADO": scenario.get("roadSection") or "No informado",
         "MONTH": str(int(date.month)) if not pd.isna(date) else "0",
     }
-    probabilities = pipeline.predict_proba(pd.DataFrame([row])[CATEGORICAL_FEATURES])[0]
+    probabilities = pipeline.predict_proba(pd.DataFrame([row])[MODEL_FEATURES])[0]
     classes = pipeline.named_steps["classifier"].classes_
     order = probabilities.argsort()[::-1]
     class_labels = [train_classes[int(index)] for index in classes]
+    threshold = metrics["metrics"].get("decisionThreshold", 0.5)
+    threshold_target = metrics["metrics"].get("thresholdTargetClass")
+    if len(train_classes) == 2 and threshold_target is not None:
+        target_index = class_labels.index(threshold_target)
+        other_class = next(label for label in train_classes if label != threshold_target)
+        prediction = (
+            threshold_target
+            if probabilities[target_index] >= threshold
+            else other_class
+        )
+    else:
+        prediction = class_labels[order[0]]
     return {
-        "prediction": class_labels[order[0]],
+        "prediction": prediction,
         "confidence": float(probabilities[order[0]]),
         "probabilities": {class_labels[index]: float(probabilities[index]) for index in order},
         "model": "XGBoost experimental",

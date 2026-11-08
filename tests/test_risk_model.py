@@ -15,10 +15,17 @@ class FakeRoadPipeline:
         self.named_steps = {"classifier": SimpleNamespace(classes_=np.array([0, 1]))}
         self.fitted_targets: pd.Series | None = None
         self.fitted_feature_count = 0
+        self.fitted_sample_weights: list[float] | None = None
 
-    def fit(self, features: pd.DataFrame, targets: pd.Series) -> "FakeRoadPipeline":
+    def fit(
+        self,
+        features: pd.DataFrame,
+        targets: pd.Series,
+        classifier__sample_weight: list[float] | None = None,
+    ) -> "FakeRoadPipeline":
         self.fitted_feature_count = len(features)
         self.fitted_targets = targets
+        self.fitted_sample_weights = classifier__sample_weight
         return self
 
     def predict(self, features: pd.DataFrame) -> np.ndarray:
@@ -58,7 +65,10 @@ class RoadRiskModelTests(unittest.TestCase):
         self.assertEqual(train_classes, ["INTERRUMPIDO", "RESTRINGIDO"])
         self.assertEqual(set(pipeline.fitted_targets.unique()), {0, 1})
         self.assertEqual(pipeline.fitted_feature_count, 28)
+        self.assertEqual(len(pipeline.fitted_sample_weights or []), 28)
         self.assertEqual(metrics["testClasses"], ["INTERRUMPIDO", "RESTRINGIDO"])
+        self.assertEqual(metrics["metrics"]["decisionThreshold"], 0.5)
+        self.assertEqual(metrics["metrics"]["thresholdCalibrationRecords"], 0)
 
     def test_prediction_maps_encoded_class_indexes_back_to_road_states(self) -> None:
         pipeline = FakeRoadPipeline()
@@ -68,7 +78,17 @@ class RoadRiskModelTests(unittest.TestCase):
             with patch.object(
                 risk_model,
                 "_fit",
-                return_value=(pipeline, {"metrics": {}, "caveat": ""}, ["INTERRUMPIDO", "RESTRINGIDO"]),
+                return_value=(
+                    pipeline,
+                    {
+                        "metrics": {
+                            "decisionThreshold": 0.375,
+                            "thresholdTargetClass": "RESTRINGIDO",
+                        },
+                        "caveat": "",
+                    },
+                    ["INTERRUMPIDO", "RESTRINGIDO"],
+                ),
             ):
                 result = risk_model.predict_road_state(
                     Path(directory),
@@ -86,6 +106,23 @@ class RoadRiskModelTests(unittest.TestCase):
 
         self.assertEqual(result["prediction"], "RESTRINGIDO")
         self.assertEqual(result["probabilities"], {"RESTRINGIDO": 0.9, "INTERRUMPIDO": 0.1})
+
+    def test_decision_threshold_selects_the_class_with_sufficient_probability(self) -> None:
+        pipeline = FakeRoadPipeline()
+        with patch.object(
+            pipeline,
+            "predict_proba",
+            return_value=np.array([[0.7, 0.3], [0.1, 0.9]]),
+        ):
+            predictions = risk_model._predict_labels(
+                pipeline,
+                pd.DataFrame([{}, {}]),
+                ["INTERRUMPIDO", "RESTRINGIDO"],
+                threshold=0.375,
+                threshold_target="RESTRINGIDO",
+            )
+
+        self.assertEqual(predictions, ["INTERRUMPIDO", "RESTRINGIDO"])
 
 
 if __name__ == "__main__":
