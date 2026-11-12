@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { UserStoryRefs } from "./UserStoryRefs";
 import { useAuth } from "../AuthContext";
+import { loadAssignees, type Assignee } from "../assigneesApi";
 import { downloadAIGovernanceEvidence, loadAIGovernanceControls, loadAIGovernanceEvidence, updateAIGovernanceControl, uploadAIGovernanceEvidence, type GovernanceControl, type GovernanceControlStatus, type GovernanceEvidenceFile } from "../aiGovernanceApi";
 import {
   deleteComplianceFollowupDocument,
@@ -23,7 +24,7 @@ import {
 import { generateGovernanceControlsReport } from "../../utils/reportGenerators/governanceControlsReport";
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`bg-white rounded ${className}`} style={{ border: "1px solid #e1dfdd" }}>{children}</div>;
+  return <div className={`bg-white rounded ${className}`} style={{ border: "1px solid var(--cs-e1dfdd)" }}>{children}</div>;
 }
 
 type ComplianceFollowupTarget = {
@@ -89,19 +90,34 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  "Sin iniciar":  { bg: "#f3f2f1", text: "#605e5c" },
-  "Pendiente":    { bg: "#f3f2f1", text: "#605e5c" },
-  "En curso":     { bg: "#eff6ff", text: "#0f6cbd" },
-  "Conforme":     { bg: "#f1faf1", text: "#107c10" },
-  "Cerrado":      { bg: "#f1faf1", text: "#107c10" },
-  "Mitigado":     { bg: "#fff8f0", text: "#986f0b" },
-  "Brecha":       { bg: "#fdf3f4", text: "#a4262c" },
+  "Sin iniciar":  { bg: "var(--cs-f3f2f1)", text: "var(--ct-605e5c)" },
+  "Pendiente":    { bg: "var(--cs-f3f2f1)", text: "var(--ct-605e5c)" },
+  "En curso":     { bg: "var(--cs-eff6ff)", text: "var(--ct-0f6cbd)" },
+  "Conforme":     { bg: "var(--cs-f1faf1)", text: "var(--ct-107c10)" },
+  "Cerrado":      { bg: "var(--cs-f1faf1)", text: "var(--ct-107c10)" },
+  "Mitigado":     { bg: "var(--cs-fff8f0)", text: "var(--ct-986f0b)" },
+  "Brecha":       { bg: "var(--cs-fdf3f4)", text: "var(--ct-a4262c)" },
 };
 
 export function ComplianceModule() {
-  const { user, managedUsers } = useAuth();
+  const { user } = useAuth();
   const canEvaluateControls = user?.role === "Supervisor de Cumplimiento";
   const canManageFollowups = user?.role === "Supervisor de Cumplimiento" && user.permissions.includes("cumplimiento");
+  const [assignees, setAssignees] = useState<Assignee[]>([]);
+  const [assigneesError, setAssigneesError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!canManageFollowups) return;
+    loadAssignees("cumplimiento")
+      .then((records) => {
+        if (active) setAssignees(records);
+      })
+      .catch((error: unknown) => {
+        if (active) setAssigneesError(error instanceof Error ? error.message : "No se pudo cargar la lista de responsables.");
+      });
+    return () => { active = false; };
+  }, [canManageFollowups]);
   const [governanceControls, setGovernanceControls] = useState<GovernanceControl[]>([]);
   const [governanceLoading, setGovernanceLoading] = useState(true);
   const [governanceError, setGovernanceError] = useState("");
@@ -296,7 +312,7 @@ export function ComplianceModule() {
       status: saved?.status ?? "Pendiente",
       phase: saved?.phase ?? "Evaluación",
       responsible: saved?.responsible ?? "",
-      notes: saved?.notes ?? "",
+      notes: "",
       riskLevel: saved?.risk_level ?? "",
     });
     setFollowupEvents([]);
@@ -321,6 +337,7 @@ export function ComplianceModule() {
         risk_level: selectedFollowup.type === "riesgo" && followupDraft.riskLevel ? followupDraft.riskLevel : null,
       });
       setComplianceFollowups((current) => ({ ...current, [saved.item_id]: saved }));
+      setFollowupDraft((current) => ({ ...current, notes: "" }));
       setFollowupNotice("Seguimiento guardado.");
       const events = await loadComplianceFollowupEvents(selectedFollowup.type, selectedFollowup.id);
       setFollowupEvents(events);
@@ -411,13 +428,13 @@ export function ComplianceModule() {
   return (
     <div className="space-y-5">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Cumplimiento Normativo</h1><UserStoryRefs ids={["HU-014", "HU-015"]} /></div>
-        <p className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>
+        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Cumplimiento Normativo</h1><UserStoryRefs ids={["HU-014", "HU-015"]} /></div>
+        <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>
           Seguimiento propio de normativas y riesgos regulatorios · se actualiza con los registros guardados
         </p>
       </div>
 
-      <nav role="tablist" aria-label="Secciones de cumplimiento" className="flex flex-wrap gap-2 border-b" style={{ borderColor: "#e1dfdd" }}>
+      <nav role="tablist" aria-label="Secciones de cumplimiento" className="flex flex-wrap gap-2 border-b" style={{ borderColor: "var(--cs-e1dfdd)" }}>
         {([
           { id: "normativas", label: "Normativas y riesgos regulatorios" },
           { id: "controles", label: "Controles y evidencias de gobernanza de IA" },
@@ -430,7 +447,7 @@ export function ComplianceModule() {
             onClick={() => setActiveTab(tab.id)}
             className="px-3 py-2 text-[14px] font-medium border-b-2 transition-colors"
             style={{
-              color: activeTab === tab.id ? "#0f6cbd" : "#605e5c",
+              color: activeTab === tab.id ? "var(--ct-0f6cbd)" : "var(--ct-605e5c)",
               borderColor: activeTab === tab.id ? "#0f6cbd" : "transparent",
             }}
           >
@@ -443,8 +460,8 @@ export function ComplianceModule() {
       <Card className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
-            <div className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: "#201f1e" }}>
-              <ShieldCheck className="w-4 h-4" style={{ color: "#0f6cbd" }} />
+            <div className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>
+              <ShieldCheck className="w-4 h-4" style={{ color: "var(--ct-0f6cbd)" }} />
               Matriz de controles
               <UserStoryRefs ids={["HU-015", "HU-013", "HU-014"]} />
             </div>
@@ -455,22 +472,22 @@ export function ComplianceModule() {
               onClick={downloadGovernanceReport}
               disabled={governanceControls.length === 0}
               className="inline-flex items-center gap-1 rounded border px-2 py-1 font-medium disabled:opacity-50"
-              style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}
+              style={{ borderColor: "var(--cs-cce0f5)", color: "var(--ct-0f6cbd)" }}
             >
               <Download className="h-3 w-3" /> Descargar reporte
             </button>
-            <span className="rounded px-2 py-1" style={{ background: "#f3f2f1", color: "#605e5c" }}>Sin evaluar: {governanceCount("no_evaluado")}</span>
-            <span className="rounded px-2 py-1" style={{ background: "#eff6ff", color: "#0f6cbd" }}>En revisión: {governanceCount("en_revision")}</span>
-            <span className="rounded px-2 py-1" style={{ background: "#f1faf1", color: "#107c10" }}>Conformes: {governanceCount("conforme")}</span>
-            <span className="rounded px-2 py-1" style={{ background: "#fdf3f4", color: "#a4262c" }}>Brechas: {governanceCount("brecha")}</span>
+            <span className="rounded px-2 py-1" style={{ background: "var(--cs-f3f2f1)", color: "var(--ct-605e5c)" }}>Sin evaluar: {governanceCount("no_evaluado")}</span>
+            <span className="rounded px-2 py-1" style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)" }}>En revisión: {governanceCount("en_revision")}</span>
+            <span className="rounded px-2 py-1" style={{ background: "var(--cs-f1faf1)", color: "var(--ct-107c10)" }}>Conformes: {governanceCount("conforme")}</span>
+            <span className="rounded px-2 py-1" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>Brechas: {governanceCount("brecha")}</span>
           </div>
         </div>
-        {governanceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{governanceError}</p>}
-        {governanceEvidenceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>No se pudieron cargar las evidencias: {governanceEvidenceError}</p>}
-        {governanceSaved && <p role="status" className="mb-3 text-[12px]" style={{ color: "#107c10" }}>{governanceSaved}</p>}
-        {governanceLoading ? <p className="text-[12px]" style={{ color: "#8a8886" }}>Cargando controles desde PostgreSQL…</p> : governanceControls.length === 0 ? <p className="text-[12px]" style={{ color: "#8a8886" }}>No hay controles inicializados. Verifica la conexión con PostgreSQL.</p> : (
+        {governanceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{governanceError}</p>}
+        {governanceEvidenceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>No se pudieron cargar las evidencias: {governanceEvidenceError}</p>}
+        {governanceSaved && <p role="status" className="mb-3 text-[12px]" style={{ color: "var(--ct-107c10)" }}>{governanceSaved}</p>}
+        {governanceLoading ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Cargando controles desde PostgreSQL…</p> : governanceControls.length === 0 ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay controles inicializados. Verifica la conexión con PostgreSQL.</p> : (
           <div>
-            <nav role="tablist" aria-label="Normativas de gobernanza de IA" className="mb-3 flex flex-wrap gap-2 border-b" style={{ borderColor: "#e1dfdd" }}>
+            <nav role="tablist" aria-label="Normativas de gobernanza de IA" className="mb-3 flex flex-wrap gap-2 border-b" style={{ borderColor: "var(--cs-e1dfdd)" }}>
               {standardEntries.map(([standard]) => (
                 <button
                   key={standard}
@@ -480,7 +497,7 @@ export function ComplianceModule() {
                   onClick={() => setSelectedStandard(standard)}
                   className="px-3 py-2 text-[14px] font-medium border-b-2 transition-colors"
                   style={{
-                    color: activeStandard === standard ? "#0f6cbd" : "#605e5c",
+                    color: activeStandard === standard ? "var(--ct-0f6cbd)" : "var(--ct-605e5c)",
                     borderColor: activeStandard === standard ? "#0f6cbd" : "transparent",
                   }}
                 >
@@ -494,27 +511,27 @@ export function ComplianceModule() {
                   {controls.map((control) => {
                     const draft = governanceDrafts[control.id] ?? { status: control.status, evidence: control.evidence };
                     return (
-                      <article key={control.id} className="rounded p-3" style={{ border: "1px solid #edebe9" }}>
+                      <article key={control.id} className="rounded p-3" style={{ border: "1px solid var(--cs-edebe9)" }}>
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>{control.focus}</h3><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>{control.model_scope === "ambos" ? "Demanda y vial" : control.model_scope === "demanda" ? "XGBoost demanda" : "XGBoost vial"}</span></div>
-                            <p className="text-[11px] mt-1" style={{ color: "#605e5c" }}>{control.objective}</p>
+                            <div className="flex flex-wrap items-center gap-1.5"><h3 className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{control.focus}</h3><span className="rounded px-1 py-0.5 text-[10px]" style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)" }}>{control.model_scope === "ambos" ? "Demanda y vial" : control.model_scope === "demanda" ? "XGBoost demanda" : "XGBoost vial"}</span></div>
+                            <p className="text-[11px] mt-1" style={{ color: "var(--ct-605e5c)" }}>{control.objective}</p>
                           </div>
-                          <span className="text-[10px] rounded px-1.5 py-1" style={{ background: control.status === "conforme" ? "#f1faf1" : control.status === "brecha" ? "#fdf3f4" : "#f3f2f1", color: control.status === "conforme" ? "#107c10" : control.status === "brecha" ? "#a4262c" : "#605e5c" }}>
+                          <span className="text-[10px] rounded px-1.5 py-1" style={{ background: control.status === "conforme" ? "var(--cs-f1faf1)" : control.status === "brecha" ? "var(--cs-fdf3f4)" : "var(--cs-f3f2f1)", color: control.status === "conforme" ? "var(--ct-107c10)" : control.status === "brecha" ? "var(--ct-a4262c)" : "var(--ct-605e5c)" }}>
                             {control.status.replace("_", " ")}
                           </span>
                         </div>
                         {canEvaluateControls ? (
                           <div className="mt-2 grid grid-cols-1 sm:grid-cols-[150px_1fr_auto] gap-2 items-end">
-                            <label className="text-[10px]" style={{ color: "#605e5c" }}>Evaluación
+                            <label className="text-[10px]" style={{ color: "var(--ct-605e5c)" }}>Evaluación
                               <select className="mt-1 block w-full rounded border p-1.5 text-[11px]" value={draft.status} onChange={(event) => setGovernanceDrafts((current) => ({ ...current, [control.id]: { ...draft, status: event.target.value as GovernanceControlStatus } }))}>
                                 <option value="no_evaluado">Sin evaluar</option><option value="en_revision">En revisión</option><option value="conforme">Conforme</option><option value="brecha">Brecha</option>
                               </select>
                             </label>
-                            <div className="text-[10px]" style={{ color: "#605e5c" }}><span>Evidencia</span>
-                              <span className="mt-1 block text-[10px]" style={{ color: "#8a8886" }}>Describe la evidencia o adjunta un archivo (máx. 10 MB).</span>
+                            <div className="text-[10px]" style={{ color: "var(--ct-605e5c)" }}><span>Evidencia</span>
+                              <span className="mt-1 block text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Describe la evidencia o adjunta un archivo (máx. 10 MB).</span>
                               <span className="mt-1 flex flex-wrap items-center gap-2">
-                                <label htmlFor={`governance-evidence-${control.id}`} className="inline-flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-[10px]" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
+                                <label htmlFor={`governance-evidence-${control.id}`} className="inline-flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-[10px]" style={{ borderColor: "var(--cs-cce0f5)", color: "var(--ct-0f6cbd)" }}>
                                   <Paperclip className="h-3 w-3" /> {uploadingEvidenceControl === control.id ? "Subiendo…" : "Elegir archivos"}
                                 </label>
                                 <input id={`governance-evidence-${control.id}`} type="file" className="sr-only" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={!canEvaluateControls || uploadingEvidenceControl === control.id} onChange={(event) => {
@@ -522,14 +539,14 @@ export function ComplianceModule() {
                                     event.currentTarget.value = "";
                                     void uploadGovernanceEvidence(control, selected);
                                   }} />
-                                <span className="text-[10px]" style={{ color: "#8a8886" }}>PDF, Office, CSV, TXT o imagen</span>
+                                <span className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>PDF, Office, CSV, TXT o imagen</span>
                               </span>
                               {(governanceAttachments[control.id] ?? []).length > 0 && (
                                 <span className="mt-2 grid gap-1">
                                   {(governanceAttachments[control.id] ?? []).map((file) => (
-                                    <span key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1" style={{ background: "#f9f8f7" }}>
-                                      <span className="inline-flex min-w-0 items-center gap-1 text-[10px]" style={{ color: "#323130" }}><FileText className="h-3 w-3 shrink-0" /><span className="truncate">{file.file_name}</span><span style={{ color: "#8a8886" }}>· {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span></span>
-                                      <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1 text-[10px]" style={{ color: "#0f6cbd" }}><Download className="h-3 w-3" /> Descargar</button>
+                                    <span key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1" style={{ background: "var(--cs-f9f8f7)" }}>
+                                      <span className="inline-flex min-w-0 items-center gap-1 text-[10px]" style={{ color: "var(--ct-323130)" }}><FileText className="h-3 w-3 shrink-0" /><span className="truncate">{file.file_name}</span><span style={{ color: "var(--ct-8a8886)" }}>· {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span></span>
+                                      <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1 text-[10px]" style={{ color: "var(--ct-0f6cbd)" }}><Download className="h-3 w-3" /> Descargar</button>
                                     </span>
                                   ))}
                                 </span>
@@ -544,16 +561,16 @@ export function ComplianceModule() {
                           <>
                           <div className="mt-2 space-y-1">
                             {(governanceAttachments[control.id] ?? []).map((file) => (
-                              <div key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1 text-[10px]" style={{ background: "#f9f8f7" }}>
-                                <span className="inline-flex items-center gap-1" style={{ color: "#323130" }}><FileText className="h-3 w-3" />{file.file_name} · {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span>
-                                <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1" style={{ color: "#0f6cbd" }}><Download className="h-3 w-3" />Descargar</button>
+                              <div key={file.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1 text-[10px]" style={{ background: "var(--cs-f9f8f7)" }}>
+                                <span className="inline-flex items-center gap-1" style={{ color: "var(--ct-323130)" }}><FileText className="h-3 w-3" />{file.file_name} · {formatEvidenceSize(file.size_bytes)} · {file.uploaded_by}</span>
+                                <button type="button" onClick={() => void downloadGovernanceEvidence(file)} className="inline-flex items-center gap-1" style={{ color: "var(--ct-0f6cbd)" }}><Download className="h-3 w-3" />Descargar</button>
                               </div>
                             ))}
                           </div>
-                          <p className="text-[10px] mt-2" style={{ color: "#8a8886" }}>Evidencia: {control.evidence || "Pendiente"} · actualizado por {control.updated_by || "sin evaluar"}</p>
+                          <p className="text-[10px] mt-2" style={{ color: "var(--ct-8a8886)" }}>Evidencia: {control.evidence || "Pendiente"} · actualizado por {control.updated_by || "sin evaluar"}</p>
                           </>
                         )}
-                        {canEvaluateControls && control.updated_by && <p className="text-[10px] mt-1" style={{ color: "#8a8886" }}>Último registro: {control.updated_by} · {new Date(control.updated_at).toLocaleString("es-PE")}</p>}
+                        {canEvaluateControls && control.updated_by && <p className="text-[10px] mt-1" style={{ color: "var(--ct-8a8886)" }}>Último registro: {control.updated_by} · {new Date(control.updated_at).toLocaleString("es-PE")}</p>}
                       </article>
                     );
                   })}
@@ -582,8 +599,8 @@ export function ComplianceModule() {
                 <Icon className="w-4 h-4" style={{ color: kpi.color }} />
               </div>
               <div>
-                <div className="text-[22px] font-semibold" style={{ color: "#201f1e" }}>{kpi.value}</div>
-                <div className="text-[12px]" style={{ color: "#8a8886" }}>{kpi.label}</div>
+                <div className="text-[22px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{kpi.value}</div>
+                <div className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>{kpi.label}</div>
               </div>
             </Card>
           );
@@ -594,7 +611,7 @@ export function ComplianceModule() {
 
         {/* Compliance rings per normativa */}
         <div className="space-y-3">
-          <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Cumplimiento por Normativa</div>
+          <div className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Cumplimiento por Normativa</div>
           {REGULATORY_NORMS.map((norm) => {
             const tracking = complianceFollowups[norm.id];
             const estado = tracking?.status ?? "Sin iniciar";
@@ -612,16 +629,16 @@ export function ComplianceModule() {
                 })}
                 aria-label={`Abrir seguimiento de ${norm.nombre}`}
                 className="block w-full rounded bg-white p-4 text-left transition-shadow hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
-                style={{ border: "1px solid #e1dfdd" }}
+                style={{ border: "1px solid var(--cs-e1dfdd)" }}
                 disabled={complianceFollowupsLoading}
               >
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{norm.id}</span>
+                  <span className="text-[12px] font-mono" style={{ color: "var(--ct-8a8886)" }}>{norm.id}</span>
                   <span className="text-[12px] px-2 py-0.5 rounded-full" style={{ background: sc.bg, color: sc.text }}>{estado}</span>
-                  <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: "#f3f2f1", color: "#8a8886" }}>{norm.tipo}</span>
+                  <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: "var(--cs-f3f2f1)", color: "var(--ct-8a8886)" }}>{norm.tipo}</span>
                 </div>
-                <div className="text-[14px] font-medium leading-snug" style={{ color: "#201f1e" }}>{norm.nombre}</div>
-                <div className="mt-2 flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
+                <div className="text-[14px] font-medium leading-snug" style={{ color: "var(--ct-201f1e)" }}>{norm.nombre}</div>
+                <div className="mt-2 flex flex-wrap gap-3 text-[12px]" style={{ color: "var(--ct-8a8886)" }}>
                   <span className="flex items-center gap-1"><User className="w-3 h-3" />{tracking?.responsible || "Sin asignar"}</span>
                   <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatRegistrationDate(registrationDates[norm.id])}</span>
                   <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{tracking ? `Fase: ${tracking.phase}` : "Seguimiento sin iniciar"}</span>
@@ -634,8 +651,8 @@ export function ComplianceModule() {
 
       {/* Regulatory risks */}
       <Card className="p-4">
-        <div className="text-[14px] font-semibold mb-3" style={{ color: "#201f1e" }}>
-          <Scale className="w-3.5 h-3.5 inline mr-1.5" style={{ color: "#0f6cbd" }} />
+        <div className="text-[14px] font-semibold mb-3" style={{ color: "var(--ct-201f1e)" }}>
+          <Scale className="w-3.5 h-3.5 inline mr-1.5" style={{ color: "var(--ct-0f6cbd)" }} />
           Riesgos regulatorios identificados · {REGULATORY_RISKS.length}
         </div>
         <div className="space-y-2">
@@ -655,19 +672,19 @@ export function ComplianceModule() {
                 })}
                 aria-label={`Abrir seguimiento del riesgo ${r.id}`}
                 className="flex w-full items-center gap-4 rounded p-3 text-left transition-all hover:bg-white hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
-                style={{ background: "#f3f2f1" }}
+                style={{ background: "var(--cs-f3f2f1)" }}
                 disabled={complianceFollowupsLoading}
               >
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: RISK_COLORS[nivel] }} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium" style={{ color: "#201f1e" }}>{r.descripcion}</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: "#8a8886" }}>
+                  <div className="text-[13px] font-medium" style={{ color: "var(--ct-201f1e)" }}>{r.descripcion}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: "var(--ct-8a8886)" }}>
                     {r.normativa} · {tracking ? `Seguimiento: ${tracking.status}` : "Abrir seguimiento"}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-[12px] font-medium" style={{ color: RISK_COLORS[nivel] }}>{nivel}</span>
-                  <div className="flex items-center gap-1 text-[11px]" style={{ color: "#8a8886" }}>
+                  <div className="flex items-center gap-1 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>
                     <AlertTriangle className="w-3 h-3" />
                     {formatRegistrationDate(registrationDates[r.id])}
                   </div>
@@ -678,43 +695,43 @@ export function ComplianceModule() {
         </div>
       </Card>
       {complianceFollowupsError && (
-        <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>
+        <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>
           No se pudo cargar el seguimiento de cumplimiento: {complianceFollowupsError}
         </p>
       )}
-      <p className="text-[12px] px-1" style={{ color: "#8a8886" }}>
+      <p className="text-[12px] px-1" style={{ color: "var(--ct-8a8886)" }}>
         El avance de cada normativa se calcula con su estado y fase de seguimiento (sin iniciar = 0%). AI Act e ISO/IEC 42001 son referencias conceptuales; no representan certificación ni cumplimiento organizacional real.
       </p>
       </>
       )}
       {selectedFollowup && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="compliance-followup-title">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded bg-white p-4" style={{ border: "1px solid #e1dfdd" }}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded bg-white p-4" style={{ border: "1px solid var(--cs-e1dfdd)" }}>
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 id="compliance-followup-title" className="text-[15px] font-semibold" style={{ color: "#201f1e" }}>
+                <h2 id="compliance-followup-title" className="text-[15px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>
                   Seguimiento · {selectedFollowup.id}
                 </h2>
-                <p className="mt-1 text-[12px]" style={{ color: "#605e5c" }}>{selectedFollowup.title}</p>
-                <p className="mt-1 text-[11px]" style={{ color: "#605e5c" }}>{selectedFollowup.reference} · {selectedFollowup.description}</p>
+                <p className="mt-1 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>{selectedFollowup.title}</p>
+                <p className="mt-1 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>{selectedFollowup.reference} · {selectedFollowup.description}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedFollowup(null)}
                 aria-label="Cerrar seguimiento de cumplimiento"
                 className="rounded px-2 py-1 text-[12px]"
-                style={{ color: "#605e5c" }}
+                style={{ color: "var(--ct-605e5c)" }}
               >
                 Cerrar
               </button>
             </div>
 
-            {followupError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{followupError}</p>}
-            {followupNotice && <p role="status" className="mb-3 text-[12px]" style={{ color: "#107c10" }}>{followupNotice}</p>}
+            {followupError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{followupError}</p>}
+            {followupNotice && <p role="status" className="mb-3 text-[12px]" style={{ color: "var(--ct-107c10)" }}>{followupNotice}</p>}
 
-            <form onSubmit={(event) => void saveComplianceFollowup(event)} className="space-y-3 rounded p-3" style={{ background: "#f9f8f7" }}>
+            <form onSubmit={(event) => void saveComplianceFollowup(event)} className="space-y-3 rounded p-3" style={{ background: "var(--cs-f9f8f7)" }}>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
+                <label className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                   Estado del seguimiento
                   <select
                     required
@@ -722,17 +739,17 @@ export function ComplianceModule() {
                     value={followupDraft.status}
                     onChange={(event) => setFollowupDraft((current) => ({ ...current, status: event.target.value as ComplianceFollowupStatus }))}
                     className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]"
-                    style={{ borderColor: "#e1dfdd" }}
+                    style={{ borderColor: "var(--cs-e1dfdd)" }}
                   >
                     <option value="Pendiente">Pendiente</option>
                     <option value="En curso">En curso</option>
                     {selectedFollowup.type === "normativa" && <option value="Brecha">Brecha detectada</option>}
-                    {selectedFollowup.type === "normativa" && <option value="Conforme">Conforme (requiere fase Verificación o Cierre)</option>}
+                    {selectedFollowup.type === "normativa" && <option value="Conforme">Conforme (requiere fase Cierre)</option>}
                     {selectedFollowup.type === "riesgo" && <option value="Mitigado">Mitigado (controles aplicados, en monitoreo)</option>}
                     {selectedFollowup.type === "riesgo" && <option value="Cerrado">Cerrado (requiere fase Cierre)</option>}
                   </select>
                 </label>
-                <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
+                <label className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                   Fase
                   <select
                     required
@@ -740,16 +757,16 @@ export function ComplianceModule() {
                     value={followupDraft.phase}
                     onChange={(event) => setFollowupDraft((current) => ({ ...current, phase: event.target.value as ComplianceFollowupPhase }))}
                     className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]"
-                    style={{ borderColor: "#e1dfdd" }}
+                    style={{ borderColor: "var(--cs-e1dfdd)" }}
                   >
                     <option value="Evaluación">Evaluación</option>
                     <option value="Plan de acción">Plan de acción</option>
                     <option value="Implementación">Implementación</option>
-                    <option value="Verificación">Verificación</option>
+                    {followupDraft.phase === "Verificación" && <option value="Verificación" disabled>Verificación (fase anterior)</option>}
                     <option value="Cierre">Cierre</option>
                   </select>
                 </label>
-                <label className="text-[11px] font-medium sm:col-span-2" style={{ color: "#605e5c" }}>
+                <label className="text-[11px] font-medium sm:col-span-2" style={{ color: "var(--ct-605e5c)" }}>
                   Responsable
                   <select
                     required
@@ -757,29 +774,30 @@ export function ComplianceModule() {
                     value={followupDraft.responsible}
                     onChange={(event) => setFollowupDraft((current) => ({ ...current, responsible: event.target.value }))}
                     className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]"
-                    style={{ borderColor: "#e1dfdd" }}
+                    style={{ borderColor: "var(--cs-e1dfdd)" }}
                   >
                     <option value="">Selecciona un responsable</option>
-                    {followupDraft.responsible && !managedUsers.some((account) => account.username === followupDraft.responsible && account.active && account.permissions.includes("cumplimiento")) && (
+                    {followupDraft.responsible && !assignees.some((account) => account.username === followupDraft.responsible) && (
                       <option value={followupDraft.responsible} disabled>{followupDraft.responsible} · usuario sin permiso activo</option>
                     )}
-                    {managedUsers.filter((account) => account.active && account.permissions.includes("cumplimiento")).map((account) => (
+                    {assignees.map((account) => (
                       <option key={account.username} value={account.username}>{account.name} · @{account.username}</option>
                     ))}
                   </select>
-                  {canManageFollowups && managedUsers.filter((account) => account.active && account.permissions.includes("cumplimiento")).length === 0 && (
-                    <span className="mt-1 block font-normal" style={{ color: "#a4262c" }}>No hay usuarios activos con permiso de Cumplimiento para asignar.</span>
+                  {assigneesError && <span className="mt-1 block font-normal" style={{ color: "var(--ct-a4262c)" }}>No se pudo cargar la lista de responsables: {assigneesError}</span>}
+                  {!assigneesError && canManageFollowups && assignees.length === 0 && (
+                    <span className="mt-1 block font-normal" style={{ color: "var(--ct-a4262c)" }}>No hay usuarios activos con permiso de Cumplimiento para asignar.</span>
                   )}
                 </label>
                 {selectedFollowup.type === "riesgo" && (
-                  <label className="text-[11px] font-medium sm:col-span-2" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium sm:col-span-2" style={{ color: "var(--ct-605e5c)" }}>
                     Nivel de riesgo
                     <select
                       disabled={!canManageFollowups}
                       value={followupDraft.riskLevel}
                       onChange={(event) => setFollowupDraft((current) => ({ ...current, riskLevel: event.target.value as ComplianceRiskLevel | "" }))}
                       className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]"
-                      style={{ borderColor: "#e1dfdd" }}
+                      style={{ borderColor: "var(--cs-e1dfdd)" }}
                     >
                       <option value="">Sin clasificar</option>
                       <option value="Crítico">Crítico</option>
@@ -789,7 +807,7 @@ export function ComplianceModule() {
                     </select>
                   </label>
                 )}
-                <label className="text-[11px] font-medium sm:col-span-2" style={{ color: "#605e5c" }}>
+                <label className="text-[11px] font-medium sm:col-span-2" style={{ color: "var(--ct-605e5c)" }}>
                   Notas y acciones de seguimiento
                   <textarea
                     required
@@ -800,7 +818,7 @@ export function ComplianceModule() {
                     onChange={(event) => setFollowupDraft((current) => ({ ...current, notes: event.target.value }))}
                     placeholder="Describe acuerdos, acciones pendientes o resultados de la revisión"
                     className="mt-1 block w-full rounded border bg-white p-2 text-[12px]"
-                    style={{ borderColor: "#e1dfdd" }}
+                    style={{ borderColor: "var(--cs-e1dfdd)" }}
                   />
                 </label>
               </div>
@@ -809,18 +827,18 @@ export function ComplianceModule() {
                   {followupSaving ? "Guardando…" : "Guardar seguimiento"}
                 </button>
               ) : (
-                <p className="text-[11px]" style={{ color: "#8a8886" }}>Solo el Supervisor de Cumplimiento con permiso de Cumplimiento puede actualizar el seguimiento.</p>
+                <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Solo el Supervisor de Cumplimiento con permiso de Cumplimiento puede actualizar el seguimiento.</p>
               )}
             </form>
 
-            <section className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
+            <section className="mt-4 border-t pt-3" style={{ borderColor: "var(--cs-edebe9)" }}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Documentos relacionados</h3>
-                  <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Archivos persistidos · máximo 10 MB por documento.</p>
+                  <h3 className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Documentos relacionados</h3>
+                  <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Archivos persistidos · máximo 10 MB por documento.</p>
                 </div>
                 {canManageFollowups && (
-                  <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
+                  <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "var(--cs-cce0f5)", color: "var(--ct-0f6cbd)" }}>
                     {followupUploading ? "Subiendo…" : "Adjuntar documento"}
                     <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={followupUploading} onChange={(event) => void uploadComplianceDocument(event)} />
                   </label>
@@ -829,16 +847,16 @@ export function ComplianceModule() {
               {followupDocuments.length ? (
                 <ul className="mt-2 space-y-1">
                   {followupDocuments.map((document) => (
-                    <li key={document.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5 text-[11px]" style={{ background: "#f9f8f7" }}>
-                      <span className="inline-flex min-w-0 items-center gap-1" style={{ color: "#323130" }}>
+                    <li key={document.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5 text-[11px]" style={{ background: "var(--cs-f9f8f7)" }}>
+                      <span className="inline-flex min-w-0 items-center gap-1" style={{ color: "var(--ct-323130)" }}>
                         <FileText className="h-3 w-3 shrink-0" />
                         <span className="truncate">{document.file_name}</span>
-                        <span style={{ color: "#8a8886" }}>· {(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by}</span>
+                        <span style={{ color: "var(--ct-8a8886)" }}>· {(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by}</span>
                       </span>
                       <span className="flex items-center gap-2">
-                        <button type="button" onClick={() => void downloadComplianceDocument(document)} className="inline-flex items-center gap-1" style={{ color: "#0f6cbd" }}><Download className="h-3 w-3" />Descargar</button>
+                        <button type="button" onClick={() => void downloadComplianceDocument(document)} className="inline-flex items-center gap-1" style={{ color: "var(--ct-0f6cbd)" }}><Download className="h-3 w-3" />Descargar</button>
                         {canManageFollowups && (
-                          <button type="button" disabled={followupDeletingDocument === document.id} onClick={() => void removeComplianceDocument(document)} className="disabled:opacity-50" style={{ color: "#a4262c" }}>
+                          <button type="button" disabled={followupDeletingDocument === document.id} onClick={() => void removeComplianceDocument(document)} className="disabled:opacity-50" style={{ color: "var(--ct-a4262c)" }}>
                             {followupDeletingDocument === document.id ? "Eliminando…" : "Eliminar"}
                           </button>
                         )}
@@ -847,14 +865,14 @@ export function ComplianceModule() {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>{followupLoading ? "Cargando documentos…" : "Aún no hay documentos adjuntos."}</p>
+                <p className="mt-2 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>{followupLoading ? "Cargando documentos…" : "Aún no hay documentos adjuntos."}</p>
               )}
             </section>
 
-            <section className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
-              <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Historial de seguimiento</h3>
+            <section className="mt-4 border-t pt-3" style={{ borderColor: "var(--cs-edebe9)" }}>
+              <h3 className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Historial de seguimiento</h3>
               {followupLoading ? (
-                <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Cargando historial…</p>
+                <p className="mt-2 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Cargando historial…</p>
               ) : followupEvents.length ? (
                 <ol className="mt-2 space-y-2">
                   {followupEvents.map((timelineEvent) => {
@@ -868,7 +886,7 @@ export function ComplianceModule() {
                       }
                     }
                     return (
-                      <li key={timelineEvent.id} className="rounded p-2 text-[11px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
+                      <li key={timelineEvent.id} className="rounded p-2 text-[11px]" style={{ background: "var(--cs-f9f8f7)", color: "var(--ct-605e5c)" }}>
                         <span className="font-medium">{new Date(timelineEvent.occurred_at).toLocaleString("es-PE")} · {timelineEvent.username}</span>
                         <p className="mt-0.5">{detail}</p>
                       </li>
@@ -876,10 +894,10 @@ export function ComplianceModule() {
                   })}
                 </ol>
               ) : (
-                <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Todavía no hay cambios registrados.</p>
+                <p className="mt-2 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Todavía no hay cambios registrados.</p>
               )}
               {complianceFollowups[selectedFollowup.id]?.updated_by && (
-                <p className="mt-2 text-[10px]" style={{ color: "#8a8886" }}>
+                <p className="mt-2 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>
                   Última actualización: {complianceFollowups[selectedFollowup.id].updated_by} · {new Date(complianceFollowups[selectedFollowup.id].updated_at).toLocaleString("es-PE")}
                 </p>
               )}

@@ -161,14 +161,67 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
             "RSK-007", "Mitigado", "Medio", "Monitoreo y cierre", "ana", "Validación realizada", "supervisor"
         )
 
-    def test_only_supervisor_with_risk_permission_can_manage_workflow(self) -> None:
+    def test_any_user_with_risk_permission_can_manage_workflow(self) -> None:
+        analyst = {"username": "analyst", "role": "Analista de Datos", "permissions": ["riesgos"]}
+        self.assertIs(api_main.get_detected_risk_manager(analyst), analyst)
+
+    def test_workflow_requires_risk_permission(self) -> None:
         with self.assertRaises(HTTPException) as raised:
             api_main.get_detected_risk_manager({
-                "role": "Analista de Datos",
-                "permissions": ["riesgos"],
+                "role": "Supervisor de Cumplimiento",
+                "permissions": ["dashboard", "supervision"],
             })
 
         self.assertEqual(raised.exception.status_code, 403)
+
+    def test_assignees_endpoint_returns_only_active_users_with_risk_permission(self) -> None:
+        connection_context = MagicMock()
+        connection = connection_context.__enter__.return_value
+        connection.execute.return_value.fetchall.return_value = [{
+            "username": "ana",
+            "display_name": "Ana",
+            "role": "Analista de Datos",
+            "permissions": ["riesgos"],
+            "active": True,
+        }]
+
+        with patch.object(database, "connection", return_value=connection_context):
+            result = database.list_detected_risk_assignees()
+
+        self.assertEqual(result, [{
+            "username": "ana",
+            "name": "Ana",
+            "role": "Analista de Datos",
+            "permissions": ["riesgos"],
+            "active": True,
+        }])
+        sql = connection.execute.call_args.args[0]
+        self.assertIn("active", sql)
+        self.assertIn("permissions ? %s", sql)
+        self.assertEqual(connection.execute.call_args.args[1], ("riesgos",))
+
+    def test_generic_assignees_endpoint_validates_permission_and_access(self) -> None:
+        with patch.object(api_main.database, "list_assignees_with_permission", return_value=[{"username": "ana"}]) as list_assignees:
+            with self.assertRaises(HTTPException) as invalid:
+                api_main.get_assignees("admin", {"permissions": ["admin"]})
+            self.assertEqual(invalid.exception.status_code, 400)
+
+            with self.assertRaises(HTTPException) as forbidden:
+                api_main.get_assignees("auditoria", {"permissions": ["cumplimiento"]})
+            self.assertEqual(forbidden.exception.status_code, 403)
+            list_assignees.assert_not_called()
+
+            result = api_main.get_assignees("auditoria", {"permissions": ["auditoria"]})
+        self.assertEqual(result, [{"username": "ana"}])
+        list_assignees.assert_called_once_with("auditoria")
+
+    def test_assignees_endpoint_requires_risk_permission(self) -> None:
+        with patch.object(api_main.database, "list_detected_risk_assignees") as list_assignees:
+            with self.assertRaises(HTTPException) as raised:
+                api_main.get_detected_risk_assignees({"permissions": ["dashboard"]})
+
+        self.assertEqual(raised.exception.status_code, 403)
+        list_assignees.assert_not_called()
 
     def test_detected_risk_read_endpoints_require_risk_permission(self) -> None:
         with patch.object(api_main.database, "list_detected_risk_workflows") as list_workflows:

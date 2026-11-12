@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard, ShieldAlert, ClipboardList, GitBranch,
-  CheckSquare, FileBarChart2, Brain, UserRoundCog
+  CheckSquare, FileBarChart2, Brain, UserRoundCog, Moon, Sun
 } from "lucide-react";
 import { useAuth } from "../AuthContext";
 import { useSectorData } from "../SectorDataContext";
+import { useTheme } from "../ThemeContext";
+import { AccountMenu } from "./AccountMenu";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -18,8 +20,9 @@ const navItems = [
 ];
 
 export function DashboardLayout() {
-  const { user, hasPermission, logout, recordAccess } = useAuth();
+  const { hasPermission, logout, recordAccess } = useAuth();
   const { dataError } = useSectorData();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const visibleItems = navItems.filter((item) => hasPermission(item.to.slice(1)));
@@ -35,7 +38,7 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "#f3f2f1", fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--cs-f3f2f1)", fontFamily: "'Inter', sans-serif" }}>
 
         {/* Sidebar */}
         <aside className="w-14 sm:w-56 flex flex-col flex-shrink-0" style={{ background: "#1b1a19" }}>
@@ -92,19 +95,27 @@ export function DashboardLayout() {
         <div className="flex-1 flex flex-col overflow-hidden">
 
           {/* Top Bar */}
-          <header className="flex-shrink-0 flex items-center justify-between gap-2 px-3 sm:px-6 h-12 bg-white" style={{ borderBottom: "1px solid #e1dfdd" }}>
-            <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium" title={user?.name} style={{ background: "#eff6ff", color: "#0f6cbd" }}>
-              {user?.name.slice(0, 1)}
-            </span>
+          <header className="flex-shrink-0 flex items-center justify-between gap-2 px-3 sm:px-6 h-12 bg-white" style={{ borderBottom: "1px solid var(--cs-e1dfdd)" }}>
+            <AccountMenu />
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <button onClick={handleLogout} className="h-8 px-2 rounded text-xs font-medium transition-colors hover:bg-gray-100" style={{ color: "#605e5c" }}>Salir</button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                className="h-8 w-8 flex items-center justify-center rounded transition-colors hover:bg-gray-100"
+                style={{ color: "var(--ct-605e5c)" }}
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button onClick={handleLogout} className="h-8 px-2 rounded text-xs font-medium transition-colors hover:bg-gray-100" style={{ color: "var(--ct-605e5c)" }}>Salir</button>
             </div>
           </header>
 
           {/* Content */}
           <main className="flex-1 overflow-auto p-3 sm:p-6">
             {dataError && (
-              <div role="alert" className="mb-4 rounded px-3 py-2 text-[13px]" style={{ background: "#fdf3f4", border: "1px solid #f1b8bb", color: "#a4262c" }}>
+              <div role="alert" className="mb-4 rounded px-3 py-2 text-[13px]" style={{ background: "var(--cs-fdf3f4)", border: "1px solid var(--cs-f1b8bb)", color: "var(--ct-a4262c)" }}>
                 No se pudieron cargar los datos sectoriales desde PostgreSQL: {dataError}
               </div>
             )}

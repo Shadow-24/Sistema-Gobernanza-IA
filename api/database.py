@@ -307,6 +307,20 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             """
+            CREATE TABLE IF NOT EXISTS ai_governance_risk_evidence_files (
+                id TEXT PRIMARY KEY,
+                risk_id TEXT NOT NULL REFERENCES ai_governance_risks(id) ON DELETE CASCADE,
+                file_name TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
+                checksum TEXT NOT NULL,
+                content BYTEA NOT NULL,
+                uploaded_by TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ai_governance_risk_evidence_risk_idx ON ai_governance_risk_evidence_files(risk_id, created_at)",
+            """
             CREATE TABLE IF NOT EXISTS audit_workflow (
                 audit_id TEXT PRIMARY KEY,
                 status TEXT NOT NULL CHECK (status IN ('Pendiente', 'Completada', 'En curso', 'Observada')),
@@ -975,6 +989,24 @@ def save_detected_risk_road_evaluation(
         ).fetchone()
 
 
+def list_assignees_with_permission(permission: str) -> list[dict[str, Any]]:
+    with connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM managed_users
+            WHERE active AND permissions ? %s
+            ORDER BY display_name, username
+            """,
+            (permission,),
+        ).fetchall()
+    return [public_user(row) for row in rows]
+
+
+def list_detected_risk_assignees() -> list[dict[str, Any]]:
+    return list_assignees_with_permission("riesgos")
+
+
 def update_detected_risk_workflow(
     risk_id: str,
     status: str,
@@ -1490,7 +1522,7 @@ def get_ai_governance_evidence_file(evidence_id: str) -> dict[str, Any] | None:
 
 def list_ai_governance_risks() -> list[dict[str, Any]]:
     with connection() as conn:
-        return conn.execute(
+        risks = conn.execute(
             """
             SELECT id, model_name, category, description, data_basis, evidence,
                    likelihood, impact, owner, treatment, status, created_by,
@@ -1500,6 +1532,19 @@ def list_ai_governance_risks() -> list[dict[str, Any]]:
                      impact * likelihood DESC, updated_at DESC
             """
         ).fetchall()
+        files = conn.execute(
+            """
+            SELECT id, risk_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
+            FROM ai_governance_risk_evidence_files
+            ORDER BY created_at, id
+            """
+        ).fetchall()
+    attachments_by_risk: dict[str, list[dict[str, Any]]] = {}
+    for file in files:
+        attachments_by_risk.setdefault(file["risk_id"], []).append(
+            {key: value for key, value in file.items() if key != "risk_id"}
+        )
+    return [{**risk, "attachments": attachments_by_risk.get(risk["id"], [])} for risk in risks]
 
 
 def list_reviewed_ai_governance_alert_ids() -> set[str]:
@@ -1512,6 +1557,7 @@ def create_ai_governance_risk(
     risk: dict[str, Any],
     username: str,
     source_alert_id: str | None = None,
+    files: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     with connection() as conn:
         row = conn.execute(
@@ -1530,6 +1576,18 @@ def create_ai_governance_risk(
                 risk["owner"], risk["treatment"], username,
             ),
         ).fetchone()
+        for file in files or []:
+            conn.execute(
+                """
+                INSERT INTO ai_governance_risk_evidence_files
+                    (id, risk_id, file_name, media_type, size_bytes, checksum, content, uploaded_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    file["id"], risk["id"], file["file_name"], file["media_type"],
+                    file["size_bytes"], file["checksum"], file["content"], username,
+                ),
+            )
         conn.execute(
             "INSERT INTO ai_governance_risk_events (risk_id, username, new_status, treatment) VALUES (%s, %s, %s, %s)",
             (risk["id"], username, "identificado", risk["treatment"]),
@@ -1546,7 +1604,25 @@ def create_ai_governance_risk(
             ).fetchone()
             if not review:
                 raise ValueError("Esta alerta automática ya fue registrada.")
-        return row
+        attachments = conn.execute(
+            """
+            SELECT id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
+            FROM ai_governance_risk_evidence_files WHERE risk_id = %s ORDER BY created_at, id
+            """,
+            (risk["id"],),
+        ).fetchall()
+        return {**row, "attachments": attachments}
+
+
+def get_ai_governance_risk_evidence_file(file_id: str) -> dict[str, Any] | None:
+    with connection() as conn:
+        return conn.execute(
+            """
+            SELECT id, risk_id, file_name, media_type, size_bytes, checksum, content, uploaded_by, created_at
+            FROM ai_governance_risk_evidence_files WHERE id = %s
+            """,
+            (file_id,),
+        ).fetchone()
 
 
 def update_ai_governance_risk(

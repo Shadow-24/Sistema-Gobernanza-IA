@@ -42,6 +42,7 @@ type AuthContextValue = {
   ) => void;
   createManagedUser: (account: { username: string; name: string; role: UserRole; password: string }) => Promise<boolean>;
   updateManagedUser: (username: string, updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">> & { password?: string }) => Promise<boolean>;
+  updateOwnProfile: (updates: { name?: string; currentPassword?: string; newPassword?: string }) => Promise<void>;
   clearAccessEvents: () => Promise<void>;
 };
 
@@ -206,6 +207,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessEvents([]);
   }, []);
 
+  const updateOwnProfile = useCallback(async (updates: { name?: string; currentPassword?: string; newPassword?: string }) => {
+    const updated = await apiRequest<ManagedUser>("/api/auth/profile", {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: updates.name,
+        current_password: updates.currentPassword,
+        new_password: updates.newPassword,
+      }),
+    });
+    const normalized = normalizeUser(updated);
+    setUser(normalized);
+    setManagedUsers((current) => current.map((item) => item.username === normalized.username ? normalized : item));
+  }, []);
+
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isLoading,
@@ -218,10 +233,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     recordAccess,
     createManagedUser,
     updateManagedUser,
+    updateOwnProfile,
     clearAccessEvents,
   }), [
     user, isLoading, managedUsers, accessEvents, managementError, login, logout, hasPermission,
-    recordAccess, createManagedUser, updateManagedUser, clearAccessEvents,
+    recordAccess, createManagedUser, updateManagedUser, updateOwnProfile, clearAccessEvents,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

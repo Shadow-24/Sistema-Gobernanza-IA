@@ -16,7 +16,7 @@ from urllib.parse import quote
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from psycopg.types.json import Jsonb
 
 from api import database, demand_model, risk_model
@@ -30,6 +30,7 @@ FACILITIES_PATH = IMPORTS_PATH / "CDCLyOPDHconInstalacionesFijas.csv"
 FUEL_SALES_PATH = IMPORTS_PATH / "MNHL7-VentasCombustibles.xlsx"
 DATE_FORMATS = ("%m/%d/%Y", "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d", "%Y-%m")
 MAX_AI_EVIDENCE_BYTES = 10 * 1024 * 1024
+MAX_AI_RISK_EVIDENCE_FILES = 5
 AI_EVIDENCE_MEDIA_TYPES = {
     ".pdf": "application/pdf",
     ".doc": "application/msword",
@@ -159,8 +160,8 @@ def get_audit_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[
 
 
 def get_detected_risk_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if user["role"] != "Supervisor de Cumplimiento" or "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento con permiso de riesgos.")
+    if "riesgos" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="Se requiere permiso de Riesgos.")
     return user
 
 
@@ -265,6 +266,12 @@ class NewUserRequest(BaseModel):
         "Ingeniero de Campo",
     ]
     password: str = Field(min_length=12, max_length=1024)
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, max_length=200)
+    current_password: str | None = Field(default=None, max_length=1024)
+    new_password: str | None = Field(default=None, min_length=12, max_length=1024)
 
 
 class UserUpdateRequest(BaseModel):
@@ -1061,6 +1068,59 @@ def get_session(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, A
     return {"user": database.public_user(user)}
 
 
+@app.patch("/api/auth/profile")
+def update_profile(
+    request: ProfileUpdateRequest,
+    authorization: str | None = Header(default=None),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    username = user["username"]
+    token = authorization.removeprefix("Bearer ").strip() if authorization else ""
+    name = request.name.strip() if request.name is not None else None
+    if request.name is None and request.new_password is None:
+        raise HTTPException(status_code=422, detail="No se enviaron campos para actualizar.")
+    if name is not None and not name:
+        raise HTTPException(status_code=422, detail="El nombre no puede estar vacío.")
+    password_changed = request.new_password is not None
+    if password_changed and not request.current_password:
+        raise HTTPException(status_code=422, detail="Debes indicar tu contraseña actual.")
+    try:
+        with database.connection() as conn:
+            account = conn.execute(
+                "SELECT password_hash FROM managed_users WHERE username = %s FOR UPDATE",
+                (username,),
+            ).fetchone()
+            if not account:
+                raise HTTPException(status_code=404, detail="No se encontró el usuario.")
+            if password_changed:
+                if not database.verify_password(request.current_password or "", account["password_hash"]):
+                    raise HTTPException(status_code=400, detail="La contraseña actual no es correcta.")
+                conn.execute(
+                    "UPDATE managed_users SET password_hash = %s WHERE username = %s",
+                    (database.hash_password(request.new_password or ""), username),
+                )
+                conn.execute(
+                    "DELETE FROM auth_sessions WHERE username = %s AND token_hash <> %s",
+                    (username, database.token_digest(token)),
+                )
+            if name is not None:
+                conn.execute("UPDATE managed_users SET display_name = %s WHERE username = %s", (name, username))
+            row = conn.execute("SELECT * FROM managed_users WHERE username = %s", (username,)).fetchone()
+            conn.execute(
+                """
+                INSERT INTO access_events (username, role, action, resource, result)
+                VALUES (%s, %s, %s, 'Perfil de usuario', 'Permitido')
+                """,
+                (username, user["role"], "Cambio de contraseña" if password_changed else "Actualización de perfil"),
+            )
+        return database.public_user(row)
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.exception("No se pudo actualizar el perfil del usuario.")
+        raise HTTPException(status_code=503, detail="No se pudo actualizar el perfil.") from error
+
+
 @app.post("/api/auth/logout")
 def logout(
     authorization: str | None = Header(default=None),
@@ -1485,6 +1545,32 @@ def update_detected_risk_workflow(
         raise HTTPException(status_code=503, detail="No se pudo actualizar el seguimiento del riesgo.") from error
 
 
+@app.get("/api/detected-risks/assignees")
+def get_detected_risk_assignees(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    _require_risk_read_access(user)
+    try:
+        return database.list_detected_risk_assignees()
+    except Exception as error:
+        logger.exception("No se pudo consultar los responsables de riesgos.")
+        raise HTTPException(status_code=503, detail="No se pudo consultar los responsables de riesgos.") from error
+
+
+ASSIGNABLE_PERMISSIONS = {"riesgos", "cumplimiento", "auditoria"}
+
+
+@app.get("/api/assignees")
+def get_assignees(permission: str, user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
+    if permission not in ASSIGNABLE_PERMISSIONS:
+        raise HTTPException(status_code=400, detail="Permiso de responsables no válido.")
+    if permission not in user["permissions"]:
+        raise HTTPException(status_code=403, detail="No tienes permiso para consultar estos responsables.")
+    try:
+        return database.list_assignees_with_permission(permission)
+    except Exception as error:
+        logger.exception("No se pudo consultar los responsables.")
+        raise HTTPException(status_code=503, detail="No se pudo consultar los responsables.") from error
+
+
 @app.get("/api/detected-risks/events")
 def get_detected_risk_events(
     risk_id: str = Query(min_length=1, max_length=120),
@@ -1865,6 +1951,29 @@ def _require_ai_evidence_read_access(user: dict[str, Any]) -> None:
         raise HTTPException(status_code=403, detail="No tienes permiso para consultar las evidencias de gobernanza.")
 
 
+async def _read_ai_evidence_upload(file: UploadFile) -> dict[str, Any]:
+    original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    extension = Path(original_name).suffix.lower()
+    media_type = AI_EVIDENCE_MEDIA_TYPES.get(extension)
+    if not original_name or len(original_name) > 255 or not media_type:
+        await file.close()
+        raise HTTPException(status_code=415, detail="Formato de evidencia no admitido. Usa PDF, Word, Excel, CSV, TXT, PNG o JPG.")
+    content = await file.read(MAX_AI_EVIDENCE_BYTES + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(status_code=422, detail="El archivo está vacío.")
+    if len(content) > MAX_AI_EVIDENCE_BYTES:
+        raise HTTPException(status_code=413, detail="El tamaño máximo por archivo es 10 MB.")
+    return {
+        "id": str(uuid.uuid4()),
+        "file_name": original_name,
+        "media_type": media_type,
+        "size_bytes": len(content),
+        "checksum": hashlib.sha256(content).hexdigest(),
+        "content": content,
+    }
+
+
 @app.get("/api/ai-governance/evidence")
 def get_ai_governance_evidence(
     control_id: str | None = Query(default=None, max_length=120),
@@ -1884,27 +1993,15 @@ async def upload_ai_governance_evidence(
     file: UploadFile = File(...),
     user: dict[str, Any] = Depends(get_supervisor),
 ) -> dict[str, Any]:
-    original_name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
-    extension = Path(original_name).suffix.lower()
-    media_type = AI_EVIDENCE_MEDIA_TYPES.get(extension)
-    if not original_name or len(original_name) > 255 or not media_type:
-        await file.close()
-        raise HTTPException(status_code=415, detail="Formato de evidencia no admitido. Usa PDF, Word, Excel, CSV, TXT, PNG o JPG.")
-    content = await file.read(MAX_AI_EVIDENCE_BYTES + 1)
-    await file.close()
-    if not content:
-        raise HTTPException(status_code=422, detail="El archivo está vacío.")
-    if len(content) > MAX_AI_EVIDENCE_BYTES:
-        raise HTTPException(status_code=413, detail="El tamaño máximo por archivo es 10 MB.")
-    checksum = hashlib.sha256(content).hexdigest()
+    upload = await _read_ai_evidence_upload(file)
     try:
         saved = database.save_ai_governance_evidence_file(
             evidence_id=str(uuid.uuid4()),
             control_id=control_id,
-            file_name=original_name,
-            media_type=media_type,
-            content=content,
-            checksum=checksum,
+            file_name=upload["file_name"],
+            media_type=upload["media_type"],
+            content=upload["content"],
+            checksum=upload["checksum"],
             username=user["username"],
         )
     except ValueError as error:
@@ -2064,14 +2161,23 @@ def get_ai_governance_risks(user: dict[str, Any] = Depends(get_current_user)) ->
 
 
 @app.post("/api/ai-governance/risks", status_code=201)
-def create_ai_governance_risk(
-    request: AIGovernanceRiskCreate,
+async def create_ai_governance_risk(
+    risk_json: str = Form(..., alias="risk"),
+    files: list[UploadFile] = File(default=[]),
     user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
     if "riesgos" not in user["permissions"]:
         raise HTTPException(status_code=403, detail="No tienes permiso para registrar riesgos de IA.")
-    if request.data_basis == "observado" and not request.evidence.strip():
-        raise HTTPException(status_code=422, detail="Un riesgo con base observada requiere registrar la fuente de evidencia.")
+    try:
+        request = AIGovernanceRiskCreate.model_validate_json(risk_json)
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error.errors(include_url=False)) from error
+    attachments = [item for item in files if (item.filename or "").strip()]
+    if len(attachments) > MAX_AI_RISK_EVIDENCE_FILES:
+        raise HTTPException(status_code=422, detail=f"Puedes adjuntar hasta {MAX_AI_RISK_EVIDENCE_FILES} archivos por riesgo.")
+    uploads = [await _read_ai_evidence_upload(item) for item in attachments]
+    if request.data_basis == "observado" and not request.evidence.strip() and not uploads:
+        raise HTTPException(status_code=422, detail="Un riesgo con base observada requiere una fuente de evidencia: escribe una referencia o adjunta un archivo.")
     risk = {
         "id": str(uuid.uuid4()),
         "modelName": request.model_name.strip(),
@@ -2086,12 +2192,41 @@ def create_ai_governance_risk(
         "sourceAlertId": request.source_alert_id,
     }
     try:
-        return database.create_ai_governance_risk(risk, user["username"], request.source_alert_id)
+        return database.create_ai_governance_risk(risk, user["username"], request.source_alert_id, uploads)
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except Exception as error:
         logger.exception("No se pudo registrar el riesgo de gobernanza de IA.")
         raise HTTPException(status_code=503, detail="No se pudo registrar el riesgo en PostgreSQL.") from error
+
+
+@app.get("/api/ai-governance/risk-evidence/{file_id}/download")
+def download_ai_governance_risk_evidence(
+    file_id: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> Response:
+    _require_ai_evidence_read_access(user)
+    try:
+        evidence = database.get_ai_governance_risk_evidence_file(file_id)
+    except Exception as error:
+        logger.exception("No se pudo leer el adjunto de riesgo %s.", file_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el adjunto del riesgo.") from error
+    if not evidence:
+        raise HTTPException(status_code=404, detail="No se encontró el adjunto solicitado.")
+    _append_access_event(
+        username=user["username"],
+        role=user["role"],
+        action="Descarga de evidencia de riesgo AI TRiSM",
+        resource=f"{evidence['risk_id']}/{evidence['file_name']}",
+        result="Permitido",
+    )
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"evidence\"; filename*=UTF-8''{quote(evidence['file_name'])}",
+        "Content-Length": str(evidence["size_bytes"]),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+    }
+    return Response(content=evidence["content"], media_type=evidence["media_type"], headers=headers)
 
 
 @app.patch("/api/ai-governance/risks/{risk_id}")

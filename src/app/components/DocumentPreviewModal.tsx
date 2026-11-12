@@ -81,15 +81,15 @@ export function DocumentPreviewModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label={`Vista previa de ${fileName}`}>
       <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white shadow-xl">
-        <div className="flex items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "#edebe9" }}>
-          <h3 className="truncate text-[14px] font-semibold" style={{ color: "#201f1e" }}>{fileName}</h3>
-          <button type="button" onClick={onClose} aria-label="Cerrar vista previa" className="rounded px-2 py-1 text-[12px]" style={{ color: "#605e5c" }}>Cerrar</button>
+        <div className="flex items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "var(--cs-edebe9)" }}>
+          <h3 className="truncate text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{fileName}</h3>
+          <button type="button" onClick={onClose} aria-label="Cerrar vista previa" className="rounded px-2 py-1 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Cerrar</button>
         </div>
         <div className="min-h-0 flex-1 overflow-auto p-3">
           {!content ? (
-            <p className="text-[12px]" style={{ color: "#8a8886" }}>Cargando vista previa…</p>
+            <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Cargando vista previa…</p>
           ) : content.message ? (
-            <p className="text-[13px]" style={{ color: "#605e5c" }}>{content.message}</p>
+            <p className="text-[13px]" style={{ color: "var(--ct-605e5c)" }}>{content.message}</p>
           ) : content.url && mediaType.startsWith("image/") ? (
             <img src={content.url} alt={fileName} className="mx-auto max-h-[75vh] max-w-full object-contain" />
           ) : extension === "pdf" ? (
@@ -105,21 +105,21 @@ export function DocumentPreviewModal({
                     <table className="min-w-full border-collapse text-[11px]">
                       <tbody>{sheet.rows.map((row, rowIndex) => (
                         <tr key={rowIndex}>{row.map((cell, cellIndex) => (
-                          <td key={cellIndex} className="border px-2 py-1" style={{ borderColor: "#edebe9" }}>{String(cell)}</td>
+                          <td key={cellIndex} className="border px-2 py-1" style={{ borderColor: "var(--cs-edebe9)" }}>{String(cell)}</td>
                         ))}</tr>
                       ))}</tbody>
                     </table>
                   </div>
-                  {sheet.rows.length === 100 && <p className="mt-1 text-[10px]" style={{ color: "#8a8886" }}>Vista previa limitada a las primeras 100 filas.</p>}
+                  {sheet.rows.length === 100 && <p className="mt-1 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Vista previa limitada a las primeras 100 filas.</p>}
                 </section>
               ))}
             </div>
           ) : content.files ? (
             content.files.length ? (
               <ul className="space-y-1 text-[12px]">{content.files.map((path) => <li key={path}>{path}</li>)}</ul>
-            ) : <p className="text-[12px]" style={{ color: "#8a8886" }}>El archivo ZIP no contiene archivos.</p>
+            ) : <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>El archivo ZIP no contiene archivos.</p>
           ) : (
-            <pre className="whitespace-pre-wrap break-words text-[12px]" style={{ color: "#201f1e" }}>{content.text}</pre>
+            <pre className="whitespace-pre-wrap break-words text-[12px]" style={{ color: "var(--ct-201f1e)" }}>{content.text}</pre>
           )}
         </div>
       </div>

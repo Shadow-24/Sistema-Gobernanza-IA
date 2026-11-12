@@ -119,6 +119,120 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Inline-style color tokens. Light values match the original hex colors. */
+:root {
+  color-scheme: light;
+  --cs-9fd89f: #9fd89f;
+  --cs-c7e0f4: #c7e0f4;
+  --cs-c8c6c4: #c8c6c4;
+  --cs-cce0f5: #cce0f5;
+  --cs-e1dfdd: #e1dfdd;
+  --cs-e8f2fb: #e8f2fb;
+  --cs-edebe9: #edebe9;
+  --cs-eff6fc: #eff6fc;
+  --cs-eff6ff: #eff6ff;
+  --cs-f1b8bb: #f1b8bb;
+  --cs-f1b9bc: #f1b9bc;
+  --cs-f1faf1: #f1faf1;
+  --cs-f3d7b5: #f3d7b5;
+  --cs-f3f2f1: #f3f2f1;
+  --cs-f3f9fd: #f3f9fd;
+  --cs-f5e2a0: #f5e2a0;
+  --cs-f5f0fb: #f5f0fb;
+  --cs-f5f9fd: #f5f9fd;
+  --cs-f8d1b4: #f8d1b4;
+  --cs-f8f8f8: #f8f8f8;
+  --cs-f9f8f7: #f9f8f7;
+  --cs-faf9f8: #faf9f8;
+  --cs-fdf3f4: #fdf3f4;
+  --cs-fff8f0: #fff8f0;
+  --cs-fffbf0: #fffbf0;
+  --cs-ffffff: #ffffff;
+  --ct-004578: #004578;
+  --ct-0f6cbd: #0f6cbd;
+  --ct-107c10: #107c10;
+  --ct-201f1e: #201f1e;
+  --ct-323130: #323130;
+  --ct-605e5c: #605e5c;
+  --ct-797775: #797775;
+  --ct-8764b8: #8764b8;
+  --ct-8a4b08: #8a4b08;
+  --ct-8a8886: #8a8886;
+  --ct-986f0b: #986f0b;
+  --ct-a4262c: #a4262c;
+  --ct-ca5010: #ca5010;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #1a1918;
+  --foreground: #f3f2f1;
+  --card: #242322;
+  --card-foreground: #f3f2f1;
+  --popover: #242322;
+  --popover-foreground: #f3f2f1;
+  --secondary: #2d2c2b;
+  --secondary-foreground: #f3f2f1;
+  --muted: #2d2c2b;
+  --muted-foreground: #b3b0ad;
+  --border: #3b3a39;
+  --input-background: #2a2928;
+  --switch-background: #5a5856;
+  --cs-9fd89f: #2f5c2f;
+  --cs-c7e0f4: #1f3a5a;
+  --cs-c8c6c4: #5a5856;
+  --cs-cce0f5: #1f3a5a;
+  --cs-e1dfdd: #3b3a39;
+  --cs-e8f2fb: #1b2b40;
+  --cs-edebe9: #3b3a39;
+  --cs-eff6fc: #1b2b40;
+  --cs-eff6ff: #1b2b40;
+  --cs-f1b8bb: #5c2a2e;
+  --cs-f1b9bc: #5c2a2e;
+  --cs-f1faf1: #1d2e1d;
+  --cs-f3d7b5: #5a3a20;
+  --cs-f3f2f1: #2d2c2b;
+  --cs-f3f9fd: #1f2a36;
+  --cs-f5e2a0: #5a4a14;
+  --cs-f5f0fb: #2a2236;
+  --cs-f5f9fd: #1f2a36;
+  --cs-f8d1b4: #5a3a20;
+  --cs-f8f8f8: #2a2928;
+  --cs-f9f8f7: #2a2928;
+  --cs-faf9f8: #2a2928;
+  --cs-fdf3f4: #3a1f22;
+  --cs-fff8f0: #3a2c1c;
+  --cs-fffbf0: #3a321c;
+  --cs-ffffff: #242322;
+  --ct-004578: #7cc0f5;
+  --ct-0f6cbd: #5cb0f0;
+  --ct-107c10: #6cd06c;
+  --ct-201f1e: #f3f2f1;
+  --ct-323130: #e1dfdd;
+  --ct-605e5c: #b3b0ad;
+  --ct-797775: #a8a6a4;
+  --ct-8764b8: #b99ae0;
+  --ct-8a4b08: #eba05a;
+  --ct-8a8886: #a8a6a4;
+  --ct-986f0b: #e8b64c;
+  --ct-a4262c: #f1767c;
+  --ct-ca5010: #f2894f;
+}
+
+/* Tailwind utilities that hard-code light surfaces. */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .hover\:bg-white:hover {
+  background-color: var(--card);
+}
+[data-theme="dark"] .hover\:bg-gray-100:hover,
+[data-theme="dark"] .hover\:bg-gray-50:hover {
+  background-color: var(--muted);
+}
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .hover\:text-gray-700:hover {
+  color: var(--muted-foreground);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

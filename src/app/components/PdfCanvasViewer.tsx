@@ -49,8 +49,8 @@ export function PdfCanvasViewer({ blob }: { blob: Blob }) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      {loading && <p className="text-[12px]" style={{ color: "#8a8886" }}>Cargando páginas…</p>}
-      {error && <p className="text-[13px]" style={{ color: "#a4262c" }}>{error}</p>}
+      {loading && <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Cargando páginas…</p>}
+      {error && <p className="text-[13px]" style={{ color: "var(--ct-a4262c)" }}>{error}</p>}
       <div ref={containerRef} className="flex flex-col gap-3" />
     </div>
   );

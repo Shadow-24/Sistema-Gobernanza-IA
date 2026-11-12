@@ -59,6 +59,18 @@ export function loadDetectedRiskWorkflows(): Promise<DetectedRiskWorkflow[]> {
   return apiRequest<DetectedRiskWorkflow[]>("/api/detected-risks/workflow");
 }
 
+export type DetectedRiskAssignee = {
+  username: string;
+  name: string;
+  role: string;
+  permissions: string[];
+  active: boolean;
+};
+
+export function loadDetectedRiskAssignees(): Promise<DetectedRiskAssignee[]> {
+  return apiRequest<DetectedRiskAssignee[]>("/api/detected-risks/assignees");
+}
+
 export function registerDetectedRisks(riskIds: string[]): Promise<DetectedRiskRegistration[]> {
   return apiRequest<DetectedRiskRegistration[]>("/api/detected-risks/registrations", {
     method: "POST",

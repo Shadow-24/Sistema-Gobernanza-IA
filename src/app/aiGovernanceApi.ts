@@ -16,6 +16,17 @@ export type GovernanceControl = {
 
 export type GovernanceRiskStatus = "identificado" | "en_tratamiento" | "aceptado" | "cerrado";
 
+export type GovernanceRiskAttachment = {
+  id: string;
+  risk_id: string;
+  file_name: string;
+  media_type: string;
+  size_bytes: number;
+  checksum: string;
+  uploaded_by: string;
+  created_at: string;
+};
+
 export type GovernanceRisk = {
   id: string;
   model_name: string;
@@ -31,9 +42,13 @@ export type GovernanceRisk = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  attachments: GovernanceRiskAttachment[];
 };
 
-export type GovernanceRiskInput = Omit<GovernanceRisk, "id" | "status" | "created_by" | "created_at" | "updated_at"> & {
+export type GovernanceRiskInput = Omit<
+  GovernanceRisk,
+  "id" | "status" | "created_by" | "created_at" | "updated_at" | "attachments"
+> & {
   source_alert_id?: string;
 };
 
@@ -82,10 +97,11 @@ export function loadAIGovernanceAlerts(): Promise<{ alerts: GovernanceAlert[]; g
   return apiRequest<{ alerts: GovernanceAlert[]; generatedAt: string }>("/api/ai-governance/alerts");
 }
 
-export function createAIGovernanceRisk(value: GovernanceRiskInput): Promise<GovernanceRisk> {
-  return apiRequest<GovernanceRisk>("/api/ai-governance/risks", {
-    method: "POST",
-    body: JSON.stringify({
+export function createAIGovernanceRisk(value: GovernanceRiskInput, files: File[] = []): Promise<GovernanceRisk> {
+  const form = new FormData();
+  form.append(
+    "risk",
+    JSON.stringify({
       model_name: value.model_name,
       category: value.category,
       description: value.description,
@@ -97,6 +113,11 @@ export function createAIGovernanceRisk(value: GovernanceRiskInput): Promise<Gove
       treatment: value.treatment,
       source_alert_id: value.source_alert_id,
     }),
+  );
+  files.forEach((file) => form.append("files", file));
+  return apiRequest<GovernanceRisk>("/api/ai-governance/risks", {
+    method: "POST",
+    body: form,
   });
 }
 
@@ -126,5 +147,10 @@ export async function uploadAIGovernanceEvidence(controlId: string, file: File):
 
 export async function downloadAIGovernanceEvidence(fileId: string): Promise<Blob> {
   const response = await apiFetch(`/api/ai-governance/evidence/${encodeURIComponent(fileId)}/download`);
+  return response.blob();
+}
+
+export async function downloadAIGovernanceRiskEvidence(fileId: string): Promise<Blob> {
+  const response = await apiFetch(`/api/ai-governance/risk-evidence/${encodeURIComponent(fileId)}/download`);
   return response.blob();
 }

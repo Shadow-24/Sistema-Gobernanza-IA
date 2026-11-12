@@ -23,6 +23,7 @@ import {
   type DemandModelStatus,
 } from "../demandModelApi";
 import { useAuth } from "../AuthContext";
+import { loadAssignees, type Assignee } from "../assigneesApi";
 import { csvValue, useSectorData } from "../SectorDataContext";
 import type { CSVRow } from "../../utils/csvParser";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
@@ -56,14 +57,14 @@ function Card({
   className = "",
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) {
-  return <div {...props} className={`bg-white rounded ${className}`} style={{ border: "1px solid #e1dfdd", ...props.style }}>{children}</div>;
+  return <div {...props} className={`bg-white rounded ${className}`} style={{ border: "1px solid var(--cs-e1dfdd)", ...props.style }}>{children}</div>;
 }
 
 const STATE_STYLES: Record<string, { icon: React.ElementType; bg: string; text: string; label: string }> = {
-  "Pendiente":   { icon: Clock,       bg: "#f3f2f1", text: "#605e5c", label: "Pendiente" },
-  "Completada":  { icon: CheckCircle, bg: "#f1faf1", text: "#107c10", label: "Completada" },
-  "En curso":    { icon: Clock,       bg: "#fff8f0", text: "#ca5010", label: "En curso" },
-  "Observada":   { icon: XCircle,     bg: "#fdf3f4", text: "#a4262c", label: "Observada" },
+  "Pendiente":   { icon: Clock,       bg: "var(--cs-f3f2f1)", text: "var(--ct-605e5c)", label: "Pendiente" },
+  "Completada":  { icon: CheckCircle, bg: "var(--cs-f1faf1)", text: "var(--ct-107c10)", label: "Completada" },
+  "En curso":    { icon: Clock,       bg: "var(--cs-fff8f0)", text: "var(--ct-ca5010)", label: "En curso" },
+  "Observada":   { icon: XCircle,     bg: "var(--cs-fdf3f4)", text: "var(--ct-a4262c)", label: "Observada" },
 };
 
 const AUDIT_PHASES: AuditPhase[] = [
@@ -123,18 +124,18 @@ function AuditTechnicalEvaluation({
   onTrain: () => void;
 }) {
   if (loading) {
-    return <p className="text-[12px]" style={{ color: "#605e5c" }}>Consultando evaluación real del modelo…</p>;
+    return <p className="text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Consultando evaluación real del modelo…</p>;
   }
 
   if (error) {
-    return <p role="alert" className="text-[12px]" style={{ color: "#a4262c" }}>{error}</p>;
+    return <p role="alert" className="text-[12px]" style={{ color: "var(--ct-a4262c)" }}>{error}</p>;
   }
 
   const metrics = status?.metrics?.hybrid ?? status?.metrics?.xgboost;
   const needsTraining = status?.status === "training_pending" || status?.sourceIsCurrent === false;
   return (
-    <div className="space-y-3 text-[12px]" style={{ color: "#605e5c" }}>
-      <p><strong style={{ color: "#201f1e" }}>Modelo:</strong> {status?.model ?? "XGBoost"} · pronóstico de ventas mensuales observadas.</p>
+    <div className="space-y-3 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>
+      <p><strong style={{ color: "var(--ct-201f1e)" }}>Modelo:</strong> {status?.model ?? "XGBoost"} · pronóstico de ventas mensuales observadas.</p>
       {status?.status === "evaluated" && metrics ? (
         <>
           <p>
@@ -151,8 +152,8 @@ function AuditTechnicalEvaluation({
             <span>Mejora vs. baseline: {status.metrics?.errorReductionPercent == null ? "—" : `${status.metrics.errorReductionPercent.toFixed(2)}%`}</span>
           </div>
           <p>Explicabilidad: {status.explainability?.evaluation.status ?? "no disponible"}.</p>
-          {status.sourceIsCurrent === false && <p role="status" style={{ color: "#8a4b08" }}>La fuente cambió desde esta evaluación; vuelve a entrenar antes de interpretar las métricas.</p>}
-          {status.warnings?.map((warning) => <p key={warning} style={{ color: "#8a4b08" }}>{warning}</p>)}
+          {status.sourceIsCurrent === false && <p role="status" style={{ color: "var(--ct-8a4b08)" }}>La fuente cambió desde esta evaluación; vuelve a entrenar antes de interpretar las métricas.</p>}
+          {status.warnings?.map((warning) => <p key={warning} style={{ color: "var(--ct-8a4b08)" }}>{warning}</p>)}
         </>
       ) : (
         <p>{status?.message ?? "Aún no existe una evaluación entrenada con este modelo."}</p>
@@ -193,9 +194,9 @@ function AuditEvaluationDetails({
       onClick={(event) => event.stopPropagation()}
       onToggle={(event) => setIsOpen(event.currentTarget.open)}
       className="mb-3 p-3 rounded"
-      style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}
+      style={{ background: "var(--cs-f9f8f7)", border: "1px solid var(--cs-e1dfdd)" }}
     >
-      <summary className="cursor-pointer text-[12px] font-medium" style={{ color: "#0f6cbd" }}>Ver estado y evaluación técnica</summary>
+      <summary className="cursor-pointer text-[12px] font-medium" style={{ color: "var(--ct-0f6cbd)" }}>Ver estado y evaluación técnica</summary>
       {isOpen && (
         <div className="pt-3">
           <AuditTechnicalEvaluation
@@ -250,10 +251,24 @@ function timelineTimestamp(value: string): number {
 }
 
 export function AuditModule() {
-  const { user, managedUsers, managementError } = useAuth();
+  const { user } = useAuth();
   const { datasets, loading: datasetsLoading, dataError } = useSectorData();
   const canManageAudits = user?.role === "Supervisor de Cumplimiento" && user.permissions.includes("auditoria");
-  const eligibleAssignees = managedUsers.filter((account) => account.active && account.permissions.includes("auditoria"));
+  const [assignees, setAssignees] = useState<Assignee[]>([]);
+  const [assigneesError, setAssigneesError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!canManageAudits) return;
+    loadAssignees("auditoria")
+      .then((records) => {
+        if (active) setAssignees(records);
+      })
+      .catch((error: unknown) => {
+        if (active) setAssigneesError(error instanceof Error ? error.message : "No se pudo cargar la lista de responsables.");
+      });
+    return () => { active = false; };
+  }, [canManageAudits]);
   const [demandModelStatus, setDemandModelStatus] = useState<DemandModelStatus | null>(null);
   const [demandModelStatusLoading, setDemandModelStatusLoading] = useState(true);
   const [demandModelStatusError, setDemandModelStatusError] = useState("");
@@ -385,7 +400,7 @@ export function AuditModule() {
     setDraftStatus(selectedAudit.estado);
     setDraftPhase(selectedWorkflow?.phase ?? "Planificación");
     setDraftResponsible(selectedWorkflow?.responsible ?? "");
-    setDraftNotes(selectedWorkflow?.notes ?? "");
+    setDraftNotes("");
     setNotice("");
   }, [selectedAuditId, selectedWorkflow?.phase, selectedWorkflow?.responsible, selectedWorkflow?.notes, selectedAudit?.estado]);
 
@@ -425,6 +440,7 @@ export function AuditModule() {
         notes: draftNotes,
       });
       setWorkflow((current) => [...current.filter((item) => item.audit_id !== saved.audit_id), saved]);
+      setDraftNotes("");
       setRefreshKey((current) => current + 1);
       setNotice("Seguimiento de auditoría guardado.");
     } catch (error) {
@@ -521,24 +537,24 @@ export function AuditModule() {
   return (
     <div className="space-y-5">
       <div>
-        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Auditoría</h1><UserStoryRefs ids={["HU-013", "HU-016", "HU-017"]} /></div>
-        <p className="text-[13px] mt-0.5" style={{ color: "#605e5c" }}>
+        <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Auditoría</h1><UserStoryRefs ids={["HU-013", "HU-016", "HU-017"]} /></div>
+        <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>
           Historial de auditorías · métricas de modelos disponibles en la evaluación técnica
         </p>
-        <p className="text-[11px] mt-1" style={{ color: "#8a8886" }}>Los cambios de seguimiento y los documentos adjuntos se guardan en PostgreSQL.</p>
+        <p className="text-[11px] mt-1" style={{ color: "var(--ct-8a8886)" }}>Los cambios de seguimiento y los documentos adjuntos se guardan en PostgreSQL.</p>
       </div>
 
-      {workflowError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{workflowError}</p>}
-      {auditRegistrationError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>{auditRegistrationError}</p>}
-      {notice && <p role="status" className="rounded px-3 py-2 text-[12px]" style={{ background: "#f1faf1", color: "#107c10" }}>{notice}</p>}
-      {demandModelStatusLoading && <p role="status" className="text-[11px]" style={{ color: "#605e5c" }}>Verificando datos para AUD-04…</p>}
+      {workflowError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{workflowError}</p>}
+      {auditRegistrationError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{auditRegistrationError}</p>}
+      {notice && <p role="status" className="rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-f1faf1)", color: "var(--ct-107c10)" }}>{notice}</p>}
+      {demandModelStatusLoading && <p role="status" className="text-[11px]" style={{ color: "var(--ct-605e5c)" }}>Verificando datos para AUD-04…</p>}
       {demandModelStatusError && (
-        <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "#fdf3f4", color: "#a4262c" }}>
+        <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>
           No se pudo validar la disponibilidad de datos de AUD-04; se mantiene fuera del historial. {demandModelStatusError}
         </p>
       )}
       {!demandModelStatusLoading && !demandModelStatusError && !demandAuditAvailable && (
-        <p role="status" className="text-[11px]" style={{ color: "#605e5c" }}>
+        <p role="status" className="text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
           AUD-04 no aparece en el historial porque requiere al menos 36 meses de ventas válidas. {demandModelStatus?.message}
         </p>
       )}
@@ -556,8 +572,8 @@ export function AuditModule() {
               onClick={() => setStatusFilter((current) => current === estado ? null : estado)}
               className="rounded text-left transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
               style={{
-                background: "#ffffff",
-                border: `1px solid ${statusFilter === estado ? "#0f6cbd" : "#e1dfdd"}`,
+                background: "var(--cs-ffffff)",
+                border: `1px solid ${statusFilter === estado ? "#0f6cbd" : "var(--cs-e1dfdd)"}`,
                 boxShadow: statusFilter === estado ? "0 0 0 2px #cce0f5" : undefined,
               }}
             >
@@ -566,8 +582,8 @@ export function AuditModule() {
                 <Icon className="w-4 h-4" style={{ color: s.text }} />
               </div>
               <div>
-                <div className="text-[20px] font-semibold" style={{ color: "#201f1e" }}>{count}</div>
-                <div className="text-[12px]" style={{ color: "#8a8886" }}>Auditorías {estado}</div>
+                <div className="text-[20px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{count}</div>
+                <div className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Auditorías {estado}</div>
               </div>
               </div>
             </button>
@@ -575,9 +591,9 @@ export function AuditModule() {
         })}
       </div>
       {statusFilter && (
-        <div className="flex items-center justify-between gap-2 text-[11px]" style={{ color: "#605e5c" }}>
+        <div className="flex items-center justify-between gap-2 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
           <span>Filtrando historial y línea de tiempo: {statusFilter}.</span>
-          <button type="button" onClick={() => setStatusFilter(null)} className="font-medium" style={{ color: "#0f6cbd" }}>Quitar filtro</button>
+          <button type="button" onClick={() => setStatusFilter(null)} className="font-medium" style={{ color: "var(--ct-0f6cbd)" }}>Quitar filtro</button>
         </div>
       )}
 
@@ -585,7 +601,7 @@ export function AuditModule() {
 
         {/* Audit list */}
         <div className="space-y-3">
-          <div className="text-[14px] font-semibold" style={{ color: "#201f1e" }}>Historial de Auditorías</div>
+          <div className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Historial de Auditorías</div>
           {filteredAudits.map(audit => {
             const s = STATE_STYLES[audit.estado];
             const Icon = s.icon;
@@ -613,16 +629,16 @@ export function AuditModule() {
                 }}
               >
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="text-[12px] font-mono" style={{ color: "#8a8886" }}>{audit.id}</span>
+                  <span className="text-[12px] font-mono" style={{ color: "var(--ct-8a8886)" }}>{audit.id}</span>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px]" style={{ background: s.bg, color: s.text }}>
                     <Icon className="w-2.5 h-2.5" />{audit.estado}
                   </span>
-                  {hasModelEvaluation && <span className="px-2 py-0.5 rounded-full text-[12px]" style={{ background: "#eff6ff", color: "#0f6cbd" }}>Revisar evaluación técnica</span>}
+                  {hasModelEvaluation && <span className="px-2 py-0.5 rounded-full text-[12px]" style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)" }}>Revisar evaluación técnica</span>}
                 </div>
-                <p className="text-[14px] font-medium leading-snug" style={{ color: "#201f1e" }}>{audit.tipo}</p>
-                <p className="mt-1 text-[12px] leading-snug" style={{ color: "#8a8886" }}>{audit.administrado} · {audit.sector}</p>
-                <p className="mt-1 text-[12px] leading-snug" style={{ color: "#8a8886" }}>{audit.hallazgos}</p>
-                <div className="mt-2 mb-3 flex flex-wrap gap-3 text-[12px]" style={{ color: "#8a8886" }}>
+                <p className="text-[14px] font-medium leading-snug" style={{ color: "var(--ct-201f1e)" }}>{audit.tipo}</p>
+                <p className="mt-1 text-[12px] leading-snug" style={{ color: "var(--ct-8a8886)" }}>{audit.administrado} · {audit.sector}</p>
+                <p className="mt-1 text-[12px] leading-snug" style={{ color: "var(--ct-8a8886)" }}>{audit.hallazgos}</p>
+                <div className="mt-2 mb-3 flex flex-wrap gap-3 text-[12px]" style={{ color: "var(--ct-8a8886)" }}>
                   <span className="flex items-center gap-1"><User className="w-3 h-3" />{audit.responsable || "Sin asignar"}</span>
                   <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{audit.fecha}</span>
                 </div>
@@ -639,7 +655,7 @@ export function AuditModule() {
                 )}
 
                 {!datasetsLoading && !dataError && (audit.resoluciones.length > 0 || audit.expedientes.length > 0) && (
-                  <div className="flex items-center gap-4 text-[12px]" style={{ color: "#8a8886" }}>
+                  <div className="flex items-center gap-4 text-[12px]" style={{ color: "var(--ct-8a8886)" }}>
                     {audit.resoluciones.length > 0 && <span className="flex items-center gap-1"><Link className="w-3 h-3" />{audit.resoluciones.length} resoluciones verificadas</span>}
                     {audit.expedientes.length > 0 && (
                       <span className="flex items-center gap-1">
@@ -660,7 +676,7 @@ export function AuditModule() {
                           showAuditReference(audit.id, "resolution", resolution);
                         }}
                         className="rounded px-1.5 py-0.5 text-[11px] font-mono underline"
-                        style={{ background: "#eff6ff", color: "#0f6cbd" }}
+                        style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)" }}
                       >{resolution}</button>
                     ))}
                     {audit.expedientes.map((caseId) => (
@@ -672,7 +688,7 @@ export function AuditModule() {
                           showAuditReference(audit.id, "case", caseId);
                         }}
                         className="rounded px-1.5 py-0.5 text-[11px] font-mono underline"
-                        style={{ background: "#f1faf1", color: "#107c10" }}
+                        style={{ background: "var(--cs-f1faf1)", color: "var(--ct-107c10)" }}
                       >{caseId}</button>
                     ))}
                   </div>
@@ -686,17 +702,17 @@ export function AuditModule() {
             <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto p-4">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                <h2 id="audit-follow-up-title" className="text-[15px] font-semibold" style={{ color: "#201f1e" }}>Seguimiento · {selectedAudit.id}</h2>
-                <p className="text-[12px] mt-1" style={{ color: "#605e5c" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
+                <h2 id="audit-follow-up-title" className="text-[15px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Seguimiento · {selectedAudit.id}</h2>
+                <p className="text-[12px] mt-1" style={{ color: "var(--ct-605e5c)" }}>{selectedAudit.tipo} · Los identificadores históricos son referencias; los archivos adjuntos se listan por separado.</p>
                 </div>
                 <button type="button" onClick={() => {
                   setIsFollowUpOpen(false);
                   setSelectedReference(null);
-                }} aria-label="Cerrar seguimiento de auditoría" className="rounded px-2 py-1 text-[12px]" style={{ color: "#605e5c" }}>Cerrar</button>
+                }} aria-label="Cerrar seguimiento de auditoría" className="rounded px-2 py-1 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Cerrar</button>
               </div>
-              <div className="mb-4 rounded p-3" style={{ background: "#f9f8f7", border: "1px solid #e1dfdd" }}>
-                <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Referencias de esta auditoría</h3>
-                <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>
+              <div className="mb-4 rounded p-3" style={{ background: "var(--cs-f9f8f7)", border: "1px solid var(--cs-e1dfdd)" }}>
+                <h3 className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Referencias de esta auditoría</h3>
+                <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>
                   {datasetsLoading
                     ? "Consultando las fuentes de resoluciones y expedientes…"
                     : dataError
@@ -705,11 +721,11 @@ export function AuditModule() {
                 </p>
                 <div className="mt-2 space-y-2">
                   <div>
-                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Resoluciones verificadas</div>
+                    <div className="text-[10px] font-medium" style={{ color: "var(--ct-605e5c)" }}>Resoluciones verificadas</div>
                     {datasetsLoading ? (
-                      <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Consultando…</p>
+                      <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Consultando…</p>
                     ) : dataError ? (
-                      <p className="mt-0.5 text-[10px]" style={{ color: "#a4262c" }}>No se pudieron verificar las resoluciones.</p>
+                      <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-a4262c)" }}>No se pudieron verificar las resoluciones.</p>
                     ) : selectedAudit.resoluciones.length ? (
                       <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.resoluciones.map((resolution) => (
                         <button
@@ -717,17 +733,17 @@ export function AuditModule() {
                           type="button"
                           onClick={() => showAuditReference(selectedAudit.id, "resolution", resolution)}
                           className="rounded px-1.5 py-0.5 text-[10px] font-mono underline"
-                          style={{ background: "#eff6ff", color: "#0f6cbd" }}
+                          style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)" }}
                         >{resolution}</button>
                       ))}</div>
-                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>No hay resoluciones verificadas para esta auditoría.</p>}
+                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>No hay resoluciones verificadas para esta auditoría.</p>}
                   </div>
                   <div>
-                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Expedientes verificados</div>
+                    <div className="text-[10px] font-medium" style={{ color: "var(--ct-605e5c)" }}>Expedientes verificados</div>
                     {datasetsLoading ? (
-                      <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>Consultando…</p>
+                      <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Consultando…</p>
                     ) : dataError ? (
-                      <p className="mt-0.5 text-[10px]" style={{ color: "#a4262c" }}>No se pudieron verificar los expedientes.</p>
+                      <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-a4262c)" }}>No se pudieron verificar los expedientes.</p>
                     ) : selectedAudit.expedientes.length ? (
                       <div className="mt-1 flex flex-wrap gap-1">{selectedAudit.expedientes.map((caseId) => (
                         <button
@@ -735,14 +751,14 @@ export function AuditModule() {
                           type="button"
                           onClick={() => showAuditReference(selectedAudit.id, "case", caseId)}
                           className="rounded px-1.5 py-0.5 text-[10px] font-mono underline"
-                          style={{ background: "#f1faf1", color: "#107c10" }}
+                          style={{ background: "var(--cs-f1faf1)", color: "var(--ct-107c10)" }}
                         >{caseId}</button>
                       ))}</div>
-                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>No hay expedientes verificados para esta auditoría.</p>}
+                    ) : <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>No hay expedientes verificados para esta auditoría.</p>}
                   </div>
                   <div>
-                    <div className="text-[10px] font-medium" style={{ color: "#605e5c" }}>Documentos adjuntos</div>
-                    <p className="mt-0.5 text-[10px]" style={{ color: "#8a8886" }}>
+                    <div className="text-[10px] font-medium" style={{ color: "var(--ct-605e5c)" }}>Documentos adjuntos</div>
+                    <p className="mt-0.5 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>
                       {documentsLoading
                         ? "Consultando archivos adjuntos…"
                         : documentsError
@@ -754,16 +770,16 @@ export function AuditModule() {
                   </div>
                 </div>
                 {selectedReference && (
-                  <div className="mt-3 rounded border p-3" style={{ borderColor: "#cce0f5", background: "#ffffff" }}>
+                  <div className="mt-3 rounded border p-3" style={{ borderColor: "var(--cs-cce0f5)", background: "var(--cs-ffffff)" }}>
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <h4 className="text-[11px] font-semibold" style={{ color: "#201f1e" }}>
+                      <h4 className="text-[11px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>
                         {selectedReference.kind === "resolution" ? "Detalle de resolución" : "Detalle de expediente"} · {selectedReference.identifier}
                       </h4>
                       <button
                         type="button"
                         onClick={() => setSelectedReference(null)}
                         className="text-[10px] underline"
-                        style={{ color: "#0f6cbd" }}
+                        style={{ color: "var(--ct-0f6cbd)" }}
                       >Cerrar detalle</button>
                     </div>
                     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -771,105 +787,105 @@ export function AuditModule() {
                         .filter(([, value]) => value.trim())
                         .map(([field, value]) => (
                           <div key={field} className="min-w-0">
-                            <dt className="text-[9px] font-medium" style={{ color: "#8a8886" }}>{field}</dt>
-                            <dd className="break-words text-[10px]" style={{ color: "#323130" }}>{value}</dd>
+                            <dt className="text-[9px] font-medium" style={{ color: "var(--ct-8a8886)" }}>{field}</dt>
+                            <dd className="break-words text-[10px]" style={{ color: "var(--ct-323130)" }}>{value}</dd>
                           </div>
                         ))}
                     </dl>
                   </div>
                 )}
               </div>
-              <form onSubmit={(event) => void saveAuditChanges(event)} className="space-y-3 rounded p-3" style={{ background: "#f9f8f7" }}>
+              <form onSubmit={(event) => void saveAuditChanges(event)} className="space-y-3 rounded p-3" style={{ background: "var(--cs-f9f8f7)" }}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                     Estado
                     <select required disabled={!canManageAudits} value={draftStatus} onChange={(event) => {
                       const status = event.target.value as AuditStatus;
                       setDraftStatus(status);
-                    }} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "#e1dfdd" }}>
+                    }} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "var(--cs-e1dfdd)" }}>
                       <option value="Pendiente">Pendiente</option>
                       <option value="En curso">En curso</option>
                       <option value="Observada">Observada</option>
                       <option value="Completada">Completada</option>
                     </select>
                   </label>
-                  <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                     Etapa de la auditoría
-                    <select required disabled={!canManageAudits} value={draftPhase} onChange={(event) => setDraftPhase(event.target.value as AuditPhase)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "#e1dfdd" }}>
+                    <select required disabled={!canManageAudits} value={draftPhase} onChange={(event) => setDraftPhase(event.target.value as AuditPhase)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "var(--cs-e1dfdd)" }}>
                       {AUDIT_PHASES.map((phase) => <option key={phase} value={phase}>{phase}</option>)}
                     </select>
                   </label>
-                  <label className="text-[11px] font-medium" style={{ color: "#605e5c" }}>
+                  <label className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                     Responsable
-                    <select required={draftStatus !== "Pendiente"} disabled={!canManageAudits} value={draftResponsible} onChange={(event) => setDraftResponsible(event.target.value)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "#e1dfdd" }}>
+                    <select required={draftStatus !== "Pendiente"} disabled={!canManageAudits} value={draftResponsible} onChange={(event) => setDraftResponsible(event.target.value)} className="mt-1 block w-full rounded border bg-white px-2 py-1.5 text-[12px]" style={{ borderColor: "var(--cs-e1dfdd)" }}>
                       <option value="">Selecciona un responsable</option>
-                      {draftResponsible && !eligibleAssignees.some((account) => account.username === draftResponsible) && (
+                      {draftResponsible && !assignees.some((account) => account.username === draftResponsible) && (
                         <option value={draftResponsible} disabled>Usuario asignado sin permiso activo</option>
                       )}
-                      {eligibleAssignees.map((account) => (
+                      {assignees.map((account) => (
                         <option key={account.username} value={account.username}>{account.name} · @{account.username}</option>
                       ))}
                     </select>
-                    {managementError && <span className="mt-1 block font-normal" style={{ color: "#a4262c" }}>No se pudo cargar la lista de usuarios: {managementError}</span>}
-                    {!managementError && canManageAudits && eligibleAssignees.length === 0 && <span className="mt-1 block font-normal" style={{ color: "#8a8886" }}>No hay usuarios activos con permiso de Auditoría.</span>}
+                    {assigneesError && <span className="mt-1 block font-normal" style={{ color: "var(--ct-a4262c)" }}>No se pudo cargar la lista de responsables: {assigneesError}</span>}
+                    {!assigneesError && canManageAudits && assignees.length === 0 && <span className="mt-1 block font-normal" style={{ color: "var(--ct-8a8886)" }}>No hay usuarios activos con permiso de Auditoría.</span>}
                   </label>
                 </div>
-                <label className="block text-[11px] font-medium" style={{ color: "#605e5c" }}>
+                <label className="block text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                   Notas de seguimiento
-                  <textarea required={draftStatus !== "Pendiente"} disabled={!canManageAudits} maxLength={5000} rows={3} value={draftNotes} onChange={(event) => setDraftNotes(event.target.value)} placeholder="Acuerdos, tareas pendientes o comentarios de revisión" className="mt-1 block w-full rounded border bg-white p-2 text-[12px]" style={{ borderColor: "#e1dfdd" }} />
+                  <textarea required={draftStatus !== "Pendiente"} disabled={!canManageAudits} maxLength={5000} rows={3} value={draftNotes} onChange={(event) => setDraftNotes(event.target.value)} placeholder="Acuerdos, tareas pendientes o comentarios de revisión" className="mt-1 block w-full rounded border bg-white p-2 text-[12px]" style={{ borderColor: "var(--cs-e1dfdd)" }} />
                 </label>
                 {canManageAudits ? (
                   <button type="submit" disabled={saving} className="rounded px-3 py-2 text-[12px] font-medium text-white disabled:opacity-60" style={{ background: "#0f6cbd" }}>{saving ? "Guardando…" : "Guardar seguimiento"}</button>
                 ) : (
-                  <p className="text-[11px]" style={{ color: "#8a8886" }}>Solo el Supervisor de Cumplimiento puede actualizar auditorías.</p>
+                  <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Solo el Supervisor de Cumplimiento puede actualizar auditorías.</p>
                 )}
               </form>
 
-              <div className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
+              <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--cs-edebe9)" }}>
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Documentos relacionados</h3>
-                    <p className="text-[10px] mt-0.5" style={{ color: "#8a8886" }}>Adjuntos persistidos · máximo 10 MB por archivo.</p>
+                    <h3 className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Documentos relacionados</h3>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--ct-8a8886)" }}>Adjuntos persistidos · máximo 10 MB por archivo.</p>
                   </div>
                 </div>
                 {canManageAudits && (
                   <div className="mt-2 flex flex-wrap items-end gap-2">
-                    <label className="text-[10px] font-medium" style={{ color: "#605e5c" }}>
+                    <label className="text-[10px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                       Tipo de documento
                       <select
                         value={documentCategory}
                         onChange={(event) => setDocumentCategory(event.target.value as AuditDocument["category"])}
                         disabled={uploading}
                         className="mt-1 block rounded border bg-white px-2 py-1.5 text-[11px]"
-                        style={{ borderColor: "#e1dfdd" }}
+                        style={{ borderColor: "var(--cs-e1dfdd)" }}
                       >
                         <option value="Resoluciones">Resoluciones</option>
                         <option value="Expedientes">Expedientes</option>
                         <option value="Otro documento relacionado">Otro documento relacionado</option>
                       </select>
                     </label>
-                    <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "#cce0f5", color: "#0f6cbd" }}>
+                    <label className="cursor-pointer rounded border px-2 py-1.5 text-[11px] font-medium" style={{ borderColor: "var(--cs-cce0f5)", color: "var(--ct-0f6cbd)" }}>
                       {uploading ? "Subiendo…" : "Adjuntar documento"}
                       <input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" disabled={uploading} onChange={(event) => void addAuditDocument(event)} />
                     </label>
                   </div>
                 )}
-                {documentsError && <p role="alert" className="mt-2 text-[11px]" style={{ color: "#a4262c" }}>{documentsError}</p>}
+                {documentsError && <p role="alert" className="mt-2 text-[11px]" style={{ color: "var(--ct-a4262c)" }}>{documentsError}</p>}
                 {documentsLoading ? (
-                  <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Cargando documentos…</p>
+                  <p className="mt-2 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Cargando documentos…</p>
                 ) : documents.length ? (
                   <div className="mt-2 space-y-1">
                     {documents.map((document) => (
-                      <div key={document.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5" style={{ background: "#f9f8f7" }}>
+                      <div key={document.id} className="flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5" style={{ background: "var(--cs-f9f8f7)" }}>
                         <div className="min-w-0">
-                          <div className="truncate text-[11px] font-medium" style={{ color: "#201f1e" }}>{document.file_name}</div>
-                          <div className="text-[10px]" style={{ color: "#8a8886" }}>{document.category} · {(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by} · {new Date(document.created_at).toLocaleDateString("es-PE")}</div>
+                          <div className="truncate text-[11px] font-medium" style={{ color: "var(--ct-201f1e)" }}>{document.file_name}</div>
+                          <div className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>{document.category} · {(document.size_bytes / 1024).toFixed(1)} KB · {document.uploaded_by} · {new Date(document.created_at).toLocaleDateString("es-PE")}</div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => void previewAuditDocument(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "#0f6cbd" }}>Ver</button>
-                          <button type="button" onClick={() => void downloadAuditDocumentFile(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "#0f6cbd" }}>Descargar</button>
+                          <button type="button" onClick={() => void previewAuditDocument(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "var(--ct-0f6cbd)" }}>Ver</button>
+                          <button type="button" onClick={() => void downloadAuditDocumentFile(document)} className="rounded px-2 py-1 text-[11px]" style={{ color: "var(--ct-0f6cbd)" }}>Descargar</button>
                           {canManageAudits && (
-                            <button type="button" disabled={deletingDocumentId === document.id} onClick={() => void removeAuditDocument(document)} className="rounded px-2 py-1 text-[11px] disabled:opacity-60" style={{ color: "#a4262c" }}>
+                            <button type="button" disabled={deletingDocumentId === document.id} onClick={() => void removeAuditDocument(document)} className="rounded px-2 py-1 text-[11px] disabled:opacity-60" style={{ color: "var(--ct-a4262c)" }}>
                               {deletingDocumentId === document.id ? "Eliminando…" : "Eliminar"}
                             </button>
                           )}
@@ -878,7 +894,7 @@ export function AuditModule() {
                     ))}
                   </div>
                 ) : (
-                  !documentsError && <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Aún no hay documentos adjuntos para esta auditoría.</p>
+                  !documentsError && <p className="mt-2 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Aún no hay documentos adjuntos para esta auditoría.</p>
                 )}
               </div>
               {documentPreview && (
@@ -889,13 +905,13 @@ export function AuditModule() {
                   onClose={() => setDocumentPreview(null)}
                 />
               )}
-              {selectedWorkflow?.updated_by && <p className="mt-2 text-[10px]" style={{ color: "#8a8886" }}>Última actualización: {selectedWorkflow.updated_by} · {new Date(selectedWorkflow.updated_at).toLocaleString("es-PE")}</p>}
-              <section className="mt-4 border-t pt-3" style={{ borderColor: "#edebe9" }}>
-                <h3 className="text-[12px] font-semibold" style={{ color: "#201f1e" }}>Historial de seguimiento</h3>
+              {selectedWorkflow?.updated_by && <p className="mt-2 text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Última actualización: {selectedWorkflow.updated_by} · {new Date(selectedWorkflow.updated_at).toLocaleString("es-PE")}</p>}
+              <section className="mt-4 border-t pt-3" style={{ borderColor: "var(--cs-edebe9)" }}>
+                <h3 className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Historial de seguimiento</h3>
                 {selectedAuditHistory.length ? (
                   <ol className="mt-2 space-y-2">
                     {selectedAuditHistory.map((event) => (
-                      <li key={event.key} className="rounded p-2 text-[11px]" style={{ background: "#f9f8f7", color: "#605e5c" }}>
+                      <li key={event.key} className="rounded p-2 text-[11px]" style={{ background: "var(--cs-f9f8f7)", color: "var(--ct-605e5c)" }}>
                         <span className="font-medium">{event.fecha}</span>
                         <p className="mt-0.5">{event.evento} — {event.detalle}</p>
                         {event.eventType === "update" && event.changes.length > 0 && (
@@ -909,7 +925,7 @@ export function AuditModule() {
                     ))}
                   </ol>
                 ) : (
-                  <p className="mt-2 text-[11px]" style={{ color: "#8a8886" }}>Todavía no hay cambios registrados.</p>
+                  <p className="mt-2 text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Todavía no hay cambios registrados.</p>
                 )}
               </section>
             </Card>

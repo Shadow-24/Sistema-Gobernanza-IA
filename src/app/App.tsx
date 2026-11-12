@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from "react-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
+import { ThemeProvider } from "./ThemeContext";
 import { SectorDataProvider } from "./SectorDataContext";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { LoginScreen } from "./components/LoginScreen";
@@ -36,9 +37,9 @@ function ProtectedModule({ module, label, supervisorOnly = false, children }: { 
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (!permitted) {
     return (
-      <div className="max-w-xl mx-auto mt-10 bg-white rounded p-6" style={{ border: "1px solid #e1dfdd" }}>
-        <h1 className="text-[18px] font-semibold" style={{ color: "#201f1e" }}>Acceso no autorizado</h1>
-        <p className="text-[14px] mt-2 mb-4" style={{ color: "#605e5c" }}>Tu rol no tiene permiso para acceder a {label}.</p>
+      <div className="max-w-xl mx-auto mt-10 bg-white rounded p-6" style={{ border: "1px solid var(--cs-e1dfdd)" }}>
+        <h1 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Acceso no autorizado</h1>
+        <p className="text-[14px] mt-2 mb-4" style={{ color: "var(--ct-605e5c)" }}>Tu rol no tiene permiso para acceder a {label}.</p>
         <Link to="/dashboard" className="inline-flex items-center px-3 py-2 rounded text-[14px] font-medium text-white" style={{ background: "#0f6cbd" }}>Regresar al Dashboard Ejecutivo</Link>
       </div>
     );
@@ -48,6 +49,7 @@ function ProtectedModule({ module, label, supervisorOnly = false, children }: { 
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <SectorDataProvider>
         <BrowserRouter>
@@ -68,5 +70,6 @@ export default function App() {
         </BrowserRouter>
       </SectorDataProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
