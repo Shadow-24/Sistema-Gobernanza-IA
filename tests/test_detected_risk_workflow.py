@@ -257,31 +257,83 @@ class DetectedRiskWorkflowTests(unittest.TestCase):
         predict.assert_called_once_with(api_main.IMPORTS_PATH, request.model_dump(by_alias=True))
         save.assert_called_once_with("SIM-TRN-001", request.model_dump(by_alias=True, exclude_none=True), prediction, "analyst")
 
-    def test_road_evaluation_save_replaces_previous_evaluation_for_risk(self) -> None:
+    def test_road_evaluation_save_updates_latest_and_appends_to_history(self) -> None:
         connection_context = MagicMock()
         connection = connection_context.__enter__.return_value
-        saved = {
-            "risk_id": "SIM-TRN-001",
-            "inputs": {"phenomenonClass": "HIDROMETEOROLÓGICO"},
-            "result": {"prediction": "INTERRUMPIDO"},
-            "evaluated_by": "supervisor",
+        row = {
+            "id": 7, "risk_id": "SIM-TRN-001", "inputs": {"phenomenonClass": "HIDROMETEOROLÓGICO"},
+            "result": {"prediction": "INTERRUMPIDO"}, "evaluated_by": "supervisor",
+            "review_decision": None, "review_comment": None, "review_by": None, "review_at": None,
         }
-        connection.execute.return_value.fetchone.return_value = saved
+        connection.execute.return_value.fetchone.side_effect = [{"id": 7}, row]
 
         with patch.object(database, "connection", return_value=connection_context):
             result = database.save_detected_risk_road_evaluation(
-                "SIM-TRN-001",
-                {"phenomenonClass": "HIDROMETEOROLÓGICO"},
-                {"prediction": "INTERRUMPIDO"},
-                "supervisor",
+                "SIM-TRN-001", {"phenomenonClass": "HIDROMETEOROLÓGICO"}, {"prediction": "INTERRUMPIDO"}, "supervisor",
             )
 
-        self.assertEqual(result, saved)
-        statement, parameters = connection.execute.call_args.args
-        self.assertIn("ON CONFLICT (risk_id) DO UPDATE", statement)
-        self.assertEqual(parameters[0], "SIM-TRN-001")
-        self.assertEqual(parameters[1].obj, {"phenomenonClass": "HIDROMETEOROLÓGICO"})
-        self.assertEqual(parameters[2].obj, {"prediction": "INTERRUMPIDO"})
+        statements = [call.args[0] for call in connection.execute.call_args_list]
+        self.assertIn("ON CONFLICT (risk_id) DO UPDATE", statements[0])
+        self.assertIn("INSERT INTO detected_risk_road_evaluation_history", statements[1])
+        self.assertEqual(connection.execute.call_args_list[0].args[1][1].obj, {"phenomenonClass": "HIDROMETEOROLÓGICO"})
+        self.assertEqual(result["id"], 7)
+        self.assertEqual(result["review"]["status"], "pendiente")
+        self.assertNotIn("review_decision", result)
+
+    def test_road_evaluation_review_requires_supervisor_and_a_reason_to_reject(self) -> None:
+        supervisor = {"username": "sup", "role": "Supervisor de Cumplimiento", "permissions": ["supervision"]}
+        with self.assertRaises(HTTPException) as denied:
+            api_main.get_supervisor({"username": "a", "role": "Analista de Datos", "permissions": ["riesgos", "supervision"]})
+        self.assertEqual(denied.exception.status_code, 403)
+
+        with patch.object(api_main.database, "review_detected_risk_road_evaluation") as review:
+            with self.assertRaises(HTTPException) as error:
+                api_main.review_detected_risk_road_evaluation(
+                    5, api_main.RoadEvaluationReviewRequest(decision="rechazada", comment=" "), supervisor,
+                )
+            review.assert_not_called()
+        self.assertEqual(error.exception.status_code, 422)
+
+    def test_road_evaluation_review_records_decision_and_blocks_a_second_review(self) -> None:
+        supervisor = {"username": "sup", "role": "Supervisor de Cumplimiento", "permissions": ["supervision"]}
+        reviewed = {"id": 5, "review": {"status": "validada", "reviewedBy": "sup"}}
+        with patch.object(api_main.database, "review_detected_risk_road_evaluation", return_value=reviewed) as review:
+            result = api_main.review_detected_risk_road_evaluation(
+                5, api_main.RoadEvaluationReviewRequest(decision="validada", comment="ok"), supervisor,
+            )
+        review.assert_called_once_with(5, "validada", "ok", "sup")
+        self.assertEqual(result, reviewed)
+
+        with patch.object(api_main.database, "review_detected_risk_road_evaluation", side_effect=ValueError("ya revisada")):
+            with self.assertRaises(HTTPException) as error:
+                api_main.review_detected_risk_road_evaluation(
+                    5, api_main.RoadEvaluationReviewRequest(decision="validada"), supervisor,
+                )
+        self.assertEqual(error.exception.status_code, 409)
+
+        with patch.object(api_main.database, "review_detected_risk_road_evaluation", return_value=None):
+            with self.assertRaises(HTTPException) as missing:
+                api_main.review_detected_risk_road_evaluation(
+                    99, api_main.RoadEvaluationReviewRequest(decision="validada"), supervisor,
+                )
+        self.assertEqual(missing.exception.status_code, 404)
+
+    def test_standalone_road_prediction_endpoint_is_removed(self) -> None:
+        paths = {getattr(route, "path", "") for route in api_main.app.routes}
+        self.assertNotIn("/api/risk-model/road-impact/predict", paths)
+
+    def test_road_evaluation_history_requires_risk_permission_and_lists_rows(self) -> None:
+        with patch.object(api_main.database, "list_detected_risk_road_evaluations") as listing:
+            with self.assertRaises(HTTPException) as raised:
+                api_main.list_detected_risk_road_evaluations("SIM-TRN-001", 20, {"permissions": ["dashboard"]})
+            listing.assert_not_called()
+        self.assertEqual(raised.exception.status_code, 403)
+
+        rows = [{"risk_id": "SIM-TRN-001", "evaluated_by": "analyst"}]
+        with patch.object(api_main.database, "list_detected_risk_road_evaluations", return_value=rows) as listing:
+            result = api_main.list_detected_risk_road_evaluations("SIM-TRN-001", 20, {"permissions": ["riesgos"]})
+        self.assertEqual(result, rows)
+        listing.assert_called_once_with("SIM-TRN-001", 20)
 
     def test_road_evaluation_read_requires_risk_permission(self) -> None:
         with patch.object(api_main.database, "get_detected_risk_road_evaluation") as get_evaluation:

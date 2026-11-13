@@ -8,6 +8,7 @@ import { csvValue, groupCount, useSectorData } from "../SectorDataContext";
 import {
   loadDemandModelStatus,
   predictDemandModel,
+  reviewDemandModel,
   trainDemandModel,
   type DemandForecastResponse,
   type DemandModelStatus,
@@ -89,6 +90,24 @@ export function ExecutiveDashboard() {
       setDemandModelError(error instanceof Error ? error.message : "No se pudo entrenar y evaluar el modelo.");
     } finally {
       setDemandTraining(false);
+    }
+  };
+
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewing, setReviewing] = useState(false);
+  const canReviewDemandModel = user?.role === "Supervisor de Cumplimiento" && user.permissions.includes("supervision");
+  const runDemandReview = async (decision: "aprobado" | "rechazado") => {
+    if (!demandModelStatus?.runId) return;
+    setReviewing(true);
+    setDemandModelError(null);
+    try {
+      const { approval } = await reviewDemandModel(demandModelStatus.runId, decision, reviewComment);
+      setDemandModelStatus({ ...demandModelStatus, approval, warnings: (demandModelStatus.warnings ?? []).filter((warning) => !warning.startsWith("Modelo pendiente de aprobación")) });
+      setReviewComment("");
+    } catch (error) {
+      setDemandModelError(error instanceof Error ? error.message : "No se pudo registrar la revisión del modelo.");
+    } finally {
+      setReviewing(false);
     }
   };
 
@@ -519,7 +538,7 @@ export function ExecutiveDashboard() {
                 <button
                   type="button"
                   onClick={runDemandPrediction}
-                  disabled={demandPredictionLoading || demandModelStatus?.sourceIsCurrent === false}
+                  disabled={demandPredictionLoading || demandModelStatus?.sourceIsCurrent === false || demandModelStatus?.approval?.status !== "aprobado"}
                   className="rounded px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-60"
                   style={{ background: "#0f6cbd" }}
                 >
@@ -556,6 +575,31 @@ export function ExecutiveDashboard() {
         )}
         {demandModelStatus?.status === "evaluated" && demandModelStatus.metrics && (
           <div className="mt-4 space-y-4">
+            {demandModelStatus.approval && (
+              <div role="status" className="rounded p-2 text-[12px]" style={{ background: "var(--cs-fff8f0)", color: "var(--ct-8a4b08)" }}>
+                <p>
+                  <strong>Revisión humana:</strong>{" "}
+                  {demandModelStatus.approval.status === "pendiente" && "pendiente. Un Supervisor de Cumplimiento debe aprobar este modelo antes de generar pronósticos."}
+                  {demandModelStatus.approval.status === "aprobado" && `aprobado por ${demandModelStatus.approval.reviewedBy ?? "supervisor"}.`}
+                  {demandModelStatus.approval.status === "rechazado" && `rechazado por ${demandModelStatus.approval.reviewedBy ?? "supervisor"}. Entrena una nueva corrida.`}
+                  {demandModelStatus.approval.comment ? ` Comentario: ${demandModelStatus.approval.comment}` : ""}
+                </p>
+                {demandModelStatus.approval.status === "pendiente" && canReviewDemandModel && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      placeholder="Comentario (obligatorio para rechazar)"
+                      aria-label="Comentario de la revisión del modelo"
+                      maxLength={2000}
+                      className="min-w-[220px] flex-1 rounded border px-2 py-1 text-[12px]"
+                    />
+                    <button type="button" disabled={reviewing} onClick={() => runDemandReview("aprobado")} className="rounded px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-60" style={{ background: "#107c10" }}>Aprobar modelo</button>
+                    <button type="button" disabled={reviewing || !reviewComment.trim()} onClick={() => runDemandReview("rechazado")} className="rounded px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-60" style={{ background: "#a4262c" }}>Rechazar</button>
+                  </div>
+                )}
+              </div>
+            )}
             {demandModelStatus.sourceIsCurrent === false && (
               <div role="status" className="rounded p-2 text-[12px]" style={{ background: "var(--cs-fff8f0)", color: "var(--ct-8a4b08)" }}>
                 Estas métricas pertenecen al último modelo guardado y sus fuentes cambiaron después de esa evaluación. Pulsa <strong>Entrenar y evaluar</strong> antes de interpretar la comparación actual de fuentes EIA.

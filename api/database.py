@@ -18,6 +18,7 @@ from typing import Any, Callable, Iterator
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
+from api.access_policy import PERMISSIONS_BY_ROLE, REPORT_TYPES_BY_ROLE  # noqa: F401
 from api.imported_data import (
     ENVIRONMENTAL_FILES,
     MINORIST_PRICE_FILE,
@@ -44,33 +45,6 @@ OPERATIONAL_PREFIXES = (
     "MNGN2-3-", "MNGN4-", "MNGN5-", "MNGN6-", "MNGN7-", "MNGN8-", "MNHL2-",
     "MNHL3-", "MNHL4-", "MNHL6-", "MNHL7-", "MNHL8-", "MNHL9-",
 )
-
-PERMISSIONS_BY_ROLE = {
-    "Gerente de Operaciones": ["dashboard", "trazabilidad", "reportes", "fuentes"],
-    "Analista de Datos": ["dashboard", "riesgos", "trazabilidad", "reportes", "fuentes"],
-    "Supervisor de Cumplimiento": [
-        "dashboard", "riesgos", "auditoria", "trazabilidad",
-        "cumplimiento", "reportes", "supervision", "fuentes",
-    ],
-    "Ingeniero de Campo": ["dashboard", "riesgos", "trazabilidad", "reportes", "fuentes"],
-}
-
-REPORT_TYPES_BY_ROLE = {
-    "Gerente de Operaciones": [
-        "Dashboard Ejecutivo", "Reporte de Trazabilidad",
-    ],
-    "Analista de Datos": [
-        "Dashboard Ejecutivo", "Reporte de Riesgos", "Reporte de Trazabilidad",
-    ],
-    "Supervisor de Cumplimiento": [
-        "Dashboard Ejecutivo", "Reporte de Cumplimiento", "Reporte de Riesgos",
-        "Reporte de Auditoría", "Reporte de Trazabilidad",
-    ],
-    "Ingeniero de Campo": [
-        "Dashboard Ejecutivo", "Reporte de Riesgos", "Reporte de Trazabilidad",
-    ],
-}
-
 
 @contextmanager
 def connection() -> Iterator[psycopg.Connection[dict[str, Any]]]:
@@ -176,6 +150,19 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             "CREATE INDEX IF NOT EXISTS access_events_occurred_at_idx ON access_events(occurred_at DESC)",
+            """
+            CREATE OR REPLACE FUNCTION forbid_audit_log_mutation() RETURNS trigger AS $$
+            BEGIN
+                RAISE EXCEPTION 'El registro de auditoría es de solo anexión: % no está permitido.', TG_OP;
+            END;
+            $$ LANGUAGE plpgsql
+            """,
+            "DROP TRIGGER IF EXISTS access_events_append_only ON access_events",
+            """
+            CREATE TRIGGER access_events_append_only
+            BEFORE UPDATE OR DELETE ON access_events
+            FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation()
+            """,
             """
             CREATE TABLE IF NOT EXISTS source_files (
                 file_name TEXT PRIMARY KEY,
@@ -392,6 +379,8 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             ADD CONSTRAINT audit_documents_category_check
             CHECK (category IN ('Resoluciones', 'Expedientes', 'Otro documento relacionado'))
             """,
+            "ALTER TABLE audit_documents ADD COLUMN IF NOT EXISTS removed_at TIMESTAMPTZ",
+            "ALTER TABLE audit_documents ADD COLUMN IF NOT EXISTS removed_by TEXT",
             "CREATE INDEX IF NOT EXISTS audit_documents_audit_idx ON audit_documents(audit_id, created_at DESC)",
             """
             CREATE TABLE IF NOT EXISTS detected_risk_workflow (
@@ -437,6 +426,46 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 evaluated_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_road_evaluation_history (
+                id BIGSERIAL PRIMARY KEY,
+                risk_id TEXT NOT NULL,
+                inputs JSONB NOT NULL,
+                result JSONB NOT NULL,
+                evaluated_by TEXT NOT NULL,
+                evaluated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS road_evaluation_history_risk_idx ON detected_risk_road_evaluation_history(risk_id, evaluated_at DESC)",
+            "DROP TRIGGER IF EXISTS road_evaluation_history_append_only ON detected_risk_road_evaluation_history",
+            """
+            CREATE TRIGGER road_evaluation_history_append_only
+            BEFORE UPDATE OR DELETE ON detected_risk_road_evaluation_history
+            FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation()
+            """,
+            """
+            INSERT INTO detected_risk_road_evaluation_history (risk_id, inputs, result, evaluated_by, evaluated_at)
+            SELECT e.risk_id, e.inputs, e.result, e.evaluated_by, e.evaluated_at
+            FROM detected_risk_road_evaluations e
+            WHERE NOT EXISTS (
+                SELECT 1 FROM detected_risk_road_evaluation_history h WHERE h.risk_id = e.risk_id
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS detected_risk_road_evaluation_reviews (
+                evaluation_id BIGINT PRIMARY KEY REFERENCES detected_risk_road_evaluation_history(id),
+                decision TEXT NOT NULL CHECK (decision IN ('validada', 'rechazada')),
+                comment TEXT NOT NULL DEFAULT '',
+                reviewed_by TEXT NOT NULL,
+                reviewed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+            """,
+            "DROP TRIGGER IF EXISTS road_evaluation_reviews_append_only ON detected_risk_road_evaluation_reviews",
+            """
+            CREATE TRIGGER road_evaluation_reviews_append_only
+            BEFORE UPDATE OR DELETE ON detected_risk_road_evaluation_reviews
+            FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation()
+            """,
             "CREATE INDEX IF NOT EXISTS detected_risk_workflow_events_risk_idx ON detected_risk_workflow_events(risk_id, occurred_at DESC)",
             "ALTER TABLE detected_risk_workflow ADD COLUMN IF NOT EXISTS risk_level TEXT",
             "ALTER TABLE detected_risk_workflow ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()",
@@ -471,6 +500,8 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
                 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
             )
             """,
+            "ALTER TABLE detected_risk_documents ADD COLUMN IF NOT EXISTS removed_at TIMESTAMPTZ",
+            "ALTER TABLE detected_risk_documents ADD COLUMN IF NOT EXISTS removed_by TEXT",
             "CREATE INDEX IF NOT EXISTS detected_risk_documents_risk_idx ON detected_risk_documents(risk_id, created_at DESC)",
             """
             CREATE TABLE IF NOT EXISTS compliance_followups (
@@ -512,6 +543,8 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             """,
             "ALTER TABLE compliance_followups ADD COLUMN IF NOT EXISTS risk_level TEXT CHECK (risk_level IS NULL OR risk_level IN ('Crítico', 'Alto', 'Medio', 'Bajo'))",
             "CREATE INDEX IF NOT EXISTS compliance_followup_events_item_idx ON compliance_followup_events(item_id, occurred_at DESC)",
+            "ALTER TABLE compliance_followup_documents ADD COLUMN IF NOT EXISTS removed_at TIMESTAMPTZ",
+            "ALTER TABLE compliance_followup_documents ADD COLUMN IF NOT EXISTS removed_by TEXT",
             "CREATE INDEX IF NOT EXISTS compliance_followup_documents_item_idx ON compliance_followup_documents(item_id, created_at DESC)",
         )
         for statement in statements:
@@ -827,7 +860,7 @@ def list_audit_documents(audit_id: str) -> list[dict[str, Any]]:
             SELECT id, audit_id, category, file_name, media_type, size_bytes, checksum,
                    uploaded_by, created_at
             FROM audit_documents
-            WHERE audit_id = %s
+            WHERE audit_id = %s AND removed_at IS NULL
             ORDER BY created_at DESC, id
             """,
             (audit_id,),
@@ -875,7 +908,7 @@ def get_audit_document(document_id: str) -> dict[str, Any] | None:
             SELECT id, audit_id, category, file_name, media_type, size_bytes, checksum,
                    content, uploaded_by, created_at
             FROM audit_documents
-            WHERE id = %s
+            WHERE id = %s AND removed_at IS NULL
             """,
             (document_id,),
         ).fetchone()
@@ -885,11 +918,12 @@ def delete_audit_document(document_id: str, username: str) -> dict[str, str] | N
     with connection() as conn:
         document = conn.execute(
             """
-            DELETE FROM audit_documents
-            WHERE id = %s
+            UPDATE audit_documents
+            SET removed_at = now(), removed_by = %s
+            WHERE id = %s AND removed_at IS NULL
             RETURNING audit_id, file_name
             """,
-            (document_id,),
+            (username, document_id),
         ).fetchone()
         if not document:
             return None
@@ -956,16 +990,45 @@ def register_compliance_items(item_ids: list[str]) -> list[dict[str, Any]]:
         ).fetchall()
 
 
+_ROAD_EVALUATION_SELECT = """
+    SELECT h.id, h.risk_id, h.inputs, h.result, h.evaluated_by, h.evaluated_at,
+           r.decision AS review_decision, r.comment AS review_comment,
+           r.reviewed_by AS review_by, r.reviewed_at AS review_at
+    FROM detected_risk_road_evaluation_history h
+    LEFT JOIN detected_risk_road_evaluation_reviews r ON r.evaluation_id = h.id
+"""
+
+
+def _road_evaluation_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Agrupa la revisión humana de una evaluación vial en un solo objeto `review`."""
+    if row is None:
+        return None
+    evaluation = {key: value for key, value in row.items() if not key.startswith("review_")}
+    evaluation["review"] = {
+        "status": row.get("review_decision") or "pendiente",
+        "reviewedBy": row.get("review_by"),
+        "reviewedAt": row.get("review_at"),
+        "comment": row.get("review_comment") or "",
+    }
+    return evaluation
+
+
 def get_detected_risk_road_evaluation(risk_id: str) -> dict[str, Any] | None:
     with connection() as conn:
-        return conn.execute(
-            """
-            SELECT risk_id, inputs, result, evaluated_by, evaluated_at
-            FROM detected_risk_road_evaluations
-            WHERE risk_id = %s
-            """,
+        row = conn.execute(
+            _ROAD_EVALUATION_SELECT + " WHERE h.risk_id = %s ORDER BY h.evaluated_at DESC, h.id DESC LIMIT 1",
             (risk_id,),
         ).fetchone()
+    return _road_evaluation_row(row)
+
+
+def list_detected_risk_road_evaluations(risk_id: str, limit: int = 20) -> list[dict[str, Any]]:
+    with connection() as conn:
+        rows = conn.execute(
+            _ROAD_EVALUATION_SELECT + " WHERE h.risk_id = %s ORDER BY h.evaluated_at DESC, h.id DESC LIMIT %s",
+            (risk_id, limit),
+        ).fetchall()
+    return [_road_evaluation_row(row) for row in rows]
 
 
 def save_detected_risk_road_evaluation(
@@ -975,7 +1038,7 @@ def save_detected_risk_road_evaluation(
     username: str,
 ) -> dict[str, Any]:
     with connection() as conn:
-        return conn.execute(
+        conn.execute(
             """
             INSERT INTO detected_risk_road_evaluations
                 (risk_id, inputs, result, evaluated_by)
@@ -983,10 +1046,49 @@ def save_detected_risk_road_evaluation(
             ON CONFLICT (risk_id) DO UPDATE
             SET inputs = EXCLUDED.inputs, result = EXCLUDED.result,
                 evaluated_by = EXCLUDED.evaluated_by, evaluated_at = now()
-            RETURNING risk_id, inputs, result, evaluated_by, evaluated_at
+            """,
+            (risk_id, Jsonb(inputs), Jsonb(result), username),
+        )
+        created = conn.execute(
+            """
+            INSERT INTO detected_risk_road_evaluation_history (risk_id, inputs, result, evaluated_by)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
             """,
             (risk_id, Jsonb(inputs), Jsonb(result), username),
         ).fetchone()
+        row = conn.execute(_ROAD_EVALUATION_SELECT + " WHERE h.id = %s", (created["id"],)).fetchone()
+    return _road_evaluation_row(row)
+
+
+def review_detected_risk_road_evaluation(
+    evaluation_id: int,
+    decision: str,
+    comment: str,
+    username: str,
+) -> dict[str, Any] | None:
+    """Registra la validación humana de una evaluación vial.
+
+    Devuelve None si la evaluación no existe y lanza ValueError si ya fue revisada.
+    """
+    with connection() as conn:
+        if not conn.execute(
+            "SELECT 1 FROM detected_risk_road_evaluation_history WHERE id = %s", (evaluation_id,),
+        ).fetchone():
+            return None
+        inserted = conn.execute(
+            """
+            INSERT INTO detected_risk_road_evaluation_reviews (evaluation_id, decision, comment, reviewed_by)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (evaluation_id) DO NOTHING
+            RETURNING evaluation_id
+            """,
+            (evaluation_id, decision, comment, username),
+        ).fetchone()
+        if not inserted:
+            raise ValueError("Esta evaluación ya fue revisada; una decisión no se sobrescribe.")
+        row = conn.execute(_ROAD_EVALUATION_SELECT + " WHERE h.id = %s", (evaluation_id,)).fetchone()
+    return _road_evaluation_row(row)
 
 
 def list_assignees_with_permission(permission: str) -> list[dict[str, Any]]:
@@ -1107,7 +1209,7 @@ def list_detected_risk_documents(risk_id: str) -> list[dict[str, Any]]:
             """
             SELECT id, risk_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
             FROM detected_risk_documents
-            WHERE risk_id = %s
+            WHERE risk_id = %s AND removed_at IS NULL
             ORDER BY created_at DESC, id
             """,
             (risk_id,),
@@ -1158,7 +1260,7 @@ def get_detected_risk_document(document_id: str) -> dict[str, Any] | None:
             """
             SELECT id, risk_id, file_name, media_type, size_bytes, checksum, content, uploaded_by, created_at
             FROM detected_risk_documents
-            WHERE id = %s
+            WHERE id = %s AND removed_at IS NULL
             """,
             (document_id,),
         ).fetchone()
@@ -1168,11 +1270,12 @@ def delete_detected_risk_document(document_id: str, username: str) -> dict[str, 
     with connection() as conn:
         document = conn.execute(
             """
-            DELETE FROM detected_risk_documents
-            WHERE id = %s
+            UPDATE detected_risk_documents
+            SET removed_at = now(), removed_by = %s
+            WHERE id = %s AND removed_at IS NULL
             RETURNING risk_id, file_name
             """,
-            (document_id,),
+            (username, document_id),
         ).fetchone()
         if not document:
             return None
@@ -1301,7 +1404,7 @@ def list_compliance_followup_documents(item_id: str) -> list[dict[str, Any]]:
             """
             SELECT id, item_id, file_name, media_type, size_bytes, checksum, uploaded_by, created_at
             FROM compliance_followup_documents
-            WHERE item_id = %s
+            WHERE item_id = %s AND removed_at IS NULL
             ORDER BY created_at DESC, id
             """,
             (item_id,),
@@ -1359,7 +1462,7 @@ def get_compliance_followup_document(document_id: str) -> dict[str, Any] | None:
             """
             SELECT id, item_id, file_name, media_type, size_bytes, checksum, content, uploaded_by, created_at
             FROM compliance_followup_documents
-            WHERE id = %s
+            WHERE id = %s AND removed_at IS NULL
             """,
             (document_id,),
         ).fetchone()
@@ -1369,11 +1472,12 @@ def delete_compliance_followup_document(document_id: str, username: str) -> dict
     with connection() as conn:
         document = conn.execute(
             """
-            DELETE FROM compliance_followup_documents
-            WHERE id = %s
+            UPDATE compliance_followup_documents
+            SET removed_at = now(), removed_by = %s
+            WHERE id = %s AND removed_at IS NULL
             RETURNING item_id, file_name
             """,
-            (document_id,),
+            (username, document_id),
         ).fetchone()
         if not document:
             return None
@@ -1670,6 +1774,26 @@ def initialize_demand_model_schema() -> None:
         )
         """,
         "CREATE INDEX IF NOT EXISTS demand_model_runs_created_at_idx ON demand_model_runs(created_at DESC)",
+        "ALTER TABLE demand_model_runs ADD COLUMN IF NOT EXISTS approval_status TEXT NOT NULL DEFAULT 'pendiente'",
+        "ALTER TABLE demand_model_runs DROP CONSTRAINT IF EXISTS demand_model_runs_approval_status_check",
+        """
+        ALTER TABLE demand_model_runs
+        ADD CONSTRAINT demand_model_runs_approval_status_check
+        CHECK (approval_status IN ('pendiente', 'aprobado', 'rechazado'))
+        """,
+        "ALTER TABLE demand_model_runs ADD COLUMN IF NOT EXISTS reviewed_by TEXT",
+        "ALTER TABLE demand_model_runs ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ",
+        "ALTER TABLE demand_model_runs ADD COLUMN IF NOT EXISTS review_comment TEXT NOT NULL DEFAULT ''",
+        """
+        CREATE TABLE IF NOT EXISTS demand_model_review_events (
+            id BIGSERIAL PRIMARY KEY,
+            run_id TEXT NOT NULL REFERENCES demand_model_runs(id) ON DELETE CASCADE,
+            username TEXT NOT NULL,
+            decision TEXT NOT NULL CHECK (decision IN ('aprobado', 'rechazado')),
+            comment TEXT NOT NULL DEFAULT '',
+            occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+        """,
         """
         CREATE TABLE IF NOT EXISTS demand_model_predictions (
             id TEXT PRIMARY KEY,
@@ -2464,40 +2588,82 @@ def save_demand_model_run(result: dict[str, Any], model_artifact: bytes, usernam
         )
 
 
-def load_demand_model_run(run_id: str | None = None) -> dict[str, Any] | None:
+_APPROVAL_SQL = """
+    jsonb_build_object(
+        'status', approval_status,
+        'reviewedBy', reviewed_by,
+        'reviewedAt', reviewed_at,
+        'comment', review_comment
+    )
+"""
+
+
+def load_demand_model_run(run_id: str | None = None, *, approved_only: bool = False) -> dict[str, Any] | None:
+    conditions = ["status = 'evaluated'", "model_artifact IS NOT NULL"]
+    params: list[Any] = []
+    if run_id is not None:
+        conditions.append("id = %s")
+        params.append(run_id)
+    if approved_only:
+        conditions.append("approval_status = 'aprobado'")
     with connection() as conn:
-        if run_id is None:
-            row = conn.execute(
-                """
-                SELECT id, source_checksum, result, model_artifact
-                FROM demand_model_runs
-                WHERE status = 'evaluated' AND model_artifact IS NOT NULL
-                ORDER BY created_at DESC LIMIT 1
-                """
-            ).fetchone()
-        else:
-            row = conn.execute(
-                """
-                SELECT id, source_checksum, result, model_artifact
-                FROM demand_model_runs
-                WHERE id = %s AND status = 'evaluated' AND model_artifact IS NOT NULL
-                """,
-                (run_id,),
-            ).fetchone()
-    return row
+        return conn.execute(
+            f"""
+            SELECT id, source_checksum, result, model_artifact, {_APPROVAL_SQL} AS approval
+            FROM demand_model_runs
+            WHERE {' AND '.join(conditions)}
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            params,
+        ).fetchone()
 
 
 def list_demand_model_runs(limit: int = 20) -> list[dict[str, Any]]:
     with connection() as conn:
         return conn.execute(
-            """
-            SELECT result
+            f"""
+            SELECT result || jsonb_build_object('approval', {_APPROVAL_SQL}) AS result
             FROM demand_model_runs
             ORDER BY created_at DESC
             LIMIT %s
             """,
             (limit,),
         ).fetchall()
+
+
+def review_demand_model_run(run_id: str, decision: str, comment: str, username: str) -> dict[str, Any] | None:
+    """Registra la decisión humana sobre un modelo.
+
+    Devuelve None si la corrida no existe y lanza ValueError si ya fue revisada:
+    una decisión no se sobrescribe.
+    """
+    with connection() as conn:
+        row = conn.execute(
+            "SELECT approval_status FROM demand_model_runs WHERE id = %s FOR UPDATE",
+            (run_id,),
+        ).fetchone()
+        if not row:
+            return None
+        if row["approval_status"] != "pendiente":
+            raise ValueError(
+                f"El modelo ya fue {row['approval_status']}; entrena una nueva corrida para volver a revisarlo."
+            )
+        conn.execute(
+            """
+            UPDATE demand_model_runs
+            SET approval_status = %s, reviewed_by = %s, reviewed_at = now(), review_comment = %s
+            WHERE id = %s
+            """,
+            (decision, username, comment, run_id),
+        )
+        conn.execute(
+            "INSERT INTO demand_model_review_events (run_id, username, decision, comment) VALUES (%s, %s, %s, %s)",
+            (run_id, username, decision, comment),
+        )
+        return conn.execute(
+            f"SELECT {_APPROVAL_SQL} AS approval FROM demand_model_runs WHERE id = %s",
+            (run_id,),
+        ).fetchone()
 
 
 def save_demand_prediction(

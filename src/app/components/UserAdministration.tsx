@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock3, LockKeyhole, Plus, Search, ShieldCheck, Trash2, UserRound, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, LockKeyhole, Plus, Search, ShieldCheck, UserRound, XCircle } from "lucide-react";
 import { useAuth, type ManagedUser, type UserRole } from "../AuthContext";
 import { UserStoryRefs } from "./UserStoryRefs";
 
@@ -50,7 +50,7 @@ function UserRow({ user, selected, onSelect }: { user: ManagedUser; selected: bo
 }
 
 export function UserAdministration() {
-  const { managedUsers, accessEvents, managementError, user, createManagedUser, updateManagedUser, clearAccessEvents } = useAuth();
+  const { managedUsers, accessEvents, managementError, user, createManagedUser, updateManagedUser } = useAuth();
   const [selectedUsername, setSelectedUsername] = useState(managedUsers[0]?.username ?? "");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -236,7 +236,7 @@ export function UserAdministration() {
 
           <section className="overflow-hidden" style={panelStyle}>
             <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--cs-edebe9)" }}>
-              <div className="flex items-center gap-2"><Clock3 className="w-4 h-4" style={{ color: "var(--ct-605e5c)" }} /><div><h2 className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Registro de accesos</h2><p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Eventos recientes · máximo 200 registros</p></div></div>
+              <div className="flex items-center gap-2"><Clock3 className="w-4 h-4" style={{ color: "var(--ct-605e5c)" }} /><div><h2 className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Registro de accesos</h2><p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Eventos recientes · máximo 200 registros · solo lectura (el registro no se puede borrar)</p></div></div>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="relative flex-1 sm:w-44">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--ct-8a8886)" }} />
@@ -245,16 +245,6 @@ export function UserAdministration() {
                 <select aria-label="Filtrar resultado" value={resultFilter} onChange={(event) => setResultFilter(event.target.value)} className="h-8 px-2 text-[12px] bg-white" style={inputStyle}>
                   <option>Todos</option><option>Permitido</option><option>Denegado</option>
                 </select>
-                <button type="button" title="Limpiar todos los registros" aria-label="Limpiar todos los registros" onClick={() => {
-                  if (window.confirm("¿Limpiar todos los registros de acceso? Esta acción no se puede deshacer.")) {
-                    clearAccessEvents().catch((error: unknown) => {
-                      console.error("No se pudieron limpiar los eventos de acceso:", error);
-                      setNotice(error instanceof Error ? error.message : "No se pudieron limpiar los eventos.");
-                    });
-                  }
-                }} className="inline-flex items-center justify-center w-8 h-8" style={{ border: "1px solid var(--cs-e1dfdd)", color: "var(--ct-a4262c)", background: "var(--cs-ffffff)" }}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
             <details>

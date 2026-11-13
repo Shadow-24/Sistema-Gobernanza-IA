@@ -10,9 +10,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, brier_score_loss, f1_score, roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
@@ -33,6 +35,74 @@ TARGET = "ESTADO_INICIAL"
 MIN_CATEGORY_FREQUENCY = 8
 MINORITY_CLASS_WEIGHT = 1.5
 DECISION_THRESHOLDS = tuple(0.35 + index * 0.025 for index in range(19))
+# Columnas de baja frecuencia por categoría (provincia, vía, tramo): se codifican con la tasa histórica
+# suavizada de cada valor en lugar de una columna one-hot casi vacía.
+ONE_HOT_FEATURES = ["CLASE_FENOMENO", "FENOMENO", "EVENTO", "DEPARTEMENTO"]
+TARGET_ENCODED_FEATURES = ["DEPARTEMENTO", "PROVINCIA", "RED_AFECTADA", "TRAMO_AFECADO", "EVENTO"]
+TARGET_ENCODING_SMOOTHING = 10.0
+TARGET_ENCODING_FOLDS = 5
+# Franjas de probabilidad de la clase predicha para medir la fiabilidad histórica.
+RELIABILITY_BANDS = ((0.5, 0.65), (0.65, 0.8), (0.8, 0.9), (0.9, 1.0001))
+MIN_BAND_CASES = 15
+
+
+class SmoothedTargetEncoder(BaseEstimator, TransformerMixin):
+    """Codifica cada categoría con la tasa suavizada de la clase positiva.
+
+    En entrenamiento usa codificación fuera de pliegue (cada fila se codifica con
+    estadísticos calculados sin ella), de modo que el modelo no memoriza su propio
+    objetivo. Las categorías nunca vistas reciben la tasa global.
+    """
+
+    def __init__(self, smoothing: float = TARGET_ENCODING_SMOOTHING, folds: int = TARGET_ENCODING_FOLDS) -> None:
+        self.smoothing = smoothing
+        self.folds = folds
+
+    @staticmethod
+    def _positive(y: Any) -> np.ndarray:
+        values = np.asarray(y)
+        return (values == values.max()).astype(float) if values.size else values.astype(float)
+
+    def _statistics(self, X: pd.DataFrame, positive: np.ndarray) -> tuple[float, dict[str, dict[Any, tuple[float, int]]]]:
+        prior = float(positive.mean()) if len(positive) else 0.0
+        tables: dict[str, dict[Any, tuple[float, int]]] = {}
+        for column in X.columns:
+            grouped = pd.DataFrame({"key": X[column].to_numpy(), "y": positive}).groupby("key")["y"].agg(["sum", "count"])
+            tables[column] = {key: (float(row["sum"]), int(row["count"])) for key, row in grouped.iterrows()}
+        return prior, tables
+
+    def _encode(self, X: pd.DataFrame, prior: float, tables: dict[str, dict[Any, tuple[float, int]]]) -> np.ndarray:
+        encoded = np.empty((len(X), len(X.columns)), dtype=float)
+        for position, column in enumerate(X.columns):
+            table = tables[column]
+            encoded[:, position] = [
+                (table[key][0] + self.smoothing * prior) / (table[key][1] + self.smoothing) if key in table else prior
+                for key in X[column].to_numpy()
+            ]
+        return encoded
+
+    def fit(self, X: pd.DataFrame, y: Any = None) -> "SmoothedTargetEncoder":
+        X = pd.DataFrame(X)
+        self.columns_ = list(X.columns)
+        self.prior_, self.tables_ = self._statistics(X, self._positive(y))
+        return self
+
+    def fit_transform(self, X: pd.DataFrame, y: Any = None, **fit_params: Any) -> np.ndarray:
+        X = pd.DataFrame(X).reset_index(drop=True)
+        positive = self._positive(y)
+        self.fit(X, y)
+        encoded = np.empty((len(X), len(X.columns)), dtype=float)
+        # Los registros llegan ordenados por fecha: pliegues contiguos evitan mezclar el futuro con el pasado inmediato.
+        for fold in np.array_split(np.arange(len(X)), min(self.folds, max(len(X), 1))):
+            if not len(fold):
+                continue
+            rest = np.setdiff1d(np.arange(len(X)), fold)
+            prior, tables = self._statistics(X.iloc[rest], positive[rest])
+            encoded[fold] = self._encode(X.iloc[fold], prior, tables)
+        return encoded
+
+    def transform(self, X: pd.DataFrame) -> np.ndarray:
+        return self._encode(pd.DataFrame(X), self.prior_, self.tables_)
 
 
 def _prepare(path: Path) -> pd.DataFrame:
@@ -59,13 +129,17 @@ def _build_pipeline() -> Pipeline:
     from xgboost import XGBClassifier
 
     preprocess = ColumnTransformer(
-        [("categorical", OneHotEncoder(handle_unknown="ignore", min_frequency=MIN_CATEGORY_FREQUENCY), MODEL_FEATURES)],
+        [
+            ("categorical", OneHotEncoder(handle_unknown="ignore", min_frequency=MIN_CATEGORY_FREQUENCY), ONE_HOT_FEATURES),
+            ("target_rate", SmoothedTargetEncoder(), TARGET_ENCODED_FEATURES),
+        ],
         remainder="drop",
     )
     model = XGBClassifier(
-        n_estimators=250,
+        n_estimators=200,
         max_depth=3,
         learning_rate=0.05,
+        min_child_weight=3,
         subsample=0.85,
         colsample_bytree=0.85,
         reg_lambda=2,
@@ -108,11 +182,11 @@ def _calibrate_threshold(
     date_cutoff_index: int,
     majority_class: str,
     minority_class: str,
-) -> tuple[float, int, float]:
+) -> tuple[float, int, float, list[tuple[str, float]]]:
     dates = sorted(data["DATE"].unique())
     boundaries = [int(len(dates) * fraction) for fraction in (0.5, 0.6, 0.7, 0.8)]
     if date_cutoff_index != boundaries[-1] or len(set(boundaries)) != len(boundaries):
-        return 0.5, 0, 0.0
+        return 0.5, 0, 0.0, []
 
     actual: list[str] = []
     majority_probabilities: list[float] = []
@@ -138,8 +212,9 @@ def _calibrate_threshold(
         actual.extend(validation[TARGET].tolist())
         majority_probabilities.extend(probabilities[:, majority_index].tolist())
 
+    points = list(zip(actual, majority_probabilities))
     if not actual or minority_class not in actual:
-        return 0.5, len(actual), 0.0
+        return 0.5, len(actual), 0.0, points
 
     best_threshold = 0.5
     best_score = (-1.0, -1.0)
@@ -161,7 +236,40 @@ def _calibrate_threshold(
         if score > best_score:
             best_score = score
             best_threshold = threshold
-    return best_threshold, len(actual), best_score[0]
+    return best_threshold, len(actual), best_score[0], points
+
+
+def _validation_summary(
+    points: list[tuple[str, float]],
+    majority_class: str,
+    minority_class: str,
+    threshold: float,
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    """Fiabilidad histórica por franja de probabilidad y calidad probabilística en validación temporal."""
+    if not points:
+        return [], None
+    actual = np.asarray([label for label, _ in points])
+    majority_probability = np.asarray([probability for _, probability in points], dtype=float)
+    predicted_majority = majority_probability >= threshold
+    predicted = np.where(predicted_majority, majority_class, minority_class)
+    predicted_probability = np.where(predicted_majority, majority_probability, 1 - majority_probability)
+    correct = predicted == actual
+    reliability = []
+    for lower, upper in RELIABILITY_BANDS:
+        in_band = (predicted_probability >= lower) & (predicted_probability < upper)
+        cases = int(in_band.sum())
+        reliability.append({
+            "from": lower,
+            "to": min(upper, 1.0),
+            "cases": cases,
+            "accuracy": float(correct[in_band].mean()) if cases >= MIN_BAND_CASES else None,
+        })
+    summary: dict[str, Any] = {"records": int(len(points))}
+    positives = (actual == minority_class).astype(int)
+    if 0 < positives.sum() < len(positives):
+        summary["auc"] = float(roc_auc_score(positives, 1 - majority_probability))
+        summary["brierScore"] = float(brier_score_loss(positives, 1 - majority_probability))
+    return reliability, summary
 
 
 def _predict_labels(
@@ -204,8 +312,9 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
     pipeline = _fit_pipeline(train, train_classes)
     majority, minority = _class_roles(train[TARGET])
     threshold, calibration_records, calibration_macro_f1 = (0.5, 0, 0.0)
+    calibration_points: list[tuple[str, float]] = []
     if len(train_classes) == 2:
-        threshold, calibration_records, calibration_macro_f1 = _calibrate_threshold(
+        threshold, calibration_records, calibration_macro_f1, calibration_points = _calibrate_threshold(
             data,
             date_cutoff_index,
             majority,
@@ -219,6 +328,11 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
         threshold_target=majority if len(train_classes) == 2 else None,
     )
     labels = sorted(data[TARGET].unique().tolist())
+    reliability, validation = (
+        _validation_summary(calibration_points, majority, minority, threshold)
+        if len(train_classes) == 2
+        else ([], None)
+    )
     metrics = {
         "source": SOURCE_NAME,
         "target": TARGET,
@@ -234,6 +348,16 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
             column: data[column].value_counts().head(100).index.tolist()
             for column in ["CLASE_FENOMENO", "FENOMENO", "EVENTO", "DEPARTEMENTO", "PROVINCIA", "RED_AFECTADA", "TRAMO_AFECADO"]
         },
+        "locations": sorted(
+            data[["DEPARTEMENTO", "PROVINCIA", "RED_AFECTADA", "TRAMO_AFECADO"]]
+            .drop_duplicates()
+            .itertuples(index=False, name=None)
+        ),
+        "phenomena": sorted(
+            data[["CLASE_FENOMENO", "FENOMENO", "EVENTO"]].drop_duplicates().itertuples(index=False, name=None)
+        ),
+        "reliability": reliability,
+        "validation": validation,
         "metrics": {
             "accuracy": float(accuracy_score(test[TARGET], predictions)),
             "balancedAccuracy": float(balanced_accuracy_score(test[TARGET], predictions)),
@@ -302,10 +426,39 @@ def predict_road_state(imports_path: Path, scenario: dict[str, Any]) -> dict[str
         )
     else:
         prediction = class_labels[order[0]]
+    probability_by_class = {class_labels[index]: float(probabilities[index]) for index in order}
+    # La confianza es la probabilidad de la clase que realmente se predice (con el umbral calibrado
+    # puede no ser la de mayor probabilidad), no la máxima entre clases.
+    confidence = probability_by_class[prediction]
+    reliability_band = next(
+        (
+            band for band in metrics.get("reliability", [])
+            if band["from"] <= confidence < band["to"] + (1e-9 if band["to"] >= 1.0 else 0)
+        ),
+        None,
+    )
+    observed_accuracy = reliability_band["accuracy"] if reliability_band else None
+    confidence_level = (
+        None if observed_accuracy is None
+        else "Alta" if observed_accuracy >= 0.9
+        else "Media" if observed_accuracy >= 0.75
+        else "Baja"
+    )
     return {
         "prediction": prediction,
-        "confidence": float(probabilities[order[0]]),
-        "probabilities": {class_labels[index]: float(probabilities[index]) for index in order},
+        "confidence": confidence,
+        "confidenceLevel": confidence_level,
+        "reliability": (
+            {
+                "observedAccuracy": observed_accuracy,
+                "cases": reliability_band["cases"],
+                "from": reliability_band["from"],
+                "to": reliability_band["to"],
+            }
+            if reliability_band and observed_accuracy is not None
+            else None
+        ),
+        "probabilities": probability_by_class,
         "model": "XGBoost experimental",
         "evaluation": metrics["metrics"],
         "limitations": metrics["caveat"],

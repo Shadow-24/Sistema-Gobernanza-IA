@@ -125,5 +125,100 @@ class RoadRiskModelTests(unittest.TestCase):
         self.assertEqual(predictions, ["INTERRUMPIDO", "RESTRINGIDO"])
 
 
+class TargetEncoderTests(unittest.TestCase):
+    def test_training_encoding_is_out_of_fold_and_unseen_categories_get_the_prior(self) -> None:
+        frame = pd.DataFrame({"zone": ["a", "a", "a", "a", "b", "b", "b", "b", "c", "c"]})
+        target = np.array([1, 1, 1, 1, 0, 0, 0, 0, 1, 0])
+        encoder = risk_model.SmoothedTargetEncoder(smoothing=1.0, folds=5)
+
+        training = encoder.fit_transform(frame, target)
+
+        self.assertEqual(training.shape, (10, 1))
+        # Una fila no se codifica con su propio objetivo: la tasa en entrenamiento no es 0 ni 1 exactos.
+        self.assertTrue(((training > 0) & (training < 1)).all())
+        unseen = encoder.transform(pd.DataFrame({"zone": ["nueva"]}))
+        self.assertAlmostEqual(float(unseen[0, 0]), float(target.mean()))
+        known = encoder.transform(pd.DataFrame({"zone": ["a", "b"]}))
+        self.assertGreater(known[0, 0], known[1, 0])
+
+
+class RoadConfidenceTests(unittest.TestCase):
+    def _predict(self, majority_probability: float, reliability: list[dict]) -> dict:
+        class Pipeline(FakeRoadPipeline):
+            def predict_proba(self, features: pd.DataFrame) -> np.ndarray:
+                return np.tile(np.array([1 - majority_probability, majority_probability]), (len(features), 1))
+
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / risk_model.SOURCE_NAME).touch()
+            with patch.object(
+                risk_model,
+                "_fit",
+                return_value=(
+                    Pipeline(),
+                    {
+                        "metrics": {"decisionThreshold": 0.375, "thresholdTargetClass": "RESTRINGIDO"},
+                        "caveat": "",
+                        "reliability": reliability,
+                    },
+                    ["INTERRUMPIDO", "RESTRINGIDO"],
+                ),
+            ):
+                return risk_model.predict_road_state(
+                    Path(directory),
+                    {"phenomenonClass": "c", "phenomenon": "p", "event": "e", "department": "d"},
+                )
+
+    def test_confidence_is_the_probability_of_the_class_actually_predicted(self) -> None:
+        # Con umbral 0.375, P(RESTRINGIDO)=0.45 se predice RESTRINGIDO aunque INTERRUMPIDO tenga 0.55.
+        result = self._predict(0.45, [])
+        self.assertEqual(result["prediction"], "RESTRINGIDO")
+        self.assertAlmostEqual(result["confidence"], 0.45)
+        self.assertIsNone(result["confidenceLevel"])
+
+    def test_confidence_level_comes_from_observed_validation_accuracy(self) -> None:
+        bands = [
+            {"from": 0.5, "to": 0.8, "cases": 40, "accuracy": 0.7},
+            {"from": 0.8, "to": 1.0, "cases": 120, "accuracy": 0.95},
+        ]
+        high = self._predict(0.9, bands)
+        self.assertEqual(high["confidenceLevel"], "Alta")
+        self.assertEqual(high["reliability"]["cases"], 120)
+        low = self._predict(0.6, bands)
+        self.assertEqual(low["confidenceLevel"], "Baja")
+
+    def test_validation_summary_reports_accuracy_per_band_and_hides_small_bands(self) -> None:
+        points = [("RESTRINGIDO", 0.95)] * 20 + [("INTERRUMPIDO", 0.95)] * 0 + [("RESTRINGIDO", 0.55)] * 3
+        reliability, summary = risk_model._validation_summary(points, "RESTRINGIDO", "INTERRUMPIDO", 0.375)
+        top = next(band for band in reliability if band["from"] == 0.9)
+        low = next(band for band in reliability if band["from"] == 0.5)
+        self.assertEqual(top["cases"], 20)
+        self.assertEqual(top["accuracy"], 1.0)
+        self.assertEqual(low["cases"], 3)
+        self.assertIsNone(low["accuracy"])
+        self.assertEqual(summary["records"], 23)
+
+
+class RoadHierarchyTests(unittest.TestCase):
+    def test_model_status_exposes_location_and_phenomenon_hierarchies(self) -> None:
+        risk_model._fit.cache_clear()
+        labels = ["RESTRINGIDO", "INTERRUMPIDO"]
+        rows = []
+        for index, date in enumerate(pd.date_range("2026-01-01", periods=35)):
+            row = {"DATE": date, risk_model.TARGET: labels[index % 2]}
+            row.update({feature: f"v{index % 3}" for feature in risk_model.CATEGORICAL_FEATURES})
+            row["DEPARTEMENTO"], row["PROVINCIA"] = "LIMA", "HUAROCHIRI"
+            rows.append(row)
+        with (
+            patch.object(risk_model, "_prepare", return_value=pd.DataFrame(rows)),
+            patch.object(risk_model, "_build_pipeline", return_value=FakeRoadPipeline()),
+        ):
+            _, metrics, _ = risk_model._fit("fixture.csv", 2)
+        risk_model._fit.cache_clear()
+
+        self.assertTrue(all(len(location) == 4 for location in metrics["locations"]))
+        self.assertTrue(all(location[:2] == ("LIMA", "HUAROCHIRI") for location in metrics["locations"]))
+        self.assertTrue(all(len(item) == 3 for item in metrics["phenomena"]))
+
+
 if __name__ == "__main__":
     unittest.main()

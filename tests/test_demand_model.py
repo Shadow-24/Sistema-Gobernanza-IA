@@ -340,6 +340,58 @@ class DemandApiRegistrationTests(unittest.TestCase):
         save_prediction.assert_called_once()
         record_operation.assert_called_once()
 
+    def test_prediction_requires_a_supervisor_approved_model(self) -> None:
+        user = {"username": "model-analyst", "role": "Analista de Datos"}
+        pending_run = {"result": {}, "source_checksum": "x", "model_artifact": b"m", "approval": {"status": "pendiente"}}
+
+        def load(run_id=None, *, approved_only=False):
+            return None if approved_only else pending_run
+
+        with (
+            patch.object(api_main.database, "load_demand_model_run", side_effect=load),
+            patch.object(api_main.database, "record_model_operation"),
+            patch.object(api_main.demand_model, "predict_horizon") as predict_horizon,
+        ):
+            with self.assertRaises(HTTPException) as error:
+                api_main.predict_demand(DemandForecastRequest(horizon_months=1), user)
+
+        self.assertEqual(error.exception.status_code, 409)
+        self.assertIn("aprobado", error.exception.detail)
+        predict_horizon.assert_not_called()
+
+    def test_review_is_supervisor_only_and_rejection_requires_a_reason(self) -> None:
+        route = next(r for r in app.routes if getattr(r, "path", "") == "/api/demand-model/runs/{run_id}/review")
+        self.assertIn("POST", route.methods)
+        with self.assertRaises(HTTPException) as denied:
+            api_main.get_supervisor({"username": "analyst", "role": "Analista de Datos", "permissions": ["supervision"]})
+        self.assertEqual(denied.exception.status_code, 403)
+
+        supervisor = {"username": "sup", "role": "Supervisor de Cumplimiento", "permissions": ["supervision"]}
+        with patch.object(api_main.database, "review_demand_model_run") as review:
+            with self.assertRaises(HTTPException) as error:
+                api_main.review_demand_model(
+                    "run-1", api_main.DemandModelReviewRequest(decision="rechazado", comment="  "), supervisor,
+                )
+            review.assert_not_called()
+        self.assertEqual(error.exception.status_code, 422)
+
+    def test_review_records_the_decision_and_blocks_a_second_review(self) -> None:
+        supervisor = {"username": "sup", "role": "Supervisor de Cumplimiento", "permissions": ["supervision"]}
+        approval = {"approval": {"status": "aprobado", "reviewedBy": "sup", "comment": "ok"}}
+        with patch.object(api_main.database, "review_demand_model_run", return_value=approval) as review:
+            result = api_main.review_demand_model(
+                "run-1", api_main.DemandModelReviewRequest(decision="aprobado", comment="ok"), supervisor,
+            )
+        review.assert_called_once_with("run-1", "aprobado", "ok", "sup")
+        self.assertEqual(result["approval"]["status"], "aprobado")
+
+        with patch.object(api_main.database, "review_demand_model_run", side_effect=ValueError("ya fue aprobado")):
+            with self.assertRaises(HTTPException) as error:
+                api_main.review_demand_model(
+                    "run-1", api_main.DemandModelReviewRequest(decision="rechazado", comment="x"), supervisor,
+                )
+        self.assertEqual(error.exception.status_code, 409)
+
     def test_prediction_endpoint_validates_source_and_persists_trace(self) -> None:
         saved_result = {
             "runId": "run-123",

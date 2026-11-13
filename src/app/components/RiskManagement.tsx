@@ -3,7 +3,17 @@ import { useEffect, useState } from "react";
 import { useSectorData } from "../SectorDataContext";
 import { simulatedSupplyChainRisks } from "../governanceScenarios";
 import { UserStoryRefs } from "./UserStoryRefs";
-import { loadRoadImpactModel, type RoadImpactInput, type RoadImpactModel } from "../riskAssessmentsApi";
+import { loadRoadImpactModel, type RoadImpactModel } from "../riskAssessmentsApi";
+import {
+  EMPTY_ROAD_SCENARIO,
+  applyRoadChange,
+  inferRoadScenario,
+  roadEvaluationInputsToScenario,
+  roadOptions,
+  roadScenarioToInput,
+  type RoadField,
+  type RoadScenario,
+} from "../roadScenario";
 import { ApiError } from "../apiClient";
 import { useAuth } from "../AuthContext";
 import { createAIGovernanceRisk, downloadAIGovernanceRiskEvidence, loadAIGovernanceAlerts, loadAIGovernanceRisks, updateAIGovernanceRisk, type GovernanceAlert, type GovernanceRisk, type GovernanceRiskAttachment, type GovernanceRiskStatus } from "../aiGovernanceApi";
@@ -11,6 +21,8 @@ import {
   deleteDetectedRiskDocument,
   downloadDetectedRiskDocument,
   evaluateDetectedRiskRoadImpact,
+  loadDetectedRiskRoadEvaluationHistory,
+  reviewDetectedRiskRoadEvaluation,
   loadDetectedRiskAssignees,
   loadDetectedRiskDocuments,
   loadDetectedRiskEvents,
@@ -101,26 +113,6 @@ export type DetectedRisk = {
 };
 
 type DetectedRiskChange = { label: string; before: string; after: string };
-type RoadScenario = {
-  phenomenonClass: string;
-  phenomenon: string;
-  event: string;
-  department: string;
-  province: string;
-  roadCode: string;
-  roadSection: string;
-};
-
-const EMPTY_ROAD_SCENARIO: RoadScenario = {
-  phenomenonClass: "",
-  phenomenon: "",
-  event: "",
-  department: "",
-  province: "",
-  roadCode: "",
-  roadSection: "",
-};
-
 function formatGovernanceEvidence(evidence: string): string[] {
   const readable = evidence
     .replace(/Evaluación [0-9a-f-]{36} · (\S+?)\.(?=\s|$)/i, (_, date: string) => {
@@ -130,63 +122,6 @@ function formatGovernanceEvidence(evidence: string): string[] {
     .replace(/periodo de prueba=\{'to': '([^']+)', 'from': '([^']+)'\}/, "periodo de prueba: $2 a $1")
     .replace(/R² modelo=(-?\d+\.\d+)/, (_, value: string) => `R² del modelo: ${Number(value).toFixed(2)}`);
   return readable.split(/(?<=\.)\s+|;\s+/).map((part) => part.trim().replace(/\.$/, "")).filter(Boolean);
-}
-
-function normalizeRoadValue(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
-}
-
-function inferRoadScenario(risk: DetectedRisk, model: RoadImpactModel | null): RoadScenario {
-  const categories = model?.categories;
-  if (!categories) return EMPTY_ROAD_SCENARIO;
-
-  const riskText = normalizeRoadValue([
-    risk.descripcion,
-    risk.fuente,
-    risk.proceso ?? "",
-    risk.modelo ?? "",
-    risk.recomendacion,
-  ].join(" "));
-  const findMentionedCategory = (category: string) => (categories[category] ?? [])
-    .filter((value) => normalizeRoadValue(value).length >= 5 && riskText.includes(normalizeRoadValue(value)))
-    .sort((left, right) => normalizeRoadValue(right).length - normalizeRoadValue(left).length)[0] ?? "";
-  const departmentTokens = risk.departamento.split(/[\/,;]|\s+y\s/i).map(normalizeRoadValue);
-  const department = (categories.DEPARTEMENTO ?? []).find((value) =>
-    departmentTokens.includes(normalizeRoadValue(value))
-  ) ?? "";
-  return {
-    phenomenonClass: findMentionedCategory("CLASE_FENOMENO"),
-    phenomenon: findMentionedCategory("FENOMENO"),
-    event: findMentionedCategory("EVENTO"),
-    department,
-    province: findMentionedCategory("PROVINCIA"),
-    roadCode: findMentionedCategory("RED_AFECTADA"),
-    roadSection: findMentionedCategory("TRAMO_AFECADO"),
-  };
-}
-
-function roadEvaluationInputsToScenario(inputs: RoadImpactInput): RoadScenario {
-  return {
-    phenomenonClass: inputs.phenomenonClass,
-    phenomenon: inputs.phenomenon,
-    event: inputs.event,
-    department: inputs.department,
-    province: inputs.province ?? "",
-    roadCode: inputs.roadCode ?? "",
-    roadSection: inputs.roadSection ?? "",
-  };
-}
-
-function roadScenarioToInput(scenario: RoadScenario): RoadImpactInput {
-  return {
-    phenomenonClass: scenario.phenomenonClass,
-    phenomenon: scenario.phenomenon,
-    event: scenario.event,
-    department: scenario.department,
-    province: scenario.province || undefined,
-    roadCode: scenario.roadCode || undefined,
-    roadSection: scenario.roadSection || undefined,
-  };
 }
 
 function roadEvaluationErrorMessage(error: unknown): string {
@@ -341,6 +276,9 @@ export function RiskManagement() {
   const latestFuelPriceRecord = operationalData?.liquidFuels.fuelPrices.slice(-1)[0];
   const [roadModel, setRoadModel] = useState<RoadImpactModel | null>(null);
   const [roadEvaluations, setRoadEvaluations] = useState<Record<string, DetectedRiskRoadEvaluation>>({});
+  const [roadReviewComment, setRoadReviewComment] = useState("");
+  const [roadReviewing, setRoadReviewing] = useState(false);
+  const [roadEvaluationHistory, setRoadEvaluationHistory] = useState<Record<string, DetectedRiskRoadEvaluation[]>>({});
   const [roadPredictingRisk, setRoadPredictingRisk] = useState<string | null>(null);
   const [roadEvaluationLoadingRisk, setRoadEvaluationLoadingRisk] = useState<string | null>(null);
   const [roadModelError, setRoadModelError] = useState("");
@@ -373,7 +311,17 @@ export function RiskManagement() {
   };
   const getAIRegistrationDate = (registeredAt: string) => new Date(registeredAt).toLocaleDateString("es-PE");
   const roadScenario = selectedDetectedRisk
-    ? roadScenarioDrafts[selectedDetectedRisk.id] ?? inferRoadScenario(selectedDetectedRisk, roadModel)
+    ? roadScenarioDrafts[selectedDetectedRisk.id] ?? inferRoadScenario(
+      [
+        selectedDetectedRisk.descripcion,
+        selectedDetectedRisk.fuente,
+        selectedDetectedRisk.proceso ?? "",
+        selectedDetectedRisk.modelo ?? "",
+        selectedDetectedRisk.recomendacion,
+      ].join(" "),
+      selectedDetectedRisk.departamento,
+      roadModel,
+    )
     : EMPTY_ROAD_SCENARIO;
 
   useEffect(() => {
@@ -466,6 +414,13 @@ export function RiskManagement() {
       })
       .finally(() => {
         if (active) setDetectedRiskWorkflowLoading(false);
+      });
+    loadDetectedRiskRoadEvaluationHistory(selectedDetectedRisk.id)
+      .then((history) => {
+        if (active) setRoadEvaluationHistory((current) => ({ ...current, [selectedDetectedRisk.id]: history }));
+      })
+      .catch(() => {
+        if (active) setRoadEvaluationHistory((current) => ({ ...current, [selectedDetectedRisk.id]: [] }));
       });
     loadDetectedRiskRoadEvaluation(selectedDetectedRisk.id)
       .then((evaluation) => {
@@ -698,6 +653,7 @@ export function RiskManagement() {
     try {
       const evaluation = await evaluateDetectedRiskRoadImpact(riskId, roadScenarioToInput(roadScenario));
       setRoadEvaluations((current) => ({ ...current, [riskId]: evaluation }));
+      setRoadEvaluationHistory((current) => ({ ...current, [riskId]: [evaluation, ...(current[riskId] ?? [])] }));
       setRoadScenarioDrafts((current) => ({
         ...current,
         [riskId]: roadEvaluationInputsToScenario(evaluation.inputs),
@@ -709,11 +665,30 @@ export function RiskManagement() {
     }
   };
 
-  const updateRoadScenario = (field: keyof RoadScenario, value: string) => {
+  const canReviewRoadEvaluation = user?.role === "Supervisor de Cumplimiento" && user.permissions.includes("supervision");
+  const handleRoadReview = async (evaluation: DetectedRiskRoadEvaluation, decision: "validada" | "rechazada") => {
+    setRoadReviewing(true);
+    setRoadModelError("");
+    try {
+      const reviewed = await reviewDetectedRiskRoadEvaluation(evaluation.id, decision, roadReviewComment);
+      setRoadEvaluations((current) => ({ ...current, [evaluation.risk_id]: reviewed }));
+      setRoadEvaluationHistory((current) => ({
+        ...current,
+        [evaluation.risk_id]: (current[evaluation.risk_id] ?? []).map((item) => item.id === reviewed.id ? reviewed : item),
+      }));
+      setRoadReviewComment("");
+    } catch (error) {
+      setRoadModelError(roadEvaluationErrorMessage(error));
+    } finally {
+      setRoadReviewing(false);
+    }
+  };
+
+  const updateRoadScenario = (field: RoadField, value: string) => {
     if (!selectedDetectedRisk) return;
     setRoadScenarioDrafts((current) => ({
       ...current,
-      [selectedDetectedRisk.id]: { ...roadScenario, [field]: value },
+      [selectedDetectedRisk.id]: applyRoadChange(roadScenario, field, value, roadModel),
     }));
   };
   
@@ -1041,10 +1016,9 @@ export function RiskManagement() {
               <div><div className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>Departamento</div><div className="text-[12px] mt-1" style={{ color: "var(--ct-201f1e)" }}>{selectedDetectedRisk.departamento}</div></div>
             </div>
 
-            {(selectedDetectedRisk.proceso || selectedDetectedRisk.modelo) && (
+            {selectedDetectedRisk.proceso && (
               <div className="mb-4 flex flex-wrap gap-x-6 gap-y-2 rounded p-3 text-[12px]" style={{ background: "var(--cs-f9f8f7)", color: "var(--ct-605e5c)" }}>
                 {selectedDetectedRisk.proceso && <span>Proceso: <strong style={{ color: "var(--ct-201f1e)" }}>{selectedDetectedRisk.proceso}</strong></span>}
-                {selectedDetectedRisk.modelo && <span>Modelo: <strong style={{ color: "var(--ct-201f1e)" }}>{selectedDetectedRisk.modelo}</strong></span>}
               </div>
             )}
             <section className="mb-4 rounded p-3" style={{ background: "var(--cs-f9f8f7)", borderLeft: `3px solid ${selectedDetectedRisk.nivel ? RISK_LEVEL[selectedDetectedRisk.nivel].border : "var(--cs-e1dfdd)"}` }}>
@@ -1061,19 +1035,19 @@ export function RiskManagement() {
                 {roadModel?.available && (
                   <form onSubmit={(event) => handleRoadPrediction(event, selectedDetectedRisk.id)} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {([
-                      ["phenomenonClass", "Clase de fenómeno", "CLASE_FENOMENO"],
-                      ["phenomenon", "Fenómeno", "FENOMENO"],
-                      ["event", "Evento", "EVENTO"],
-                      ["department", "Departamento", "DEPARTEMENTO"],
-                      ["province", "Provincia", "PROVINCIA"],
-                      ["roadCode", "Código de vía", "RED_AFECTADA"],
-                      ["roadSection", "Tramo", "TRAMO_AFECADO"],
-                    ] as const).map(([key, label, category]) => (
+                      ["phenomenonClass", "Clase de fenómeno"],
+                      ["phenomenon", "Fenómeno"],
+                      ["event", "Evento"],
+                      ["department", "Departamento"],
+                      ["province", "Provincia"],
+                      ["roadCode", "Código de vía"],
+                      ["roadSection", "Tramo"],
+                    ] as const).map(([key, label]) => (
                       <label key={key} className="text-[11px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                         {label}
                         <select required={!["province", "roadCode", "roadSection"].includes(key)} value={roadScenario[key]} onChange={(event) => updateRoadScenario(key, event.target.value)} className="mt-1 w-full rounded border px-2 py-1.5 text-[12px]" style={{ borderColor: "var(--cs-e1dfdd)" }}>
                           <option value="">{["province", "roadCode", "roadSection"].includes(key) ? "No informado" : "No detectado · selecciona un valor"}</option>
-                          {(roadModel.categories?.[category] ?? []).map((value) => <option key={value} value={value}>{value}</option>)}
+                          {roadOptions(key, roadScenario, roadModel).map((value) => <option key={value} value={value}>{value}</option>)}
                         </select>
                       </label>
                     ))}
@@ -1081,9 +1055,50 @@ export function RiskManagement() {
                   </form>
                 )}
                 {roadEvaluations[selectedDetectedRisk.id] && (
-                  <p className="rounded bg-white p-2 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
-                    Resultado: <strong>{roadEvaluations[selectedDetectedRisk.id].result.prediction}</strong> · confianza {(roadEvaluations[selectedDetectedRisk.id].result.confidence * 100).toFixed(1)}%.
-                  </p>
+                  <div className="rounded bg-white p-2 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
+                    <p>
+                      Resultado: <strong>{roadEvaluations[selectedDetectedRisk.id].result.prediction}</strong> · probabilidad estimada {(roadEvaluations[selectedDetectedRisk.id].result.confidence * 100).toFixed(1)}%
+                      {roadEvaluations[selectedDetectedRisk.id].result.confidenceLevel && <> · confianza <strong>{roadEvaluations[selectedDetectedRisk.id].result.confidenceLevel}</strong></>}.
+                    </p>
+                    <p className="mt-1">
+                      Evaluado por <strong>{roadEvaluations[selectedDetectedRisk.id].evaluated_by}</strong> el {new Date(roadEvaluations[selectedDetectedRisk.id].evaluated_at).toLocaleString("es-PE")}.
+                    </p>
+                    <p className="mt-1">
+                      <strong>Validación humana:</strong>{" "}
+                      {roadEvaluations[selectedDetectedRisk.id].review.status === "pendiente" && "pendiente de revisión por un Supervisor de Cumplimiento."}
+                      {roadEvaluations[selectedDetectedRisk.id].review.status === "validada" && `validada por ${roadEvaluations[selectedDetectedRisk.id].review.reviewedBy ?? "supervisor"}.`}
+                      {roadEvaluations[selectedDetectedRisk.id].review.status === "rechazada" && `rechazada por ${roadEvaluations[selectedDetectedRisk.id].review.reviewedBy ?? "supervisor"}; no debe usarse.`}
+                      {roadEvaluations[selectedDetectedRisk.id].review.comment ? ` Comentario: ${roadEvaluations[selectedDetectedRisk.id].review.comment}` : ""}
+                    </p>
+                    {roadEvaluations[selectedDetectedRisk.id].review.status === "pendiente" && canReviewRoadEvaluation && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <input
+                          value={roadReviewComment}
+                          onChange={(event) => setRoadReviewComment(event.target.value)}
+                          placeholder="Comentario (obligatorio para rechazar)"
+                          aria-label="Comentario de la revisión de la evaluación vial"
+                          maxLength={2000}
+                          className="min-w-[200px] flex-1 rounded border px-2 py-1 text-[11px]"
+                        />
+                        <button type="button" disabled={roadReviewing} onClick={() => void handleRoadReview(roadEvaluations[selectedDetectedRisk.id], "validada")} className="rounded px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60" style={{ background: "#107c10" }}>Validar</button>
+                        <button type="button" disabled={roadReviewing || !roadReviewComment.trim()} onClick={() => void handleRoadReview(roadEvaluations[selectedDetectedRisk.id], "rechazada")} className="rounded px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60" style={{ background: "#a4262c" }}>Rechazar</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {(roadEvaluationHistory[selectedDetectedRisk.id]?.length ?? 0) > 1 && (
+                  <details className="rounded bg-white p-2 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
+                    <summary className="cursor-pointer font-medium" style={{ color: "var(--ct-0f6cbd)" }}>
+                      Historial de evaluaciones ({roadEvaluationHistory[selectedDetectedRisk.id].length})
+                    </summary>
+                    <ul className="mt-2 space-y-1">
+                      {roadEvaluationHistory[selectedDetectedRisk.id].map((item) => (
+                        <li key={item.id}>
+                          {new Date(item.evaluated_at).toLocaleString("es-PE")} · {item.evaluated_by} · <strong>{item.result.prediction}</strong> ({(item.result.confidence * 100).toFixed(1)}%) · {item.review.status}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
               </section>
             )}

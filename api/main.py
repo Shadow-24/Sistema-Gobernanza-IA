@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 from psycopg.types.json import Jsonb
 
-from api import database, demand_model, risk_model
+from api import access_policy, database, demand_model, risk_model
 
 
 IMPORTS_PATH = Path(__file__).resolve().parents[1] / "public" / "imports"
@@ -155,39 +155,45 @@ def get_current_user(authorization: str | None = Header(default=None)) -> dict[s
     return user
 
 
-def get_supervisor(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if user["role"] != "Supervisor de Cumplimiento" or "supervision" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento.")
+def _require_action(user: dict[str, Any], action: str) -> dict[str, Any]:
+    if not access_policy.is_allowed(user, action):
+        raise HTTPException(status_code=403, detail=access_policy.ACTION_RULES[action].message)
     return user
+
+
+def _require_permission(user: dict[str, Any], permission: str, detail: str) -> None:
+    if not access_policy.has_permission(user, permission):
+        raise HTTPException(status_code=403, detail=detail)
+
+
+def _require_any_permission(user: dict[str, Any], permissions: frozenset[str], detail: str) -> None:
+    if not access_policy.has_any_permission(user, permissions):
+        raise HTTPException(status_code=403, detail=detail)
+
+
+def get_supervisor(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    return _require_action(user, "supervise")
 
 
 def get_audit_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if user["role"] != "Supervisor de Cumplimiento" or "auditoria" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento con permiso de auditoría.")
-    return user
+    return _require_action(user, "audit.manage")
 
 
 def get_detected_risk_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="Se requiere permiso de Riesgos.")
+    _require_permission(user, "riesgos", "Se requiere permiso de Riesgos.")
     return user
 
 
 def get_compliance_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if user["role"] != "Supervisor de Cumplimiento" or "cumplimiento" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="Se requiere el rol Supervisor de Cumplimiento con permiso de Cumplimiento.")
-    return user
+    return _require_action(user, "compliance.manage")
 
 
 def _require_compliance_read_access(user: dict[str, Any]) -> None:
-    if "cumplimiento" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar cumplimiento.")
+    _require_permission(user, "cumplimiento", "No tienes permiso para consultar cumplimiento.")
 
 
 def get_demand_model_analyst(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if user["role"] not in {"Analista de Datos", "Supervisor de Cumplimiento"}:
-        raise HTTPException(status_code=403, detail="Se requiere el rol Analista de Datos o Supervisor de Cumplimiento.")
-    return user
+    return _require_action(user, "demand_model.train")
 
 
 def _record_demand_model_operation(
@@ -1182,7 +1188,7 @@ def create_user(
                     request.name.strip(),
                     database.hash_password(request.password),
                     request.role,
-                    Jsonb(database.PERMISSIONS_BY_ROLE[request.role]),
+                    Jsonb(access_policy.PERMISSIONS_BY_ROLE[request.role]),
                 ),
             ).fetchone()
             if not row:
@@ -1219,10 +1225,9 @@ def update_user(
     if password_changed:
         updates["password_hash"] = database.hash_password(updates.pop("password"))
     if "role" in updates and "permissions" not in updates:
-        updates["permissions"] = database.PERMISSIONS_BY_ROLE[updates["role"]]
+        updates["permissions"] = access_policy.PERMISSIONS_BY_ROLE[updates["role"]]
     if "permissions" in updates:
-        allowed_permissions = {"dashboard", "riesgos", "auditoria", "trazabilidad", "cumplimiento", "reportes", "supervision"}
-        if not set(updates["permissions"]).issubset(allowed_permissions):
+        if not set(updates["permissions"]).issubset(access_policy.ALL_PERMISSIONS):
             raise HTTPException(status_code=422, detail="La lista contiene permisos desconocidos.")
         updates["permissions"] = list(dict.fromkeys(updates["permissions"]))
     if updates.get("role") == "Supervisor de Cumplimiento":
@@ -1280,7 +1285,7 @@ def update_user(
 def get_access_events(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
     try:
         with database.connection() as conn:
-            if user["role"] == "Supervisor de Cumplimiento" and "supervision" in user["permissions"]:
+            if access_policy.is_allowed(user, "supervise"):
                 rows = conn.execute(
                     """
                     SELECT occurred_at, username, role, action, resource, result
@@ -1332,8 +1337,7 @@ def create_access_event(
 
 
 def _require_audit_read_access(user: dict[str, Any]) -> None:
-    if "auditoria" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar auditorías.")
+    _require_permission(user, "auditoria", "No tienes permiso para consultar auditorías.")
 
 
 @app.get("/api/audits/workflow")
@@ -1498,8 +1502,7 @@ def delete_audit_document(
 
 
 def _require_risk_read_access(user: dict[str, Any]) -> None:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar riesgos.")
+    _require_permission(user, "riesgos", "No tienes permiso para consultar riesgos.")
 
 
 @app.get("/api/detected-risks/workflow")
@@ -1570,8 +1573,7 @@ ASSIGNABLE_PERMISSIONS = {"riesgos", "cumplimiento", "auditoria"}
 def get_assignees(permission: str, user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
     if permission not in ASSIGNABLE_PERMISSIONS:
         raise HTTPException(status_code=400, detail="Permiso de responsables no válido.")
-    if permission not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar estos responsables.")
+    _require_permission(user, permission, "No tienes permiso para consultar estos responsables.")
     try:
         return database.list_assignees_with_permission(permission)
     except Exception as error:
@@ -1605,6 +1607,50 @@ def get_detected_risk_road_evaluation(
     except Exception as error:
         logger.exception("No se pudo consultar la evaluación vial del riesgo %s.", risk_id)
         raise HTTPException(status_code=503, detail="No se pudo consultar la evaluación vial guardada.") from error
+
+
+@app.get("/api/detected-risks/{risk_id}/road-evaluations")
+def list_detected_risk_road_evaluations(
+    risk_id: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    _require_risk_read_access(user)
+    if len(risk_id) > 120:
+        raise HTTPException(status_code=422, detail="El identificador del riesgo no es válido.")
+    try:
+        return database.list_detected_risk_road_evaluations(risk_id, limit)
+    except Exception as error:
+        logger.exception("No se pudo consultar el historial de evaluaciones viales del riesgo %s.", risk_id)
+        raise HTTPException(status_code=503, detail="No se pudo consultar el historial de evaluaciones viales.") from error
+
+
+class RoadEvaluationReviewRequest(BaseModel):
+    decision: Literal["validada", "rechazada"]
+    comment: str = Field(default="", max_length=2000)
+
+
+@app.post("/api/detected-risks/road-evaluations/{evaluation_id}/review")
+def review_detected_risk_road_evaluation(
+    evaluation_id: int,
+    request: RoadEvaluationReviewRequest,
+    user: dict[str, Any] = Depends(get_supervisor),
+) -> dict[str, Any]:
+    comment = request.comment.strip()
+    if request.decision == "rechazada" and not comment:
+        raise HTTPException(status_code=422, detail="Indica el motivo del rechazo de la evaluación.")
+    try:
+        evaluation = database.review_detected_risk_road_evaluation(
+            evaluation_id, request.decision, comment, user["username"],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo registrar la revisión de la evaluación vial %s.", evaluation_id)
+        raise HTTPException(status_code=503, detail="No se pudo registrar la revisión de la evaluación vial.") from error
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="No se encontró la evaluación vial solicitada.")
+    return evaluation
 
 
 @app.post("/api/detected-risks/{risk_id}/road-evaluation")
@@ -1720,16 +1766,6 @@ def delete_detected_risk_document(
     return Response(status_code=204)
 
 
-@app.delete("/api/access-events", status_code=204)
-def clear_access_events(_: dict[str, Any] = Depends(get_supervisor)) -> None:
-    try:
-        with database.connection() as conn:
-            conn.execute("DELETE FROM access_events")
-    except Exception as error:
-        logger.exception("No se pudieron limpiar los eventos de acceso.")
-        raise HTTPException(status_code=503, detail="No se pudieron limpiar los eventos de acceso.") from error
-
-
 def _classify_route_simulation(request: RiskSimulationRequest) -> dict[str, Any]:
     delay_points = 35 if request.delay_hours > 8 else 25 if request.delay_hours > 4 else 15 if request.delay_hours > 2 else 5 if request.delay_hours > 0 else 0
     incident_points = min(request.incident_count * 15, 30)
@@ -1749,8 +1785,7 @@ def get_ai_governance_controls(
     scope: Literal["todos", "demanda", "vial"] = Query(default="todos"),
     user: dict[str, Any] = Depends(get_current_user),
 ) -> list[dict[str, Any]]:
-    if not {"cumplimiento", "dashboard", "riesgos"}.intersection(user["permissions"]):
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar los controles de gobernanza de IA.")
+    _require_any_permission(user, frozenset({"cumplimiento", "dashboard", "riesgos"}), "No tienes permiso para consultar los controles de gobernanza de IA.")
     try:
         return database.list_ai_governance_controls(scope)
     except Exception as error:
@@ -1955,8 +1990,7 @@ def delete_compliance_followup_document(
 
 
 def _require_ai_evidence_read_access(user: dict[str, Any]) -> None:
-    if not {"cumplimiento", "dashboard", "riesgos"}.intersection(user["permissions"]):
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar las evidencias de gobernanza.")
+    _require_any_permission(user, frozenset({"cumplimiento", "dashboard", "riesgos"}), "No tienes permiso para consultar las evidencias de gobernanza.")
 
 
 async def _read_ai_evidence_upload(file: UploadFile) -> dict[str, Any]:
@@ -2145,8 +2179,7 @@ def _ai_governance_alerts() -> list[dict[str, Any]]:
 
 @app.get("/api/ai-governance/alerts")
 def get_ai_governance_alerts(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar alertas de riesgos de IA.")
+    _require_permission(user, "riesgos", "No tienes permiso para consultar alertas de riesgos de IA.")
     try:
         alerts = _ai_governance_alerts()
         reviewed_alert_ids = database.list_reviewed_ai_governance_alert_ids()
@@ -2159,8 +2192,7 @@ def get_ai_governance_alerts(user: dict[str, Any] = Depends(get_current_user)) -
 
 @app.get("/api/ai-governance/risks")
 def get_ai_governance_risks(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar el registro de riesgos de IA.")
+    _require_permission(user, "riesgos", "No tienes permiso para consultar el registro de riesgos de IA.")
     try:
         return database.list_ai_governance_risks()
     except Exception as error:
@@ -2174,8 +2206,7 @@ async def create_ai_governance_risk(
     files: list[UploadFile] = File(default=[]),
     user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para registrar riesgos de IA.")
+    _require_permission(user, "riesgos", "No tienes permiso para registrar riesgos de IA.")
     try:
         request = AIGovernanceRiskCreate.model_validate_json(risk_json)
     except ValidationError as error:
@@ -2255,8 +2286,7 @@ def update_ai_governance_risk(
 
 @app.get("/api/risk-assessments")
 def get_risk_assessments(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar evaluaciones de riesgo.")
+    _require_permission(user, "riesgos", "No tienes permiso para consultar evaluaciones de riesgo.")
     try:
         return database.list_risk_assessments()
     except Exception as error:
@@ -2269,8 +2299,7 @@ def create_risk_simulation(
     request: RiskSimulationRequest,
     user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para registrar evaluaciones de riesgo.")
+    _require_permission(user, "riesgos", "No tienes permiso para registrar evaluaciones de riesgo.")
     scenario_name = request.scenario_name.strip()
     if len(scenario_name) < 3:
         raise HTTPException(status_code=422, detail="El nombre del escenario debe tener al menos 3 caracteres.")
@@ -2296,33 +2325,13 @@ def create_risk_simulation(
 
 @app.get("/api/risk-model/road-impact")
 def get_road_impact_model(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar el modelo de riesgo.")
+    _require_permission(user, "riesgos", "No tienes permiso para consultar el modelo de riesgo.")
     return risk_model.model_status(IMPORTS_PATH)
-
-
-@app.post("/api/risk-model/road-impact/predict")
-def predict_road_impact(
-    request: RoadImpactRequest,
-    user: dict[str, Any] = Depends(get_current_user),
-) -> dict[str, Any]:
-    if "riesgos" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para evaluar el impacto vial.")
-    try:
-        return risk_model.predict_road_state(IMPORTS_PATH, request.model_dump(by_alias=True))
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="No se encontró el CSV MTC requerido en imports.") from error
-    except ValueError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
-    except Exception as error:
-        logger.exception("No se pudo evaluar el impacto vial con XGBoost.")
-        raise HTTPException(status_code=503, detail="No se pudo evaluar el impacto vial con XGBoost.") from error
 
 
 @app.get("/api/generated-reports")
 def get_generated_reports(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
-    if "reportes" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar reportes.")
+    _require_permission(user, "reportes", "No tienes permiso para consultar reportes.")
     try:
         with database.connection() as conn:
             rows = conn.execute(
@@ -2343,10 +2352,9 @@ async def save_generated_report(
     sections: str = Query(default="[]", max_length=10000, alias="secciones"),
     user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    if report_type not in database.REPORT_TYPES_BY_ROLE.get(user["role"], []):
+    if report_type not in access_policy.REPORT_TYPES_BY_ROLE.get(user["role"], []):
         raise HTTPException(status_code=403, detail="No tienes permiso para generar este tipo de reporte.")
-    if "reportes" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para generar reportes.")
+    _require_permission(user, "reportes", "No tienes permiso para generar reportes.")
     try:
         section_list = json.loads(sections)
         if not isinstance(section_list, list) or not all(isinstance(section, str) for section in section_list):
@@ -2402,8 +2410,7 @@ def download_generated_report(
     download: bool = False,
     user: dict[str, Any] = Depends(get_current_user),
 ) -> FileResponse:
-    if "reportes" not in user["permissions"]:
-        raise HTTPException(status_code=403, detail="No tienes permiso para consultar reportes.")
+    _require_permission(user, "reportes", "No tienes permiso para consultar reportes.")
     try:
         with database.connection() as conn:
             report = conn.execute("SELECT * FROM generated_reports WHERE id = %s", (report_id,)).fetchone()
@@ -2445,7 +2452,7 @@ def _run_demand_model(user: dict[str, Any], operation: str) -> dict[str, Any]:
             username=user["username"],
         )
         succeeded = True
-        return result
+        return {**result, "approval": {"status": "pendiente", "reviewedBy": None, "reviewedAt": None, "comment": ""}}
     except FileNotFoundError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except ValueError as error:
@@ -2465,6 +2472,12 @@ def get_demand_model_status(_: dict[str, Any] = Depends(get_current_user)) -> di
         latest = database.load_demand_model_run()
         if latest:
             result = dict(latest["result"])
+            result["approval"] = latest["approval"]
+            if latest["approval"]["status"] == "pendiente":
+                result["warnings"] = [
+                    "Modelo pendiente de aprobación: un Supervisor de Cumplimiento debe revisarlo antes de usarlo para pronosticar.",
+                    *(result.get("warnings") or []),
+                ]
             try:
                 _, _, source_checksum, _, _ = _load_demand_model_sources()
                 result["sourceIsCurrent"] = source_checksum == latest["source_checksum"]
@@ -2534,8 +2547,13 @@ def predict_demand(
     started_at = time.perf_counter()
     succeeded = False
     try:
-        saved_run = database.load_demand_model_run()
+        saved_run = database.load_demand_model_run(approved_only=True)
         if not saved_run:
+            if database.load_demand_model_run():
+                raise HTTPException(
+                    status_code=409,
+                    detail="No hay un modelo aprobado: un Supervisor de Cumplimiento debe aprobar el modelo entrenado antes de generar predicciones.",
+                )
             raise HTTPException(status_code=409, detail="Entrena y evalúa el modelo antes de generar predicciones.")
         monthly, _, checksum, external_features, _ = _load_demand_model_sources()
         if checksum != saved_run["source_checksum"]:
@@ -2591,6 +2609,32 @@ def predict_demand(
         raise HTTPException(status_code=503, detail="No se pudo generar el pronóstico de demanda.") from error
     finally:
         _record_demand_model_operation("predict", succeeded, started_at, user["username"])
+
+
+class DemandModelReviewRequest(BaseModel):
+    decision: Literal["aprobado", "rechazado"]
+    comment: str = Field(default="", max_length=2000)
+
+
+@app.post("/api/demand-model/runs/{run_id}/review")
+def review_demand_model(
+    run_id: str,
+    request: DemandModelReviewRequest,
+    user: dict[str, Any] = Depends(get_supervisor),
+) -> dict[str, Any]:
+    comment = request.comment.strip()
+    if request.decision == "rechazado" and not comment:
+        raise HTTPException(status_code=422, detail="Indica el motivo del rechazo del modelo.")
+    try:
+        approval = database.review_demand_model_run(run_id, request.decision, comment, user["username"])
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("No se pudo registrar la revisión del modelo %s.", run_id)
+        raise HTTPException(status_code=503, detail="No se pudo registrar la revisión del modelo.") from error
+    if not approval:
+        raise HTTPException(status_code=404, detail="No se encontró la corrida del modelo solicitada.")
+    return {"runId": run_id, "approval": approval["approval"]}
 
 
 @app.get("/api/demand-model/history")

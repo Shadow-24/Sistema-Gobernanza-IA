@@ -43,7 +43,6 @@ type AuthContextValue = {
   createManagedUser: (account: { username: string; name: string; role: UserRole; password: string }) => Promise<boolean>;
   updateManagedUser: (username: string, updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">> & { password?: string }) => Promise<boolean>;
   updateOwnProfile: (updates: { name?: string; currentPassword?: string; newPassword?: string }) => Promise<void>;
-  clearAccessEvents: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -202,11 +201,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const clearAccessEvents = useCallback(async () => {
-    await apiRequest<void>("/api/access-events", { method: "DELETE" });
-    setAccessEvents([]);
-  }, []);
-
   const updateOwnProfile = useCallback(async (updates: { name?: string; currentPassword?: string; newPassword?: string }) => {
     const updated = await apiRequest<ManagedUser>("/api/auth/profile", {
       method: "PATCH",
@@ -234,10 +228,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     createManagedUser,
     updateManagedUser,
     updateOwnProfile,
-    clearAccessEvents,
   }), [
     user, isLoading, managedUsers, accessEvents, managementError, login, logout, hasPermission,
-    recordAccess, createManagedUser, updateManagedUser, updateOwnProfile, clearAccessEvents,
+    recordAccess, createManagedUser, updateManagedUser, updateOwnProfile,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

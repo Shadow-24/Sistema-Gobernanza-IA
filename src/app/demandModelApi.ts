@@ -26,8 +26,16 @@ export type DemandDataSource = {
   errorReductionPercent?: number | null;
 };
 
+export type DemandModelApproval = {
+  status: "pendiente" | "aprobado" | "rechazado";
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  comment?: string;
+};
+
 export type DemandModelStatus = {
   runId?: string;
+  approval?: DemandModelApproval;
   model: string;
   modelVersion?: string;
   xgboostVersion?: string;
@@ -179,4 +187,15 @@ export function predictDemandModel(horizonMonths: number): Promise<DemandForecas
     method: "POST",
     body: JSON.stringify({ horizon_months: horizonMonths }),
   });
+}
+
+export function reviewDemandModel(
+  runId: string,
+  decision: "aprobado" | "rechazado",
+  comment: string,
+): Promise<{ runId: string; approval: DemandModelApproval }> {
+  return apiRequest<{ runId: string; approval: DemandModelApproval }>(
+    `/api/demand-model/runs/${encodeURIComponent(runId)}/review`,
+    { method: "POST", body: JSON.stringify({ decision, comment }) },
+  );
 }

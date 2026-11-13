@@ -33,6 +33,10 @@ export type RoadImpactModel = {
   classes?: Record<string, number>;
   metrics?: { accuracy: number; balancedAccuracy: number; macroF1: number; majorityBaselineAccuracy: number };
   categories?: Record<string, string[]>;
+  locations?: string[][];
+  phenomena?: string[][];
+  reliability?: { from: number; to: number; cases: number; accuracy: number | null }[];
+  validation?: { records: number; auc?: number; brierScore?: number } | null;
   caveat?: string;
 }
 
@@ -50,6 +54,8 @@ export type RoadImpactInput = {
 export type RoadImpactPrediction = {
   prediction: string;
   confidence: number;
+  confidenceLevel?: "Alta" | "Media" | "Baja" | null;
+  reliability?: { observedAccuracy: number; cases: number; from: number; to: number } | null;
   probabilities: Record<string, number>;
   model: string;
   evaluation: NonNullable<RoadImpactModel["metrics"]>;
@@ -71,9 +77,3 @@ export function loadRoadImpactModel(): Promise<RoadImpactModel> {
   return apiRequest<RoadImpactModel>("/api/risk-model/road-impact");
 }
 
-export function predictRoadImpact(input: RoadImpactInput): Promise<RoadImpactPrediction> {
-  return apiRequest<RoadImpactPrediction>("/api/risk-model/road-impact/predict", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}

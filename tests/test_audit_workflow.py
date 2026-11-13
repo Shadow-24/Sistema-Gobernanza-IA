@@ -344,3 +344,39 @@ class AuditWorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AppendOnlyAuditLogTests(unittest.TestCase):
+    def test_access_log_cannot_be_cleared_through_the_api(self) -> None:
+        methods = {
+            method
+            for route in api_main.app.routes
+            if getattr(route, "path", "") == "/api/access-events"
+            for method in (route.methods or set())
+        }
+        self.assertEqual(methods, {"GET", "POST"})
+
+    def test_audit_documents_are_retired_not_deleted(self) -> None:
+        import inspect
+
+        for function, table in (
+            (api_main.database.delete_audit_document, "audit_documents"),
+            (api_main.database.delete_detected_risk_document, "detected_risk_documents"),
+            (api_main.database.delete_compliance_followup_document, "compliance_followup_documents"),
+        ):
+            source = inspect.getsource(function)
+            self.assertIn(f"UPDATE {table}", source)
+            self.assertNotIn("DELETE FROM", source)
+
+    def test_retired_documents_are_hidden_from_lists_and_downloads(self) -> None:
+        import inspect
+
+        for function in (
+            api_main.database.list_audit_documents,
+            api_main.database.get_audit_document,
+            api_main.database.list_detected_risk_documents,
+            api_main.database.get_detected_risk_document,
+            api_main.database.list_compliance_followup_documents,
+            api_main.database.get_compliance_followup_document,
+        ):
+            self.assertIn("removed_at IS NULL", inspect.getsource(function), function.__name__)

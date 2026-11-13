@@ -47,7 +47,16 @@ export type DetectedRiskDocument = {
   created_at: string;
 };
 
+export type RoadEvaluationReview = {
+  status: "pendiente" | "validada" | "rechazada";
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  comment: string;
+};
+
 export type DetectedRiskRoadEvaluation = {
+  id: number;
+  review: RoadEvaluationReview;
   risk_id: string;
   inputs: RoadImpactInput;
   result: RoadImpactPrediction;
@@ -84,6 +93,21 @@ export function loadDetectedRiskEvents(riskId: string): Promise<DetectedRiskEven
 
 export function loadDetectedRiskRoadEvaluation(riskId: string): Promise<DetectedRiskRoadEvaluation | null> {
   return apiRequest<DetectedRiskRoadEvaluation | null>(`/api/detected-risks/${encodeURIComponent(riskId)}/road-evaluation`);
+}
+
+export function loadDetectedRiskRoadEvaluationHistory(riskId: string): Promise<DetectedRiskRoadEvaluation[]> {
+  return apiRequest<DetectedRiskRoadEvaluation[]>(`/api/detected-risks/${encodeURIComponent(riskId)}/road-evaluations`);
+}
+
+export function reviewDetectedRiskRoadEvaluation(
+  evaluationId: number,
+  decision: "validada" | "rechazada",
+  comment: string,
+): Promise<DetectedRiskRoadEvaluation> {
+  return apiRequest<DetectedRiskRoadEvaluation>(`/api/detected-risks/road-evaluations/${evaluationId}/review`, {
+    method: "POST",
+    body: JSON.stringify({ decision, comment }),
+  });
 }
 
 export function evaluateDetectedRiskRoadImpact(
