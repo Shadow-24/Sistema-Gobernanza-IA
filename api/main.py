@@ -10,6 +10,7 @@ import unicodedata
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from contextlib import asynccontextmanager
 from typing import Any, Literal
 from urllib.parse import quote
 
@@ -49,7 +50,15 @@ MIN_DAILY_POINTS = 60
 LAG_MONTHS = 3
 
 logger = logging.getLogger(__name__)
-app = FastAPI(title="Gobernanza de datos sectoriales")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    initialize_postgresql()
+    yield
+
+
+app = FastAPI(title="Gobernanza de datos sectoriales", lifespan=lifespan)
 database_initialized = threading.Event()
 authentication_initialized = threading.Event()
 AUTHENTICATION_PATHS = {
@@ -111,7 +120,6 @@ def _load_demand_model_sources() -> tuple[
     return monthly, quality, checksum, external_features, feature_errors
 
 
-@app.on_event("startup")
 def initialize_postgresql() -> None:
     database_initialized.clear()
     authentication_initialized.clear()

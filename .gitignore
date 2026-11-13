@@ -21,3 +21,6 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Reportes PDF generados en tiempo de ejecucion
+reportes_generados/

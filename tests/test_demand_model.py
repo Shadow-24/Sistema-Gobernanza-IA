@@ -385,3 +385,20 @@ class DemandApiRegistrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DemandRealDataRegressionTests(unittest.TestCase):
+    """Protege la calidad del modelo con los datos reales del repositorio."""
+
+    SALES_FILE = Path(__file__).resolve().parents[1] / "public" / "imports" / demand_model.TARGET_SOURCE
+
+    @unittest.skipUnless(SALES_FILE.is_file(), "La fuente de ventas reales no está disponible.")
+    def test_real_sales_model_keeps_positive_r2_and_beats_seasonal_baseline(self) -> None:
+        series, quality, checksum = demand_model.load_monthly_demand(self.SALES_FILE)
+        metrics = demand_model.train_and_evaluate(
+            series, source_checksum=checksum, quality=quality,
+        ).public_result["metrics"]
+
+        self.assertGreater(metrics["hybrid"]["r2"], 0.2)
+        self.assertLess(metrics["hybrid"]["mape"], 6.0)
+        self.assertLess(metrics["hybrid"]["mae"], metrics["baseline"]["mae"])
