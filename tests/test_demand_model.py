@@ -73,7 +73,7 @@ class DemandMetricsTests(unittest.TestCase):
 class DemandTrainingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        periods = pd.period_range("2020-01", periods=48, freq="M")
+        periods = pd.period_range("2020-01", periods=60, freq="M")
         values = [1000 + (period.month * 80) + period.ordinal % 12 for period in periods]
         cls.series = pd.Series(values, index=periods, dtype=float)
         cls.result = demand_model.train_and_evaluate(
@@ -84,9 +84,9 @@ class DemandTrainingTests(unittest.TestCase):
 
     def test_holdout_is_chronological_and_contains_real_baseline_metrics(self) -> None:
         result = self.result.public_result
-        self.assertEqual(result["evaluationPeriod"]["from"], "2023-03")
-        self.assertEqual(result["evaluationPeriod"]["to"], "2023-12")
-        self.assertEqual(result["testObservations"], 10)
+        self.assertEqual(result["evaluationPeriod"]["from"], "2023-07")
+        self.assertEqual(result["evaluationPeriod"]["to"], "2024-12")
+        self.assertEqual(result["testObservations"], 18)
         self.assertIn("mae", result["metrics"]["xgboost"])
         self.assertIn("mae", result["metrics"]["hybrid"])
         self.assertIn("mae", result["metrics"]["baseline"])
@@ -111,7 +111,7 @@ class DemandTrainingTests(unittest.TestCase):
             demand_model._metric_set(actual, hybrid_predictions)["mae"],
             result["metrics"]["hybrid"]["mae"],
         )
-        self.assertEqual(result["testPredictions"][0]["period"], "2023-03")
+        self.assertEqual(result["testPredictions"][0]["period"], "2023-07")
 
     def test_features_use_only_observations_before_the_target_period(self) -> None:
         features = demand_model._feature_frame(self.series, [24]).iloc[0]
@@ -126,7 +126,7 @@ class DemandTrainingTests(unittest.TestCase):
             self.result.public_result["selectionValidation"]["rollingMeanWeight"],
         )
         predictions = demand_model.predict_horizon(model, self.series, 2)
-        self.assertEqual([item["period"] for item in predictions], ["2024-01", "2024-02"])
+        self.assertEqual([item["period"] for item in predictions], ["2025-01", "2025-02"])
         self.assertTrue(all(item["value"] >= 0 for item in predictions))
         self.assertEqual(len(self.result.model_artifact) > 0, True)
 
@@ -151,7 +151,7 @@ class DemandTrainingTests(unittest.TestCase):
 
         external_feature = pd.Series(
             [75.0, 100.0],
-            index=pd.PeriodIndex(["2024-01", "2024-02"], freq="M"),
+            index=pd.PeriodIndex(["2025-01", "2025-02"], freq="M"),
         )
         with patch.object(
             demand_model,
@@ -217,7 +217,7 @@ class DemandTrainingTests(unittest.TestCase):
             def get_booster(self) -> FakeBooster:
                 return self.booster
 
-        periods = pd.period_range("2020-01", periods=48, freq="M")
+        periods = pd.period_range("2020-01", periods=60, freq="M")
         series = pd.Series(
             [1000 + period.month * 80 + period.ordinal % 12 for period in periods],
             index=periods,
@@ -260,7 +260,7 @@ class DemandTrainingTests(unittest.TestCase):
         self.assertIn("se requieren al menos", result.public_result["candidateEvaluations"][0]["reason"])
 
     def test_external_source_that_is_stale_for_forecasting_is_not_selected(self) -> None:
-        feature_periods = pd.period_range("2021-01", periods=32, freq="M")
+        feature_periods = pd.period_range("2020-01", periods=56, freq="M")
         feature = pd.Series(
             [self.series.get(period, 0.0) for period in feature_periods],
             index=feature_periods,

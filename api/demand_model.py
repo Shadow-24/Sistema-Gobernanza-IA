@@ -37,8 +37,8 @@ EIA_CACHE_SECONDS = 6 * 60 * 60
 _eia_response_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 MIN_MONTHS = 36
 MAX_FORECAST_HORIZON = 12
-TEST_MONTHS = 12
-MIN_EXTERNAL_TRAIN_OBSERVATIONS = 24
+TEST_MONTHS = 18
+MIN_EXTERNAL_TRAIN_OBSERVATIONS = 20
 MIN_EXTERNAL_TEST_OBSERVATIONS = 6
 MAX_EXTERNAL_FEATURE_STALENESS_MONTHS = 2
 BLEND_VALIDATION_HORIZON = 6
@@ -61,13 +61,13 @@ FEATURE_COLUMN_NAMES = {
 }
 MODEL_CONFIG: dict[str, Any] = {
     "objective": "reg:squarederror",
-    "n_estimators": 180,
-    "max_depth": 2,
-    "learning_rate": 0.035,
+    "n_estimators": 400,
+    "max_depth": 1,
+    "learning_rate": 0.03,
     "min_child_weight": 3,
-    "subsample": 0.85,
-    "colsample_bytree": 0.9,
-    "reg_lambda": 4,
+    "subsample": 1.0,
+    "colsample_bytree": 1.0,
+    "reg_lambda": 1,
     "random_state": 42,
     "n_jobs": 2,
     "verbosity": 0,
@@ -80,9 +80,54 @@ class TrainingResult:
     model_artifact: bytes
 
 
+_DAYS_IN_MONTH = (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+_RATIO_LAG_COLUMNS = ("lag_1", "lag_2", "lag_3", "lag_6", "lag_12", "rolling_mean_3")
+
+
+class RatioXGBRegressor:
+    """XGBoost sobre la razón demanda / nivel de los últimos 12 meses.
+
+    Los árboles no extrapolan: con la serie en crecimiento, predecir el nivel
+    absoluto subestima sistemáticamente los meses nuevos. Predecir la razón
+    (ajustada por días del mes) es estacionario; el nivel se reconstruye con el
+    promedio móvil de 12 meses, que solo usa datos anteriores al periodo objetivo.
+    """
+
+    def __init__(self, inner: Any | None = None) -> None:
+        from xgboost import XGBRegressor
+
+        self.inner = inner if inner is not None else XGBRegressor(**MODEL_CONFIG)
+
+    @staticmethod
+    def transform(features: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
+        level = features["rolling_mean_12"].to_numpy(dtype=float)
+        month = np.round(np.arctan2(features["month_sin"], features["month_cos"]) * 12 / (2 * np.pi)).astype(int) % 12
+        days = np.asarray([_DAYS_IN_MONTH[value - 1] if value else _DAYS_IN_MONTH[11] for value in month], dtype=float)
+        scale = level * days / 30.4375
+        inputs = features[list(_RATIO_LAG_COLUMNS)].div(level, axis=0)
+        inputs["month_sin"] = features["month_sin"].to_numpy()
+        inputs["month_cos"] = features["month_cos"].to_numpy()
+        extras = [column for column in features.columns if column not in FEATURE_NAMES]
+        for column in extras:
+            inputs[column] = features[column].to_numpy()
+        return inputs, scale
+
+    def fit(self, features: pd.DataFrame, target: Any) -> "RatioXGBRegressor":
+        inputs, scale = self.transform(features)
+        self.inner.fit(inputs, np.asarray(target, dtype=float) / scale)
+        return self
+
+    def predict(self, features: pd.DataFrame) -> np.ndarray:
+        inputs, scale = self.transform(features)
+        return self.inner.predict(inputs) * scale
+
+    def get_booster(self) -> Any:
+        return self.inner.get_booster()
+
+
 @dataclass
 class DemandForecastModel:
-    estimator: XGBRegressor
+    estimator: Any
     rolling_mean_weight: float = 0.0
 
 
@@ -450,10 +495,8 @@ def _forecast_feature_frame(
     return frame[columns + [feature_name]]
 
 
-def _new_model() -> XGBRegressor:
-    from xgboost import XGBRegressor
-
-    return XGBRegressor(**MODEL_CONFIG)
+def _new_model() -> RatioXGBRegressor:
+    return RatioXGBRegressor()
 
 
 def _metric_set(actual: np.ndarray, predicted: np.ndarray) -> dict[str, float | None]:
@@ -485,11 +528,18 @@ def _metric_set(actual: np.ndarray, predicted: np.ndarray) -> dict[str, float | 
 
 
 def _blend_predictions(
-    model: XGBRegressor,
+    model: Any,
     features: pd.DataFrame,
     rolling_mean_weight: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    xgboost_prediction = np.maximum(0, model.predict(features))
+    return _blend_raw(np.maximum(0, model.predict(features)), features, rolling_mean_weight)
+
+
+def _blend_raw(
+    xgboost_prediction: np.ndarray,
+    features: pd.DataFrame,
+    rolling_mean_weight: float,
+) -> tuple[np.ndarray, np.ndarray]:
     if rolling_mean_weight == 0:
         return xgboost_prediction, xgboost_prediction
     rolling_mean = features["rolling_mean_3"].to_numpy(dtype=float)
@@ -564,10 +614,36 @@ def _select_rolling_mean_weight(
     }
 
 
-def _explain(model: XGBRegressor, features: pd.DataFrame) -> dict[str, Any]:
+def _walk_forward_prediction(
+    series: pd.Series,
+    test_indices: list[int],
+    *,
+    external_features: dict[str, pd.Series] | None = None,
+    selected_source: str | None = None,
+) -> np.ndarray:
+    """Predicción un mes adelante reentrenando con todo el pasado de cada mes evaluado."""
+    predictions = []
+    for index in test_indices:
+        past = list(range(max(LAGS), index))
+        model = _new_model()
+        model.fit(
+            _feature_frame(series, past, external_features=external_features, selected_source=selected_source),
+            series.iloc[past].to_numpy(dtype=float),
+        )
+        features = _feature_frame(
+            series, [index], external_features=external_features, selected_source=selected_source,
+        )
+        predictions.append(float(np.maximum(0, model.predict(features))[0]))
+    return np.asarray(predictions)
+
+
+def _explain(model: Any, features: pd.DataFrame) -> dict[str, Any]:
     try:
         import shap
 
+        if isinstance(model, RatioXGBRegressor):
+            features, _ = model.transform(features)
+            model = model.inner
         explainer = shap.TreeExplainer(model)
         shap_values = np.asarray(explainer.shap_values(features), dtype=float)
         if shap_values.ndim == 3:
@@ -617,7 +693,7 @@ def train_and_evaluate(
             f"Se requieren al menos {MIN_MONTHS} meses consecutivos de ventas observadas; "
             f"la fuente contiene {len(series)}."
         )
-    split_index = max(24, len(series) - min(TEST_MONTHS, max(6, round(len(series) * 0.2))))
+    split_index = max(24, len(series) - min(TEST_MONTHS, max(6, round(len(series) * 0.35))))
     train_indices = list(range(max(LAGS), split_index))
     test_indices = list(range(split_index, len(series)))
     if len(train_indices) < 12 or len(test_indices) < 2:
@@ -631,8 +707,8 @@ def train_and_evaluate(
     test_y = series.iloc[test_indices].to_numpy(dtype=float)
     evaluation_model = _new_model()
     evaluation_model.fit(train_x, train_y)
-    raw_xgboost_prediction, baseline_xgboost = _blend_predictions(
-        evaluation_model,
+    raw_xgboost_prediction, baseline_xgboost = _blend_raw(
+        _walk_forward_prediction(series, test_indices),
         test_x,
         rolling_mean_weight,
     )
@@ -702,8 +778,13 @@ def train_and_evaluate(
                 train_y,
             )
             candidate_actual = series.iloc[candidate_test_indices].to_numpy(dtype=float)
-            _, candidate_prediction = _blend_predictions(
-                candidate_model,
+            _, candidate_prediction = _blend_raw(
+                _walk_forward_prediction(
+                    series,
+                    candidate_test_indices,
+                    external_features=external_features,
+                    selected_source=source,
+                ),
                 candidate_test_x,
                 rolling_mean_weight,
             )
@@ -763,8 +844,13 @@ def train_and_evaluate(
             ),
             train_y,
         )
-        raw_xgboost_prediction, predicted = _blend_predictions(
-            evaluation_model,
+        raw_xgboost_prediction, predicted = _blend_raw(
+            _walk_forward_prediction(
+                series,
+                selected_test_indices,
+                external_features=external_features,
+                selected_source=selected_source,
+            ),
             test_x,
             rolling_mean_weight,
         )
@@ -919,7 +1005,7 @@ def train_and_evaluate(
         ],
     }
     raw_model = bytes(model.get_booster().save_raw(raw_format="json"))
-    metadata = json.dumps({"rollingMeanWeight": rolling_mean_weight}).encode("utf-8")
+    metadata = json.dumps({"rollingMeanWeight": rolling_mean_weight, "ratioModel": True}).encode("utf-8")
     artifact = (
         MODEL_ARTIFACT_MAGIC
         + len(metadata).to_bytes(4, byteorder="big")
@@ -933,6 +1019,7 @@ def load_model(artifact: bytes) -> DemandForecastModel:
     from xgboost import XGBRegressor
 
     rolling_mean_weight = 0.0
+    ratio_model = False
     model_bytes = artifact
     if artifact.startswith(MODEL_ARTIFACT_MAGIC):
         metadata_length_start = len(MODEL_ARTIFACT_MAGIC)
@@ -948,16 +1035,17 @@ def load_model(artifact: bytes) -> DemandForecastModel:
             raise ValueError("Los metadatos del artefacto del modelo están incompletos.")
         metadata = json.loads(artifact[metadata_length_end:metadata_end].decode("utf-8"))
         rolling_mean_weight = float(metadata["rollingMeanWeight"])
+        ratio_model = bool(metadata.get("ratioModel", False))
         if not 0 <= rolling_mean_weight <= 1:
             raise ValueError("El peso de la media móvil en el artefacto no es válido.")
         model_bytes = artifact[metadata_end:]
     model = XGBRegressor()
     model.load_model(bytearray(model_bytes))
-    return DemandForecastModel(model, rolling_mean_weight)
+    return DemandForecastModel(RatioXGBRegressor(model) if ratio_model else model, rolling_mean_weight)
 
 
 def predict_horizon(
-    model: XGBRegressor | DemandForecastModel,
+    model: Any,
     series: pd.Series,
     horizon_months: int,
     *,
