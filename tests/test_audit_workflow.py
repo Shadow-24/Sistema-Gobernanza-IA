@@ -380,3 +380,17 @@ class AppendOnlyAuditLogTests(unittest.TestCase):
             api_main.database.get_compliance_followup_document,
         ):
             self.assertIn("removed_at IS NULL", inspect.getsource(function), function.__name__)
+
+
+    def test_every_audit_event_table_declares_an_append_only_trigger(self) -> None:
+        import inspect
+
+        schema = inspect.getsource(database.initialize_database) + inspect.getsource(database.initialize_demand_model_schema)
+        for table in (
+            "access_events",
+            "ai_governance_events",
+            "demand_model_review_events",
+            "detected_risk_road_evaluation_history",
+            "detected_risk_road_evaluation_reviews",
+        ):
+            self.assertIn("BEFORE UPDATE OR DELETE ON " + table + chr(10), schema, table)

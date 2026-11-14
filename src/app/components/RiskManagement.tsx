@@ -1057,7 +1057,7 @@ export function RiskManagement() {
                 {roadEvaluations[selectedDetectedRisk.id] && (
                   <div className="rounded bg-white p-2 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
                     <p>
-                      Resultado: <strong>{roadEvaluations[selectedDetectedRisk.id].result.prediction}</strong> · probabilidad estimada {(roadEvaluations[selectedDetectedRisk.id].result.confidence * 100).toFixed(1)}%
+                      Resultado: <strong>{roadEvaluations[selectedDetectedRisk.id].result.prediction}</strong> · probabilidad de interrupción {((roadEvaluations[selectedDetectedRisk.id].result.probabilities?.INTERRUMPIDO ?? 0) * 100).toFixed(1)}%
                       {roadEvaluations[selectedDetectedRisk.id].result.confidenceLevel && <> · confianza <strong>{roadEvaluations[selectedDetectedRisk.id].result.confidenceLevel}</strong></>}.
                     </p>
                     <p className="mt-1">

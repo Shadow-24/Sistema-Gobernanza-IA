@@ -248,6 +248,12 @@ def initialize_database(on_authentication_ready: Callable[[], None] | None = Non
             )
             """,
             "CREATE INDEX IF NOT EXISTS ai_governance_events_control_idx ON ai_governance_events(control_id, occurred_at DESC)",
+            "DROP TRIGGER IF EXISTS ai_governance_events_append_only ON ai_governance_events",
+            """
+            CREATE TRIGGER ai_governance_events_append_only
+            BEFORE UPDATE OR DELETE ON ai_governance_events
+            FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation()
+            """,
             """
             CREATE TABLE IF NOT EXISTS ai_governance_risks (
                 id TEXT PRIMARY KEY,
@@ -1793,6 +1799,19 @@ def initialize_demand_model_schema() -> None:
             comment TEXT NOT NULL DEFAULT '',
             occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
+        """,
+        """
+        CREATE OR REPLACE FUNCTION forbid_audit_log_mutation() RETURNS trigger AS $$
+        BEGIN
+            RAISE EXCEPTION 'El registro de auditoría es de solo anexión: % no está permitido.', TG_OP;
+        END;
+        $$ LANGUAGE plpgsql
+        """,
+        "DROP TRIGGER IF EXISTS demand_model_review_events_append_only ON demand_model_review_events",
+        """
+        CREATE TRIGGER demand_model_review_events_append_only
+        BEFORE UPDATE OR DELETE ON demand_model_review_events
+        FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation()
         """,
         """
         CREATE TABLE IF NOT EXISTS demand_model_predictions (

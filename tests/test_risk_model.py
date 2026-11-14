@@ -186,16 +186,49 @@ class RoadConfidenceTests(unittest.TestCase):
         low = self._predict(0.6, bands)
         self.assertEqual(low["confidenceLevel"], "Baja")
 
-    def test_validation_summary_reports_accuracy_per_band_and_hides_small_bands(self) -> None:
-        points = [("RESTRINGIDO", 0.95)] * 20 + [("INTERRUMPIDO", 0.95)] * 0 + [("RESTRINGIDO", 0.55)] * 3
+    def test_validation_summary_reports_accuracy_per_predicted_class_and_hides_small_bands(self) -> None:
+        points = (
+            [("RESTRINGIDO", 0.95)] * 20      # se predice RESTRINGIDO con 95 %
+            + [("RESTRINGIDO", 0.55)] * 3     # banda con pocos casos
+            + [("INTERRUMPIDO", 0.20)] * 16   # P(restringido)=0.20 -> se predice INTERRUMPIDO (80 %)
+        )
         reliability, summary = risk_model._validation_summary(points, "RESTRINGIDO", "INTERRUMPIDO", 0.375)
-        top = next(band for band in reliability if band["from"] == 0.9)
-        low = next(band for band in reliability if band["from"] == 0.5)
-        self.assertEqual(top["cases"], 20)
-        self.assertEqual(top["accuracy"], 1.0)
+        find = lambda label, lower: next(b for b in reliability if b["class"] == label and b["from"] == lower)
+        top = find("RESTRINGIDO", 0.9)
+        low = find("RESTRINGIDO", 0.4)
+        interrupted = find("INTERRUMPIDO", 0.8)
+        self.assertEqual((top["cases"], top["accuracy"]), (20, 1.0))
         self.assertEqual(low["cases"], 3)
         self.assertIsNone(low["accuracy"])
-        self.assertEqual(summary["records"], 23)
+        self.assertEqual((interrupted["cases"], interrupted["accuracy"]), (16, 1.0))
+        self.assertEqual(summary["records"], 39)
+
+    def test_threshold_favours_sensitivity_over_precision(self) -> None:
+        # Con costos asimétricos (F2) debe elegirse un umbral más permisivo que con F1 macro.
+        rng = np.random.default_rng(0)
+        actual, probabilities = [], []
+        for _ in range(120):
+            interrupted = rng.random() < 0.3
+            actual.append("INTERRUMPIDO" if interrupted else "RESTRINGIDO")
+            probabilities.append(float(np.clip(rng.normal(0.35 if interrupted else 0.8, 0.15), 0.01, 0.99)))
+        best = max(
+            risk_model.DECISION_THRESHOLDS,
+            key=lambda threshold: risk_model.fbeta_score(
+                actual,
+                ["INTERRUMPIDO" if p < threshold else "RESTRINGIDO" for p in probabilities],
+                beta=risk_model.THRESHOLD_BETA, pos_label="INTERRUMPIDO", average="binary", zero_division=0,
+            ),
+        )
+        macro = max(
+            risk_model.DECISION_THRESHOLDS,
+            key=lambda threshold: risk_model.f1_score(
+                actual,
+                ["INTERRUMPIDO" if p < threshold else "RESTRINGIDO" for p in probabilities],
+                average="macro", zero_division=0,
+            ),
+        )
+        self.assertGreaterEqual(best, macro)
+        self.assertEqual(risk_model.THRESHOLD_BETA, 2.0)
 
 
 class RoadHierarchyTests(unittest.TestCase):

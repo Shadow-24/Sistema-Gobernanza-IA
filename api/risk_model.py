@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, brier_score_loss, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, brier_score_loss, f1_score, fbeta_score, roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
@@ -34,7 +34,13 @@ MODEL_FEATURES = [column for column in CATEGORICAL_FEATURES if column != "MONTH"
 TARGET = "ESTADO_INICIAL"
 MIN_CATEGORY_FREQUENCY = 8
 MINORITY_CLASS_WEIGHT = 1.5
-DECISION_THRESHOLDS = tuple(0.35 + index * 0.025 for index in range(19))
+# Umbral sobre la probabilidad de la clase mayoritaria: por debajo se declara la clase minoritaria
+# (interrupción). El rango llega hasta 0,90 porque priorizar la sensibilidad exige umbrales altos.
+DECISION_THRESHOLDS = tuple(0.35 + index * 0.025 for index in range(23))
+# Perder una interrupción cuesta más que una falsa alarma: el umbral maximiza el F2 de la clase
+# minoritaria (la sensibilidad pesa el doble que la precisión).
+THRESHOLD_BETA = 2.0
+THRESHOLD_CRITERION = "F2 de la clase minoritaria (prioriza detectar interrupciones sobre evitar falsas alarmas)"
 # Columnas de baja frecuencia por categoría (provincia, vía, tramo): se codifican con la tasa histórica
 # suavizada de cada valor en lugar de una columna one-hot casi vacía.
 ONE_HOT_FEATURES = ["CLASE_FENOMENO", "FENOMENO", "EVENTO", "DEPARTEMENTO"]
@@ -42,7 +48,7 @@ TARGET_ENCODED_FEATURES = ["DEPARTEMENTO", "PROVINCIA", "RED_AFECTADA", "TRAMO_A
 TARGET_ENCODING_SMOOTHING = 10.0
 TARGET_ENCODING_FOLDS = 5
 # Franjas de probabilidad de la clase predicha para medir la fiabilidad histórica.
-RELIABILITY_BANDS = ((0.5, 0.65), (0.65, 0.8), (0.8, 0.9), (0.9, 1.0001))
+RELIABILITY_BANDS = ((0.0, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 0.9), (0.9, 1.0001))
 MIN_BAND_CASES = 15
 
 
@@ -224,11 +230,12 @@ def _calibrate_threshold(
             for probability in majority_probabilities
         ]
         score = (
-            f1_score(
+            fbeta_score(
                 actual,
                 predictions,
-                labels=[minority_class, majority_class],
-                average="macro",
+                beta=THRESHOLD_BETA,
+                pos_label=minority_class,
+                average="binary",
                 zero_division=0,
             ),
             balanced_accuracy_score(actual, predictions),
@@ -236,7 +243,14 @@ def _calibrate_threshold(
         if score > best_score:
             best_score = score
             best_threshold = threshold
-    return best_threshold, len(actual), best_score[0], points
+    best_predictions = [
+        minority_class if probability < best_threshold else majority_class
+        for probability in majority_probabilities
+    ]
+    macro_f1 = f1_score(
+        actual, best_predictions, labels=[minority_class, majority_class], average="macro", zero_division=0,
+    )
+    return best_threshold, len(actual), float(macro_f1), points
 
 
 def _validation_summary(
@@ -255,15 +269,19 @@ def _validation_summary(
     predicted_probability = np.where(predicted_majority, majority_probability, 1 - majority_probability)
     correct = predicted == actual
     reliability = []
-    for lower, upper in RELIABILITY_BANDS:
-        in_band = (predicted_probability >= lower) & (predicted_probability < upper)
-        cases = int(in_band.sum())
-        reliability.append({
-            "from": lower,
-            "to": min(upper, 1.0),
-            "cases": cases,
-            "accuracy": float(correct[in_band].mean()) if cases >= MIN_BAND_CASES else None,
-        })
+    for label in (majority_class, minority_class):
+        for lower, upper in RELIABILITY_BANDS:
+            in_band = (predicted == label) & (predicted_probability >= lower) & (predicted_probability < upper)
+            cases = int(in_band.sum())
+            if not cases:
+                continue
+            reliability.append({
+                "class": label,
+                "from": lower,
+                "to": min(upper, 1.0),
+                "cases": cases,
+                "accuracy": float(correct[in_band].mean()) if cases >= MIN_BAND_CASES else None,
+            })
     summary: dict[str, Any] = {"records": int(len(points))}
     positives = (actual == minority_class).astype(int)
     if 0 < positives.sum() < len(positives):
@@ -375,6 +393,14 @@ def _fit(source_path: str, mtime_ns: int) -> tuple[Pipeline, dict[str, Any], lis
             "thresholdTargetClass": majority if len(train_classes) == 2 else None,
             "thresholdCalibrationRecords": calibration_records,
             "thresholdCalibrationMacroF1": calibration_macro_f1,
+            "thresholdCriterion": THRESHOLD_CRITERION,
+            "minorityPrecision": float(
+                sum(
+                    actual == minority and predicted == minority
+                    for actual, predicted in zip(test[TARGET], predictions)
+                )
+                / max(sum(predicted == minority for predicted in predictions), 1)
+            ),
         },
         "testClasses": sorted(test[TARGET].unique().tolist()),
         "labels": labels,
@@ -433,7 +459,8 @@ def predict_road_state(imports_path: Path, scenario: dict[str, Any]) -> dict[str
     reliability_band = next(
         (
             band for band in metrics.get("reliability", [])
-            if band["from"] <= confidence < band["to"] + (1e-9 if band["to"] >= 1.0 else 0)
+            if band.get("class", prediction) == prediction
+            and band["from"] <= confidence < band["to"] + (1e-9 if band["to"] >= 1.0 else 0)
         ),
         None,
     )
