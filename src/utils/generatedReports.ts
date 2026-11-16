@@ -4,25 +4,14 @@ export type GeneratedReportType =
   | "Dashboard Ejecutivo"
   | "Reporte de Riesgos"
   | "Reporte de Trazabilidad"
-  | "Reporte Ejecutivo"
-  | "Reporte de Inventario"
-  | "Reporte de Transporte"
-  | "Reporte de Predicción de Demanda"
-  | "Reportes Analíticos"
   | "Reporte de Cumplimiento"
-  | "Reporte de Auditoría"
-  | "Reporte de Riesgos de Transporte"
-  | "Reporte de Condiciones Ambientales"
-  | "Reporte de Alertas"
-  | "Reporte PDF"
-  | "Exportación Excel"
-  | "Evidencias Digitales";
+  | "Reporte de Auditoría";
 
 export type GeneratedReport = {
   id: string;
   codigo?: string;
   nombre: string;
-  tipo: GeneratedReportType;
+  tipo: GeneratedReportType | (string & {});
   generado: string;
   estado: "Generado";
   sizeBytes: number;

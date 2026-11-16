@@ -23,6 +23,12 @@ class RoleMatrixTests(unittest.TestCase):
         self.assertIs(database.PERMISSIONS_BY_ROLE, policy.PERMISSIONS_BY_ROLE)
         self.assertIs(database.REPORT_TYPES_BY_ROLE, policy.REPORT_TYPES_BY_ROLE)
 
+    def test_every_report_type_requires_a_module_permission_its_roles_have_by_default(self) -> None:
+        for role, report_types in policy.REPORT_TYPES_BY_ROLE.items():
+            for report_type in report_types:
+                permission = policy.REPORT_PERMISSION_BY_TYPE[report_type]
+                self.assertIn(permission, policy.PERMISSIONS_BY_ROLE[role], f"{role} · {report_type}")
+
     def test_every_role_permission_is_assignable(self) -> None:
         # Cambiar el rol de una cuenta asigna los permisos del rol; no deben rechazarse.
         for role, permissions in policy.PERMISSIONS_BY_ROLE.items():
@@ -68,3 +74,10 @@ class FrontendMatrixSyncTests(unittest.TestCase):
         for role_match in re.finditer(r'"([^"]+)":\s*\[(.*?)\]', block, re.S):
             parsed[role_match.group(1)] = re.findall(r'"([^"]+)"', role_match.group(2))
         self.assertEqual(parsed, policy.REPORT_TYPES_BY_ROLE)
+
+    @unittest.skipUnless(FRONTEND_REPORT_PERMISSIONS.is_file(), "reportPermissions.ts no está disponible.")
+    def test_frontend_report_module_permissions_match_the_backend(self) -> None:
+        source = FRONTEND_REPORT_PERMISSIONS.read_text(encoding="utf-8")
+        block = source[source.index("REPORT_PERMISSION_BY_TYPE"):source.index("export function canGenerateReportWithPermissions(")]
+        parsed = dict(re.findall(r'"([^"]+)":\s*"([^"]+)"', block))
+        self.assertEqual(parsed, policy.REPORT_PERMISSION_BY_TYPE)

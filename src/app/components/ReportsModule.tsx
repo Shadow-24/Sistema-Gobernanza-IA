@@ -3,12 +3,10 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { generateExecutiveDashboardPDF, generateDashboardPreview } from "../../utils/reportGenerators/executiveDashboard";
 import { generateDetailedReportPDF } from "../../utils/reportGenerators/detailedReport";
-import { generateExcelExport } from "../../utils/reportGenerators/excelExport";
-import { generateEvidencesZip } from "../../utils/reportGenerators/evidencesZip";
 import { downloadGeneratedReport, formatReportSize, getGeneratedReportBlob, listGeneratedReports, reportDownloadName, saveGeneratedReport, type GeneratedReport, type GeneratedReportType } from "../../utils/generatedReports";
 import { formatPeriodLabel, getDefaultSections, getReportSectionGroups, type ReportConfiguration, type ReportDetailLevel } from "../../utils/reportConfiguration";
 import { buildConfiguredReportSections } from "../../utils/reportGenerators/configuredReport";
-import { canGenerateReport, canGenerateReportWithSections } from "../reportPermissions";
+import { canGenerateReportWithPermissions, canGenerateReportWithSections } from "../reportPermissions";
 import { UserStoryRefs } from "./UserStoryRefs";
 import { useAuth, type UserRole } from "../AuthContext";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
@@ -37,25 +35,12 @@ const TYPE_COLORS: Record<string, string> = {
   "Dashboard Ejecutivo": "#0f6cbd",
   "Reporte de Riesgos": "#ca5010",
   "Reporte de Trazabilidad": "#8764b8",
-  "Reporte Ejecutivo": "#107c10",
-  "Reporte de Inventario": "#986f0b",
-  "Reporte de Transporte": "#0f6cbd",
-  "Reporte de Predicción de Demanda": "#8764b8",
-  "Reportes Analíticos": "#986f0b",
   "Reporte de Cumplimiento": "#107c10",
   "Reporte de Auditoría": "#0f6cbd",
-  "Reporte de Riesgos de Transporte": "#ca5010",
-  "Reporte de Condiciones Ambientales": "#0f6cbd",
-  "Reporte de Alertas": "#a4262c",
-  "Reporte PDF":         "#107c10",
-  "Exportación Excel":   "#986f0b",
-  "Evidencias Digitales":"#8764b8",
 };
 
 function getReportLoadingKey(reportType: GeneratedReportType): string {
   if (reportType === "Dashboard Ejecutivo") return "dashboard-pdf";
-  if (reportType === "Reportes Analíticos" || reportType === "Exportación Excel") return "excel";
-  if (reportType === "Evidencias Digitales") return "evidences-zip";
   return "detailed-pdf";
 }
 
@@ -120,8 +105,7 @@ function ReportConfigurationModal({
     startDate,
     endDate,
     detailLevel,
-    sections: initialType === "Evidencias Digitales" ? [] : sections,
-    evidenceSections: initialType === "Evidencias Digitales" ? sections : [],
+    sections,
   };
   const isPeriodValid = !!startDate && !!endDate && startDate <= endDate;
   const selectedSectionKey = sections.join("|");
@@ -205,7 +189,7 @@ function ReportConfigurationModal({
                 <label className="text-[11px]" style={{ color: "var(--ct-605e5c)" }}>Fecha final<input type="date" value={endDate} min={startDate || undefined} onChange={(event) => { setEndDate(event.target.value); setPreset("Personalizado"); }} className="mt-1 w-full px-2 py-1.5 rounded text-[12px] border" style={{ borderColor: "var(--cs-e1dfdd)" }} /></label>
               </div>
               <div className="text-[12px] mt-2" style={{ color: isPeriodValid ? "var(--ct-605e5c)" : "var(--ct-a4262c)" }}>{isPeriodValid ? `Periodo seleccionado: ${formatPeriodLabel(startDate, endDate)}` : "La fecha inicial no puede ser posterior a la fecha final."}</div>
-              <p className="text-[11px] mt-2" style={{ color: "var(--ct-8a8886)" }}>El rango filtra registros con fecha de SINADA, expedientes, resoluciones y accesos locales. La capacidad CDCLyOPDH es una referencia histórica, no una medición de existencias.</p>
+              <p className="text-[11px] mt-2" style={{ color: "var(--ct-8a8886)" }}>El periodo solo filtra los registros de acceso. Riesgos, cumplimiento y auditoría muestran su estado actual; el Dashboard y la capacidad CDCLyOPDH son series históricas, no mediciones de existencias.</p>
             </section>
 
             <section>
@@ -247,7 +231,7 @@ function ReportConfigurationModal({
               <div className="text-[12px] mt-2" style={{ color: "var(--ct-201f1e)" }}>{previewLoading ? "Contando registros..." : `Cantidad aproximada de registros: ${recordCount}`}</div>
               <p className="text-[11px] mt-1" style={{ color: "var(--ct-605e5c)" }}>Origen: {[...new Set(sourceSummary)].slice(0, 4).join(" · ")}{sourceSummary.length > 4 ? " · y otras fuentes indicadas por sección" : ""}</p>
             </div>
-            <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Los rangos se aplican a CSV con fecha compatible. Las secciones sin datos exportables no generan registros inventados.</p>
+            <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Las secciones sin datos exportables no generan registros inventados.</p>
           </>}
         </div>
 
@@ -277,7 +261,8 @@ export function ReportsModule() {
   const [previewReportType, setPreviewReportType] = useState<GeneratedReportType | null>(null);
   const [historyPreview, setHistoryPreview] = useState<{ report: GeneratedReport; blob: Blob } | null>(null);
   const history = [...generatedReports].sort((a, b) => Date.parse(b.generado) - Date.parse(a.generado));
-  const authorizedReportTypes = user ? reportTypes.filter((report) => canGenerateReport(user.role, report.label)) : [];
+  const canGenerate = (reportType: string) => !!user && canGenerateReportWithPermissions(user.role, reportType, user.permissions);
+  const authorizedReportTypes = user ? reportTypes.filter((report) => canGenerate(report.label)) : [];
 
   useEffect(() => {
     let isActive = true;
@@ -300,7 +285,7 @@ export function ReportsModule() {
     currentUrl.searchParams.delete("tipo");
     currentUrl.searchParams.delete("reportType");
     window.history.replaceState(null, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
-    if (canGenerateReport(user.role, requestedType)) {
+    if (canGenerate(requestedType)) {
       setConfigurationReportType(requestedType as GeneratedReportType);
       return;
     }
@@ -321,8 +306,8 @@ export function ReportsModule() {
     return report;
   };
   const handleGenerateConfiguredReport = async (configuration: ReportConfiguration) => {
-    const sections = configuration.reportType === "Evidencias Digitales" ? configuration.evidenceSections : configuration.sections;
-    if (!user || !canGenerateReportWithSections(user.role, configuration.reportType, sections)) {
+    const sections = configuration.sections;
+    if (!user || !canGenerate(configuration.reportType) || !canGenerateReportWithSections(user.role, configuration.reportType, sections)) {
       recordAccess("Intento de generación de reporte", `Reporte: ${configuration.reportType} · Período: ${formatPeriodLabel(configuration.startDate, configuration.endDate)}`, "Denegado", user?.username, user?.role);
       toast.error("Acceso no autorizado para este tipo de reporte.");
       setConfigurationReportType(null);
@@ -337,10 +322,6 @@ export function ReportsModule() {
       let blob: Blob;
       if (configuration.reportType === "Dashboard Ejecutivo") {
         blob = await generateExecutiveDashboardPDF(Number(configuration.startDate.slice(0, 4)), configuration);
-      } else if (configuration.reportType === "Reportes Analíticos" || configuration.reportType === "Exportación Excel") {
-        blob = await generateExcelExport(Number(configuration.startDate.slice(0, 4)), configuration);
-      } else if (configuration.reportType === "Evidencias Digitales") {
-        blob = await generateEvidencesZip(Number(configuration.startDate.slice(0, 4)), configuration);
       } else {
         blob = await generateDetailedReportPDF(Number(configuration.startDate.slice(0, 4)), configuration);
       }
@@ -362,7 +343,7 @@ export function ReportsModule() {
   };
 
   const handleConfiguredReportPreview = async (configuration: ReportConfiguration) => {
-    if (!user || !canGenerateReportWithSections(user.role, configuration.reportType, configuration.sections)) {
+    if (!user || !canGenerate(configuration.reportType) || !canGenerateReportWithSections(user.role, configuration.reportType, configuration.sections)) {
       recordAccess("Intento de vista previa de reporte", `Reporte: ${configuration.reportType}`, "Denegado", user?.username, user?.role);
       toast.error("Acceso no autorizado para este tipo de reporte.");
       setConfigurationReportType(null);
@@ -383,7 +364,7 @@ export function ReportsModule() {
     }
   };
   const handleReportButtonClick = (reportType: GeneratedReportType) => {
-    if (!user || !canGenerateReport(user.role, reportType)) {
+    if (!user || !canGenerate(reportType)) {
       recordAccess("Intento de generación de reporte", `Reporte: ${reportType}`, "Denegado", user?.username, user?.role);
       toast.error("Acceso no autorizado para este tipo de reporte.");
       return;
@@ -530,12 +511,6 @@ export function ReportsModule() {
         </div>
         </div>
       </Card>
-
-      {/* Footer note */}
-      <div className="flex items-center gap-2 px-4 py-3 rounded text-[12px]" style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)", border: "1px solid var(--cs-cce0f5)" }}>
-        <FileBarChart2 className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>Las exportaciones usan datasets históricos cargados en PostgreSQL y resultados persistidos del modelo de demanda cuando están disponibles. No hay conexiones en vivo, firma digital ni cadena de custodia real.</span>
-      </div>
 
       {/* Dashboard Preview Modal */}
       {previewHtml && previewPeriod && previewReportType && (

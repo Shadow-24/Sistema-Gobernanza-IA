@@ -41,6 +41,7 @@ type AuthContextValue = {
     role?: string,
   ) => void;
   createManagedUser: (account: { username: string; name: string; role: UserRole; password: string }) => Promise<boolean>;
+  deleteManagedUser: (username: string) => Promise<boolean>;
   updateManagedUser: (username: string, updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">> & { password?: string }) => Promise<boolean>;
   updateOwnProfile: (updates: { name?: string; currentPassword?: string; newPassword?: string }) => Promise<void>;
 };
@@ -175,6 +176,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const deleteManagedUser = useCallback(async (username: string) => {
+    try {
+      await apiRequest<{ ok: boolean }>(`/api/users/${encodeURIComponent(username)}`, { method: "DELETE" });
+      setManagedUsers((current) => current.filter((item) => item.username !== username));
+      return true;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) return false;
+      throw error;
+    }
+  }, []);
+
   const updateManagedUser = useCallback(async (
     username: string,
     updates: Partial<Pick<ManagedUser, "name" | "role" | "permissions" | "active">> & { password?: string },
@@ -227,10 +239,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     recordAccess,
     createManagedUser,
     updateManagedUser,
+    deleteManagedUser,
     updateOwnProfile,
   }), [
     user, isLoading, managedUsers, accessEvents, managementError, login, logout, hasPermission,
-    recordAccess, createManagedUser, updateManagedUser, updateOwnProfile,
+    recordAccess, createManagedUser, updateManagedUser, deleteManagedUser, updateOwnProfile,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

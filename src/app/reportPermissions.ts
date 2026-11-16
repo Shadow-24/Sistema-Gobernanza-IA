@@ -31,6 +31,20 @@ export function canGenerateReport(role: string, reportType: string): boolean {
   return !!allowedTypes?.includes(reportType as GeneratedReportType);
 }
 
+// Permiso de módulo que exige cada tipo de reporte (replica REPORT_PERMISSION_BY_TYPE del backend).
+export const REPORT_PERMISSION_BY_TYPE: Partial<Record<GeneratedReportType, string>> = {
+  "Dashboard Ejecutivo": "dashboard",
+  "Reporte de Riesgos": "riesgos",
+  "Reporte de Trazabilidad": "trazabilidad",
+  "Reporte de Cumplimiento": "cumplimiento",
+  "Reporte de Auditoría": "auditoria",
+};
+
+export function canGenerateReportWithPermissions(role: string, reportType: string, permissions: readonly string[]): boolean {
+  const modulePermission = REPORT_PERMISSION_BY_TYPE[reportType as GeneratedReportType];
+  return canGenerateReport(role, reportType) && !!modulePermission && permissions.includes(modulePermission);
+}
+
 export function canGenerateReportWithSections(role: string, reportType: string, sectionIds: string[]): boolean {
   return canGenerateReport(role, reportType)
     && canSelectReportSections(role as UserRole, reportType as GeneratedReportType, sectionIds);

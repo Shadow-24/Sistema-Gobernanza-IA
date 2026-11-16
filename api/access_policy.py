@@ -43,6 +43,16 @@ REPORT_TYPES_BY_ROLE: dict[str, list[str]] = {
     INGENIERO: ["Dashboard Ejecutivo", "Reporte de Riesgos", "Reporte de Trazabilidad"],
 }
 
+# Permiso de módulo que exige cada tipo de reporte, además del rol y de `reportes`.
+# `src/app/reportPermissions.ts` replica este mapa para la interfaz.
+REPORT_PERMISSION_BY_TYPE: dict[str, str] = {
+    "Dashboard Ejecutivo": "dashboard",
+    "Reporte de Riesgos": "riesgos",
+    "Reporte de Trazabilidad": "trazabilidad",
+    "Reporte de Cumplimiento": "cumplimiento",
+    "Reporte de Auditoría": "auditoria",
+}
+
 
 @dataclass(frozen=True)
 class ActionRule:

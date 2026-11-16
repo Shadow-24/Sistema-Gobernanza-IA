@@ -127,6 +127,10 @@ export function ComplianceModule() {
   const [governanceAttachments, setGovernanceAttachments] = useState<Record<string, GovernanceEvidenceFile[]>>({});
   const [uploadingEvidenceControl, setUploadingEvidenceControl] = useState<string | null>(null);
   const [selectedStandard, setSelectedStandard] = useState("");
+  const [regulatorySearch, setRegulatorySearch] = useState("");
+  const [controlSearch, setControlSearch] = useState("");
+  const [regulatoryStatusFilter, setRegulatoryStatusFilter] = useState<"pendientes" | "conformes" | null>(null);
+  const [controlStatusFilter, setControlStatusFilter] = useState<GovernanceControlStatus | null>(null);
   const [activeTab, setActiveTab] = useState<"normativas" | "controles">("normativas");
   const [complianceFollowups, setComplianceFollowups] = useState<Record<string, ComplianceFollowup>>({});
   const [registrationDates, setRegistrationDates] = useState<Record<string, string>>({});
@@ -411,7 +415,26 @@ export function ComplianceModule() {
     }
   };
 
-  const governanceByStandard = governanceControls.reduce<Record<string, GovernanceControl[]>>((groups, control) => {
+  const matchesSearch = (query: string, values: Array<string | undefined | null>) => {
+    const needle = query.trim().toLowerCase();
+    return !needle || values.some((value) => value?.toLowerCase().includes(needle));
+  };
+  const matchesNormStatusFilter = (normId: string) => {
+    const status = complianceFollowups[normId]?.status;
+    if (regulatoryStatusFilter === "pendientes") return !["Conforme", "Cerrado"].includes(status ?? "");
+    if (regulatoryStatusFilter === "conformes") return ["Conforme", "Cerrado"].includes(status ?? "");
+    return true;
+  };
+  const filteredNorms = REGULATORY_NORMS.filter((norm) => matchesNormStatusFilter(norm.id) && matchesSearch(regulatorySearch, [
+    norm.id, norm.nombre, norm.tipo, complianceFollowups[norm.id]?.status ?? "Sin iniciar", complianceFollowups[norm.id]?.responsible, complianceFollowups[norm.id]?.phase,
+  ]));
+  const filteredRegulatoryRisks = REGULATORY_RISKS.filter((risk) => matchesSearch(regulatorySearch, [
+    risk.id, risk.descripcion, risk.normativa, complianceFollowups[risk.id]?.status, complianceFollowups[risk.id]?.risk_level, complianceFollowups[risk.id]?.responsible,
+  ]));
+  const filteredGovernanceControls = governanceControls.filter((control) => (!controlStatusFilter || control.status === controlStatusFilter) && matchesSearch(controlSearch, [
+    control.id, control.standard, control.focus, control.objective, control.status.replace("_", " "), control.model_scope,
+  ]));
+  const governanceByStandard = filteredGovernanceControls.reduce<Record<string, GovernanceControl[]>>((groups, control) => {
     (groups[control.standard] ??= []).push(control);
     return groups;
   }, {});
@@ -430,7 +453,7 @@ export function ComplianceModule() {
       <div>
         <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Cumplimiento Normativo</h1><UserStoryRefs ids={["HU-014", "HU-015"]} /></div>
         <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>
-          Seguimiento propio de normativas y riesgos regulatorios · se actualiza con los registros guardados
+          Seguimiento propio de normativas y riesgos regulatorios
         </p>
       </div>
 
@@ -476,10 +499,10 @@ export function ComplianceModule() {
             >
               <Download className="h-3 w-3" /> Descargar reporte
             </button>
-            <span className="rounded px-2 py-1" style={{ background: "var(--cs-f3f2f1)", color: "var(--ct-605e5c)" }}>Sin evaluar: {governanceCount("no_evaluado")}</span>
-            <span className="rounded px-2 py-1" style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)" }}>En revisión: {governanceCount("en_revision")}</span>
-            <span className="rounded px-2 py-1" style={{ background: "var(--cs-f1faf1)", color: "var(--ct-107c10)" }}>Conformes: {governanceCount("conforme")}</span>
-            <span className="rounded px-2 py-1" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>Brechas: {governanceCount("brecha")}</span>
+            <button type="button" aria-pressed={controlStatusFilter === "no_evaluado"} onClick={() => setControlStatusFilter((current) => current === "no_evaluado" ? null : "no_evaluado")} className="rounded px-2 py-1" style={{ background: "var(--cs-f3f2f1)", color: "var(--ct-605e5c)", outline: controlStatusFilter === "no_evaluado" ? "2px solid #0f6cbd" : undefined }}>Sin evaluar: {governanceCount("no_evaluado")}</button>
+            <button type="button" aria-pressed={controlStatusFilter === "en_revision"} onClick={() => setControlStatusFilter((current) => current === "en_revision" ? null : "en_revision")} className="rounded px-2 py-1" style={{ background: "var(--cs-eff6ff)", color: "var(--ct-0f6cbd)", outline: controlStatusFilter === "en_revision" ? "2px solid #0f6cbd" : undefined }}>En revisión: {governanceCount("en_revision")}</button>
+            <button type="button" aria-pressed={controlStatusFilter === "conforme"} onClick={() => setControlStatusFilter((current) => current === "conforme" ? null : "conforme")} className="rounded px-2 py-1" style={{ background: "var(--cs-f1faf1)", color: "var(--ct-107c10)", outline: controlStatusFilter === "conforme" ? "2px solid #0f6cbd" : undefined }}>Conformes: {governanceCount("conforme")}</button>
+            <button type="button" aria-pressed={controlStatusFilter === "brecha"} onClick={() => setControlStatusFilter((current) => current === "brecha" ? null : "brecha")} className="rounded px-2 py-1" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)", outline: controlStatusFilter === "brecha" ? "2px solid #0f6cbd" : undefined }}>Brechas: {governanceCount("brecha")}</button>
           </div>
         </div>
         {governanceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{governanceError}</p>}
@@ -487,6 +510,18 @@ export function ComplianceModule() {
         {governanceSaved && <p role="status" className="mb-3 text-[12px]" style={{ color: "var(--ct-107c10)" }}>{governanceSaved}</p>}
         {governanceLoading ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Cargando controles desde PostgreSQL…</p> : governanceControls.length === 0 ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay controles inicializados. Verifica la conexión con PostgreSQL.</p> : (
           <div>
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="search"
+                value={controlSearch}
+                onChange={(event) => setControlSearch(event.target.value)}
+                placeholder="Buscar control por ID, enfoque, objetivo o estado…"
+                aria-label="Buscar controles de gobernanza"
+                className="w-full flex-1 rounded border px-3 py-2 text-[13px]"
+                style={{ borderColor: "var(--cs-e1dfdd)" }}
+              />
+            </div>
+            {standardEntries.length === 0 && <p role="status" className="mb-3 text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay controles que coincidan con la búsqueda.</p>}
             <nav role="tablist" aria-label="Normativas de gobernanza de IA" className="mb-3 flex flex-wrap gap-2 border-b" style={{ borderColor: "var(--cs-e1dfdd)" }}>
               {standardEntries.map(([standard]) => (
                 <button
@@ -589,12 +624,25 @@ export function ComplianceModule() {
         {[
           { icon: ShieldCheck, label: "Cumplimiento Global", value: `${overallProgress}%`, color: progressColor(overallProgress) },
           { icon: BookOpen,    label: "Normativas en seguimiento", value: `${normsInFollowup} de ${REGULATORY_NORMS.length}`, color: "#0f6cbd" },
-          { icon: Clock,       label: "Normativas pendientes", value: `${REGULATORY_NORMS.length - normsCompliant}`, color: "#ca5010" },
-          { icon: CheckCircle, label: "Normativas conformes", value: `${normsCompliant}`, color: "#107c10" },
+          { icon: Clock,       label: "Normativas pendientes", value: `${REGULATORY_NORMS.length - normsCompliant}`, color: "#ca5010", filter: "pendientes" as const },
+          { icon: CheckCircle, label: "Normativas conformes", value: `${normsCompliant}`, color: "#107c10", filter: "conformes" as const },
         ].map((kpi, i) => {
           const Icon = kpi.icon;
+          const filter = "filter" in kpi ? kpi.filter : null;
+          const active = filter !== null && regulatoryStatusFilter === filter;
           return (
-            <Card key={i} className="p-4 flex items-center gap-3">
+            <div
+              key={i}
+              {...(filter ? {
+                role: "button",
+                tabIndex: 0,
+                "aria-pressed": active,
+                onClick: () => setRegulatoryStatusFilter((current) => current === filter ? null : filter),
+                onKeyDown: (event: React.KeyboardEvent) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setRegulatoryStatusFilter((current) => current === filter ? null : filter); } },
+              } : {})}
+              className={`bg-white rounded p-4 flex items-center gap-3 ${filter ? "cursor-pointer transition-shadow hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]" : ""}`}
+              style={{ border: `1px solid ${active ? "#0f6cbd" : "var(--cs-e1dfdd)"}`, boxShadow: active ? "0 0 0 2px #cce0f5" : undefined }}
+            >
               <div className="w-9 h-9 rounded flex items-center justify-center" style={{ background: kpi.color + "18" }}>
                 <Icon className="w-4 h-4" style={{ color: kpi.color }} />
               </div>
@@ -602,9 +650,27 @@ export function ComplianceModule() {
                 <div className="text-[22px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{kpi.value}</div>
                 <div className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>{kpi.label}</div>
               </div>
-            </Card>
+            </div>
           );
         })}
+      </div>
+
+      {regulatoryStatusFilter && (
+        <div className="flex items-center justify-between gap-2 text-[11px]" style={{ color: "var(--ct-605e5c)" }}>
+          <span>Filtrando normativas: {regulatoryStatusFilter}.</span>
+          <button type="button" onClick={() => setRegulatoryStatusFilter(null)} className="font-medium" style={{ color: "var(--ct-0f6cbd)" }}>Quitar filtro</button>
+        </div>
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          type="search"
+          value={regulatorySearch}
+          onChange={(event) => setRegulatorySearch(event.target.value)}
+          placeholder="Buscar normativa o riesgo por ID, nombre, estado, responsable…"
+          aria-label="Buscar normativas y riesgos regulatorios"
+          className="w-full flex-1 rounded border px-3 py-2 text-[13px]"
+          style={{ borderColor: "var(--cs-e1dfdd)" }}
+        />
       </div>
 
       <div>
@@ -612,7 +678,8 @@ export function ComplianceModule() {
         {/* Compliance rings per normativa */}
         <div className="space-y-3">
           <div className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Cumplimiento por Normativa</div>
-          {REGULATORY_NORMS.map((norm) => {
+          {filteredNorms.length === 0 && <p role="status" className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay normativas que coincidan con la búsqueda.</p>}
+          {filteredNorms.map((norm) => {
             const tracking = complianceFollowups[norm.id];
             const estado = tracking?.status ?? "Sin iniciar";
             const sc = STATUS_COLORS[estado] ?? STATUS_COLORS["Sin iniciar"];
@@ -656,7 +723,8 @@ export function ComplianceModule() {
           Riesgos regulatorios identificados · {REGULATORY_RISKS.length}
         </div>
         <div className="space-y-2">
-          {REGULATORY_RISKS.map(r => {
+          {filteredRegulatoryRisks.length === 0 && <p role="status" className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay riesgos regulatorios que coincidan con la búsqueda.</p>}
+          {filteredRegulatoryRisks.map(r => {
             const tracking = complianceFollowups[r.id];
             const nivel = tracking?.risk_level ?? "Sin clasificar";
             return (

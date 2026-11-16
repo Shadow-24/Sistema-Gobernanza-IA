@@ -270,6 +270,7 @@ export function RiskManagement() {
     ...(newGovernanceRisk.owner ? [newGovernanceRisk.owner] : []),
   ]));
   const [riskDrafts, setRiskDrafts] = useState<Record<string, { status: GovernanceRiskStatus; treatment: string }>>({});
+  const [closedGovernanceRiskSummaryId, setClosedGovernanceRiskSummaryId] = useState<string | null>(null);
   const { operationalData, operationalLoading, operationalError } = useSectorData();
   const latestFineRecord = operationalData?.liquidFuels.fines.slice(-1)[0];
   const latestTransportRecord = operationalData?.naturalGas.transport.slice(-1)[0];
@@ -695,11 +696,11 @@ export function RiskManagement() {
   // Filtrar riesgos seg?n b?squeda, nivel y estado
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
   const filteredRisks = risks.filter(risk => {
     const matchesSearch = searchQuery === "" || 
       risk.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getDetectedRiskDisplayId(risk.id).toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
       risk.descripcion.toLowerCase().includes(searchQuery.toLowerCase()) ||
       risk.responsable.toLowerCase().includes(searchQuery.toLowerCase()) ||
       risk.proceso?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -708,10 +709,8 @@ export function RiskManagement() {
     
     const matchesLevel = selectedLevel === null ||
       (selectedLevel === "Sin nivel" ? risk.nivel === null : risk.nivel === selectedLevel);
-    const matchesStatus = selectedStatus === null ||
-      (selectedStatus === "Sin estado" ? risk.estado === null : risk.estado === selectedStatus);
     
-    return matchesSearch && matchesLevel && matchesStatus;
+    return matchesSearch && matchesLevel;
   }).sort((left, right) => {
     const leftUpdatedAt = detectedRiskWorkflowById.get(left.id)?.updated_at;
     const rightUpdatedAt = detectedRiskWorkflowById.get(right.id)?.updated_at;
@@ -730,6 +729,7 @@ export function RiskManagement() {
   });
   const activeGovernanceRisks = governanceRisks.filter((risk) => risk.status !== "cerrado");
   const closedGovernanceRisks = governanceRisks.filter((risk) => risk.status === "cerrado");
+  const closedGovernanceRiskSummary = closedGovernanceRisks.find((risk) => risk.id === closedGovernanceRiskSummaryId);
   
   return (
     <div className="space-y-5">
@@ -737,9 +737,7 @@ export function RiskManagement() {
       {/* Header */}
       <div>
         <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Gestión de Riesgos</h1><UserStoryRefs ids={["HU-011", "HU-012", "HU-013", "HU-021", "HU-022", "HU-025", "HU-026"]} /></div>
-        <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>
-          Riesgos detectados en el periodo {latestRiskYear}. Selecciona uno para abrir su seguimiento.
-        </p>
+        <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>Seguimiento de riesgos detectados de IA y de procesos</p>
       </div>
 
       <div role="tablist" aria-label="Secciones de riesgos" className="flex flex-wrap gap-2 border-b" style={{ borderColor: "var(--cs-e1dfdd)" }}>
@@ -788,7 +786,11 @@ export function RiskManagement() {
           <label className="text-[10px] sm:col-span-2" style={{ color: "var(--ct-605e5c)" }}>Descripción<textarea required minLength={10} maxLength={2000} rows={2} value={newGovernanceRisk.description} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, description: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" /></label>
           <div className="flex flex-col gap-1">
             <label className="text-[10px]" style={{ color: "var(--ct-605e5c)" }}>Evidencia o referencia{newGovernanceRisk.data_basis === "observado" && <span style={{ color: "var(--ct-a4262c)" }}> · texto o archivo obligatorio</span>}<textarea maxLength={5000} rows={2} value={newGovernanceRisk.evidence} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, evidence: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" placeholder="Fecha, registro, enlace interno o referencia del archivo" /></label>
-            <label className="text-[10px]" style={{ color: "var(--ct-605e5c)" }}>Adjuntar archivos (máx. {AI_RISK_EVIDENCE_MAX_FILES}, 10 MB c/u)<input type="file" multiple accept={AI_RISK_EVIDENCE_ACCEPT} onChange={(event) => { addGovernanceRiskFiles(event.target.files); event.target.value = ""; }} className="mt-1 block w-full text-[10px]" /></label>
+            <div className="text-[10px]" style={{ color: "var(--ct-605e5c)" }}>
+              <input id="ai-risk-files" type="file" multiple accept={AI_RISK_EVIDENCE_ACCEPT} onChange={(event) => { addGovernanceRiskFiles(event.target.files); event.target.value = ""; }} className="sr-only" />
+              <label htmlFor="ai-risk-files" className="inline-flex cursor-pointer items-center gap-1.5 rounded border bg-white px-2.5 py-1.5 text-[11px] font-medium focus-within:outline focus-within:outline-2 focus-within:outline-[#0f6cbd]" style={{ borderColor: "var(--cs-cce0f5)", color: "var(--ct-0f6cbd)" }}><Paperclip size={12} aria-hidden="true" />Adjuntar archivos</label>
+              <span className="ml-2">máx. {AI_RISK_EVIDENCE_MAX_FILES}, 10 MB c/u</span>
+            </div>
             {newGovernanceRiskFiles.length > 0 && <ul className="space-y-1 text-[10px]" style={{ color: "var(--ct-201f1e)" }}>{newGovernanceRiskFiles.map((file, index) => <li key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 rounded px-1.5 py-0.5" style={{ background: "var(--cs-ffffff)", border: "1px solid var(--cs-e1dfdd)" }}><span className="flex min-w-0 items-center gap-1"><Paperclip size={11} aria-hidden="true" /><span className="truncate">{file.name}</span></span><button type="button" aria-label={`Quitar ${file.name}`} onClick={() => setNewGovernanceRiskFiles((current) => current.filter((_, position) => position !== index))} style={{ color: "var(--ct-a4262c)" }}><X size={11} aria-hidden="true" /></button></li>)}</ul>}
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -828,15 +830,40 @@ export function RiskManagement() {
             <section aria-labelledby="closed-ai-risks-heading" className="space-y-2">
               <h3 id="closed-ai-risks-heading" className="text-[12px] font-semibold" style={{ color: "var(--ct-605e5c)" }}>Historial de riesgos cerrados ({closedGovernanceRisks.length})</h3>
               {closedGovernanceRisks.length === 0 ? <p className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>Aún no hay riesgos cerrados.</p> : <ul className="divide-y rounded" style={{ border: "1px solid var(--cs-edebe9)" }}>
-                {closedGovernanceRisks.map((risk) => <li key={risk.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium" style={{ color: "var(--ct-201f1e)" }}>{risk.description}</p>
-                    <p className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>{risk.model_name} · {risk.category}</p>
-                  </div>
-                  <time className="shrink-0 text-[10px]" style={{ color: "var(--ct-8a8886)" }} dateTime={risk.created_at}>{getAIRegistrationDate(risk.created_at)}</time>
+                {closedGovernanceRisks.map((risk) => <li key={risk.id}>
+                  <button type="button" aria-label={`Ver resumen del riesgo cerrado ${risk.description}`} onClick={() => setClosedGovernanceRiskSummaryId(risk.id)} className="flex w-full flex-wrap items-start justify-between gap-2 px-3 py-2 text-left hover:bg-[var(--cs-f9f8f7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium" style={{ color: "var(--ct-201f1e)" }}>{risk.description}</p>
+                      <p className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>{risk.model_name} · {risk.category}</p>
+                    </div>
+                    <time className="shrink-0 text-[10px]" style={{ color: "var(--ct-8a8886)" }} dateTime={risk.created_at}>{getAIRegistrationDate(risk.created_at)}</time>
+                  </button>
                 </li>)}
               </ul>}
             </section>
+            {closedGovernanceRiskSummary && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="closed-ai-risk-summary-title">
+                <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <h2 id="closed-ai-risk-summary-title" className="text-[15px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Resumen del riesgo cerrado</h2>
+                      <p className="mt-1 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>{closedGovernanceRiskSummary.description}</p>
+                    </div>
+                    <button type="button" onClick={() => setClosedGovernanceRiskSummaryId(null)} aria-label="Cerrar resumen del riesgo" className="rounded px-2 py-1 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Cerrar</button>
+                  </div>
+                  <dl className="space-y-2 text-[12px]" style={{ color: "var(--ct-605e5c)" }}>
+                    <div><dt className="font-semibold">Modelo · categoría</dt><dd>{closedGovernanceRiskSummary.model_name} · {closedGovernanceRiskSummary.category}</dd></div>
+                    <div><dt className="font-semibold">Probabilidad / impacto</dt><dd>{closedGovernanceRiskSummary.likelihood}/5 · {closedGovernanceRiskSummary.impact}/5</dd></div>
+                    <div><dt className="font-semibold">Base del dato</dt><dd>{getGovernanceRiskBasisLabel(closedGovernanceRiskSummary.data_basis)}</dd></div>
+                    <div><dt className="font-semibold">Responsable</dt><dd>{closedGovernanceRiskSummary.owner}</dd></div>
+                    <div><dt className="font-semibold">Tratamiento</dt><dd>{closedGovernanceRiskSummary.treatment}</dd></div>
+                    <div><dt className="font-semibold">Evidencia</dt><dd>{closedGovernanceRiskSummary.evidence ? <ul className="list-disc pl-4">{formatGovernanceEvidence(closedGovernanceRiskSummary.evidence).map((item) => <li key={item}>{item}</li>)}</ul> : "Sin evidencia adjunta"}</dd></div>
+                    <div style={{ color: "var(--ct-8a8886)" }}>Registrado por {closedGovernanceRiskSummary.created_by} · {getAIRegistrationDate(closedGovernanceRiskSummary.created_at)}</div>
+                  </dl>
+                  {(closedGovernanceRiskSummary.attachments ?? []).length > 0 && <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">{(closedGovernanceRiskSummary.attachments ?? []).map((attachment) => <button key={attachment.id} type="button" onClick={() => void downloadGovernanceRiskAttachment(attachment)} className="flex items-center gap-1 rounded px-1.5 py-0.5" style={{ background: "var(--cs-f3f2f1)", color: "var(--ct-0f6cbd)" }}><Paperclip size={11} aria-hidden="true" />{attachment.file_name}</button>)}</div>}
+                </Card>
+              </div>
+            )}
           </div>
         )}
       </Card>}
@@ -844,7 +871,6 @@ export function RiskManagement() {
       {riskSection === "detected" && <>
       <div>
         <h2 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Riesgos detectados</h2>
-        <p className="text-[14px] mt-1" style={{ color: "var(--ct-605e5c)" }}>Hallazgos identificados en los procesos y datos operativos; se presentan aparte de los riesgos propios de los sistemas de IA.</p>
       </div>
 
       {/* Summary KPIs */}
@@ -909,22 +935,6 @@ export function RiskManagement() {
                 }}
               />
             </div>
-            <select
-              value={selectedStatus || ""}
-              onChange={(e) => setSelectedStatus(e.target.value === "" ? null : e.target.value)}
-              className="px-3 py-2 rounded text-[13px] border"
-              style={{ 
-                borderColor: "var(--cs-e1dfdd)",
-                backgroundColor: "var(--cs-ffffff)"
-              }}
-            >
-              <option value="">Todos los estados</option>
-              <option value="Activo">Activo</option>
-              <option value="En análisis">En análisis</option>
-              <option value="Mitigado">Mitigado</option>
-              <option value="Cerrado">Cerrado</option>
-              <option value="Sin estado">Sin estado</option>
-            </select>
           </div>
           {detectedRiskRegistrationError && <p role="alert" className="rounded px-3 py-2 text-[11px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{detectedRiskRegistrationError}</p>}
 
@@ -984,12 +994,22 @@ export function RiskManagement() {
               <ul className="divide-y rounded" style={{ border: "1px solid var(--cs-edebe9)" }}>
                 {closedDetectedRisks.map((risk) => {
                   const registrationTimestamp = detectedRiskRegistrationById.get(risk.id)?.registered_at;
-                  return <li key={risk.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-medium" style={{ color: "var(--ct-201f1e)" }}>{getDetectedRiskDisplayId(risk.id)} · {risk.descripcion}</p>
-                      <p className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>{risk.departamento} · {risk.responsable || "Sin asignar"}</p>
-                    </div>
-                    <time className="shrink-0 text-[10px]" style={{ color: "var(--ct-8a8886)" }} dateTime={registrationTimestamp}>{getDetectedRiskRegistrationDate(risk.id)}</time>
+                  return <li key={risk.id}>
+                    <button
+                      type="button"
+                      aria-label={`Ver resumen del riesgo cerrado ${getDetectedRiskDisplayId(risk.id)}`}
+                      onClick={() => {
+                        setSelectedDetectedRiskId(risk.id);
+                        setIsDetectedRiskFollowUpOpen(true);
+                      }}
+                      className="flex w-full flex-wrap items-start justify-between gap-2 px-3 py-2 text-left hover:bg-[var(--cs-f9f8f7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0f6cbd]"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-medium" style={{ color: "var(--ct-201f1e)" }}>{getDetectedRiskDisplayId(risk.id)} · {risk.descripcion}</p>
+                        <p className="text-[10px]" style={{ color: "var(--ct-8a8886)" }}>{risk.departamento} · {risk.responsable || "Sin asignar"}</p>
+                      </div>
+                      <time className="shrink-0 text-[10px]" style={{ color: "var(--ct-8a8886)" }} dateTime={registrationTimestamp}>{getDetectedRiskRegistrationDate(risk.id)}</time>
+                    </button>
                   </li>;
                 })}
               </ul>

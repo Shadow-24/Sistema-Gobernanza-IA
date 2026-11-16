@@ -1,13 +1,15 @@
+import { ApiError } from "../../app/apiClient";
+import { loadDemandModelStatus } from "../../app/demandModelApi";
 import { loadAIGovernanceControls, loadAIGovernanceEvidence, loadAIGovernanceRisks, type GovernanceControl, type GovernanceEvidenceFile, type GovernanceRisk } from "../../app/aiGovernanceApi";
 import { loadAuditDocuments, loadAuditWorkflow, loadAuditWorkflowEvents, registerAudits, type AuditDocument, type AuditWorkflow, type AuditWorkflowEvent } from "../../app/auditsApi";
 import { loadComplianceFollowupDocuments, loadComplianceFollowupEvents, loadComplianceFollowups, registerComplianceItems, type ComplianceFollowup, type ComplianceFollowupDocument, type ComplianceFollowupEvent } from "../../app/complianceFollowUpApi";
-import { loadDetectedRiskDocuments, loadDetectedRiskWorkflows, registerDetectedRisks, type DetectedRiskDocument, type DetectedRiskWorkflow } from "../../app/detectedRisksApi";
-import { auditTemplates } from "../../app/components/AuditModule";
+import { loadDetectedRiskWorkflows, registerDetectedRisks, type DetectedRiskWorkflow } from "../../app/detectedRisksApi";
+import { auditTemplates, isDemandAuditAvailable } from "../../app/components/AuditModule";
 import { buildRiskTemplates } from "../../app/components/RiskManagement";
 import { followupProgress, REGULATORY_NORMS, REGULATORY_RISKS } from "../../app/components/ComplianceModule";
 
 export type GovernanceReportData = {
-  risks: { template: ReturnType<typeof buildRiskTemplates>[number]; displayId: string; workflow?: DetectedRiskWorkflow; date: string; documents: DetectedRiskDocument[] }[];
+  risks: { template: ReturnType<typeof buildRiskTemplates>[number]; displayId: string; workflow?: DetectedRiskWorkflow; date: string }[];
   aiRisks: GovernanceRisk[];
   controls: GovernanceControl[];
   controlEvidence: GovernanceEvidenceFile[];
@@ -21,11 +23,13 @@ export type GovernanceReportData = {
 
 export type GovernanceNeeds = { risks: boolean; compliance: boolean; audits: boolean; evidence: boolean };
 
-// Un fallo de permisos o de red en una fuente no debe impedir el resto del reporte.
+// Un fallo de red en una fuente no debe impedir el resto del reporte, pero la falta de
+// permiso sí: un reporte con secciones vacías por un 403 parecería completo sin estarlo.
 async function safe<T>(request: Promise<T>, fallback: T): Promise<T> {
   try {
     return await request;
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) throw new Error("UNAUTHORIZED_REPORT_TYPE");
     return fallback;
   }
 }
@@ -36,14 +40,13 @@ export async function loadGovernanceReportData(needs: GovernanceNeeds): Promise<
   const riskTemplates = buildRiskTemplates();
   const complianceItems = [...REGULATORY_NORMS.map((norm) => ({ id: norm.id, type: "normativa" as const })), ...REGULATORY_RISKS.map((risk) => ({ id: risk.id, type: "riesgo" as const }))];
 
-  const [riskWorkflows, riskRegistrations, riskDocuments, aiRisks] = needs.risks || needs.evidence
+  const [riskWorkflows, riskRegistrations, aiRisks] = needs.risks
     ? await Promise.all([
       safe(loadDetectedRiskWorkflows(), []),
       safe(registerDetectedRisks(riskTemplates.map((risk) => risk.id)), []),
-      needs.evidence ? Promise.all(riskTemplates.map((risk) => safe(loadDetectedRiskDocuments(risk.id), []))) : Promise.resolve([]),
-      needs.risks ? safe(loadAIGovernanceRisks(), []) : Promise.resolve([]),
+      safe(loadAIGovernanceRisks(), []),
     ])
-    : [[], [], [], []];
+    : [[], [], []];
 
   const [controls, controlEvidence, followups, complianceRegistrations, complianceEvents, complianceDocuments] = needs.compliance || needs.audits || needs.evidence
     ? await Promise.all([
@@ -65,6 +68,10 @@ export async function loadGovernanceReportData(needs: GovernanceNeeds): Promise<
     ])
     : [[], [], [], []];
 
+  // AUD-04 solo existe en la pantalla de Auditoría cuando el modelo de demanda cumple su cobertura mínima.
+  const demandAuditAvailable = needs.audits ? isDemandAuditAvailable(await safe(loadDemandModelStatus(), null)) : true;
+  const reportAuditTemplates = auditTemplates.filter((audit) => audit.id !== "AUD-04" || demandAuditAvailable);
+
   const riskWorkflowById = new Map(riskWorkflows.map((item) => [item.risk_id, item]));
   const riskDateById = new Map(riskRegistrations.map((item) => [item.risk_id, item.registered_at]));
   const auditWorkflowById = new Map(auditWorkflows.map((item) => [item.audit_id, item]));
@@ -76,7 +83,6 @@ export async function loadGovernanceReportData(needs: GovernanceNeeds): Promise<
       displayId: `RSG-${String(index + 1).padStart(3, "0")}`,
       workflow: riskWorkflowById.get(template.id),
       date: formatDate(riskDateById.get(template.id)),
-      documents: riskDocuments[index] ?? [],
     })),
     aiRisks,
     controls,
@@ -85,12 +91,12 @@ export async function loadGovernanceReportData(needs: GovernanceNeeds): Promise<
     complianceDates: Object.fromEntries(complianceRegistrations.map((item) => [item.item_id, formatDate(item.registered_at)])),
     complianceEvents,
     complianceDocuments,
-    audits: auditTemplates.map((template, index) => ({
+    audits: auditTemplates.flatMap((template, index) => reportAuditTemplates.includes(template) ? [{
       template,
       workflow: auditWorkflowById.get(template.id),
       date: formatDate(auditDateById.get(template.id)),
       documents: auditDocuments[index] ?? [],
-    })),
+    }] : []),
     auditEvents,
   };
 }
@@ -115,7 +121,6 @@ const complianceStatus = (itemId: string, followups: GovernanceReportData["follo
 export function riskRows(sectionId: string, data: GovernanceReportData): string[] {
   const { risks, aiRisks } = data;
   switch (sectionId) {
-    case "risks":
     case "risk-summary": return [
       `Riesgos detectados: ${risks.length}`,
       ...countBy(risks.map(riskLevel), RISK_LEVELS).map((row) => `Nivel ${row}`),
@@ -138,7 +143,6 @@ export function riskRows(sectionId: string, data: GovernanceReportData): string[
       `${risk.id} · ${risk.model_name} · ${risk.category} · probabilidad ${risk.likelihood} × impacto ${risk.impact} · ${risk.status} · Responsable: ${risk.owner || "Sin responsable"} · ${risk.description}`);
     case "risk-recommendations": return risks.map((item) => `${item.displayId} · ${item.template.recomendacion}`);
     case "risk-sources": return risks.map((item) => `${item.displayId} · ${sourceName(item.template.fuente)} · ${item.template.departamento}`);
-    case "risk-evidence": return risks.flatMap((item) => item.documents.map((doc) => `${item.displayId} · ${doc.file_name} · ${doc.media_type} · ${fileSize(doc.size_bytes)} · Subido por ${doc.uploaded_by} · ${timestamp(doc.created_at)}`));
     default: return [];
   }
 }
@@ -152,7 +156,6 @@ export function complianceRows(sectionId: string, data: GovernanceReportData): s
   const controlRow = (control: GovernanceControl) =>
     `${control.id} · ${control.standard} · ${control.focus} · ${control.status.replace("_", " ")} · ${control.objective}${control.updated_by ? ` · Actualizado por ${control.updated_by}` : ""}`;
   switch (sectionId) {
-    case "compliance":
     case "compliance-indicators": {
       const conformes = REGULATORY_NORMS.filter((norm) => ["Conforme", "Cerrado"].includes(complianceStatus(norm.id, followups))).length;
       const overall = Math.round(REGULATORY_NORMS.reduce((sum, norm) => sum + followupProgress(followups[norm.id]), 0) / REGULATORY_NORMS.length);
@@ -176,8 +179,7 @@ export function complianceRows(sectionId: string, data: GovernanceReportData): s
       .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
       .map((event) => `${timestamp(event.occurred_at)} · ${event.item_id} · ${event.username} · ${event.event_type === "document" ? "Documento" : "Actualización"}`);
     case "related-audits": return data.audits.map(auditRow);
-    case "evidence-compliance":
-    case "compliance-evidence": return [
+    case "evidence-compliance": return [
       ...data.complianceDocuments.map((doc) => `${doc.item_id} · ${doc.file_name} · ${doc.media_type} · ${fileSize(doc.size_bytes)} · Subido por ${doc.uploaded_by} · ${timestamp(doc.created_at)}`),
       ...data.controlEvidence.map((file) => `${file.control_id} · ${file.file_name} · ${file.media_type} · ${fileSize(file.size_bytes)} · Subido por ${file.uploaded_by} · ${timestamp(file.created_at)}`),
     ];
@@ -193,7 +195,6 @@ function auditRow(item: GovernanceReportData["audits"][number]): string {
 export function auditRows(sectionId: string, data: GovernanceReportData): string[] {
   const { audits } = data;
   switch (sectionId) {
-    case "audits":
     case "audit-summary": return [
       `Auditorías registradas: ${audits.length}`,
       ...countBy(audits.map(auditStatus), AUDIT_STATUSES).map((row) => `Estado ${row}`),
@@ -206,8 +207,7 @@ export function auditRows(sectionId: string, data: GovernanceReportData): string
     case "audit-history": return [...data.auditEvents]
       .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
       .map((event) => `${timestamp(event.occurred_at)} · ${event.audit_id} · ${event.username} · ${event.event_type === "document" ? "Documento" : "Actualización"}`);
-    case "evidence-audit":
-    case "audit-evidence": return audits.flatMap((item) => item.documents.map((doc) => `${item.template.id} · ${doc.category} · ${doc.file_name} · ${doc.media_type} · ${fileSize(doc.size_bytes)} · Subido por ${doc.uploaded_by} · ${timestamp(doc.created_at)}`));
+    case "evidence-audit": return audits.flatMap((item) => item.documents.map((doc) => `${item.template.id} · ${doc.category} · ${doc.file_name} · ${doc.media_type} · ${fileSize(doc.size_bytes)} · Subido por ${doc.uploaded_by} · ${timestamp(doc.created_at)}`));
     default: return [];
   }
 }
@@ -233,7 +233,6 @@ export function visualsFor(sectionId: string, data: GovernanceReportData): Repor
   const statuses = { title: "Riesgos por estado", items: tally(risks.map(riskStatus), RISK_STATUS_COLORS) };
   const auditStates = { title: "Auditorías por estado", items: tally(audits.map(auditStatus), AUDIT_STATUS_COLORS) };
   switch (sectionId) {
-    case "risks":
     case "risk-summary": return {
       kpis: [
         { label: "Riesgos detectados", value: String(risks.length), color: "#0f6cbd" },
@@ -252,7 +251,6 @@ export function visualsFor(sectionId: string, data: GovernanceReportData): Repor
       const sources = [...new Set(risks.map((item) => sourceName(item.template.fuente)))];
       return { charts: [{ title: "Riesgos por fuente", items: sources.map((source) => ({ label: source, value: risks.filter((item) => sourceName(item.template.fuente) === source).length, color: "#8764b8" })) }] };
     }
-    case "compliance":
     case "compliance-indicators": {
       const conformes = REGULATORY_NORMS.filter((norm) => ["Conforme", "Cerrado"].includes(complianceStatus(norm.id, followups))).length;
       const overall = Math.round(REGULATORY_NORMS.reduce((sum, norm) => sum + followupProgress(followups[norm.id]), 0) / REGULATORY_NORMS.length);
@@ -273,7 +271,6 @@ export function visualsFor(sectionId: string, data: GovernanceReportData): Repor
     case "regulatory-risks": return { charts: [{ title: "Riesgos regulatorios por estado", items: tally(REGULATORY_RISKS.map((risk) => complianceStatus(risk.id, followups)), FOLLOWUP_COLORS) }] };
     case "controls-done":
     case "controls-pending": return { charts: [{ title: "Controles de gobernanza por estado", items: Object.entries(CONTROL_LABELS).map(([key, [label, color]]) => ({ label, value: controls.filter((control) => control.status === key).length, color })) }] };
-    case "audits":
     case "audit-summary": return {
       kpis: [
         { label: "Auditorías", value: String(audits.length), color: "#0f6cbd" },

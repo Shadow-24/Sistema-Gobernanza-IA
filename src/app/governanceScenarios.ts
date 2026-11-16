@@ -1,16 +1,5 @@
 export type ExplanationFactor = { name: string; percent: number };
 
-export type SimulatedModel = {
-  name: string;
-  version: string;
-  process: string;
-  status: string;
-  risk: "Alto" | "Medio" | "Bajo";
-  confidence: number;
-  lastEvaluation: string;
-  owner: string;
-};
-
 export type SupplyChainRiskScenario = {
   id: string;
   level: "Alto" | "Medio";
@@ -25,14 +14,6 @@ export type SupplyChainRiskScenario = {
   confidence: number;
   explanation: ExplanationFactor[];
 };
-
-export const simulatedModels: SimulatedModel[] = [
-  { name: "Predicción de Demanda", version: "sim. 1.0", process: "Demanda", status: "Evaluado (simulación)", risk: "Medio", confidence: 89, lastEvaluation: "Q4 2024 · escenario", owner: "Analista de Datos" },
-  { name: "Detección de Anomalías de Inventario", version: "sim. 1.0", process: "Inventario", status: "Evaluado (simulación)", risk: "Alto", confidence: 91, lastEvaluation: "Q4 2024 · escenario", owner: "Analista de Datos" },
-  { name: "Detección de Anomalías de Transporte", version: "sim. 1.0", process: "Transporte", status: "Evaluado (simulación)", risk: "Medio", confidence: 86, lastEvaluation: "Q4 2024 · escenario", owner: "Ingeniero de Campo" },
-  { name: "Evaluación de Riesgo de Ruta", version: "sim. 1.0", process: "Transporte", status: "En revisión (simulación)", risk: "Alto", confidence: 91, lastEvaluation: "Q4 2024 · escenario", owner: "Ingeniero de Campo" },
-  { name: "Clasificación de Incidentes", version: "sim. 2.3", process: "Distribución", status: "Evaluado (simulación)", risk: "Medio", confidence: 74, lastEvaluation: "Q4 2024 · escenario", owner: "Analista de Datos" },
-];
 
 export const simulatedSupplyChainRisks: SupplyChainRiskScenario[] = [
   {

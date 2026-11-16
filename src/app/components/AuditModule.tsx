@@ -237,6 +237,11 @@ const timelineByYear: Record<string, { fecha: string; evento: string; tipo: "aud
   "2025": [],
 };
 
+// Regla única para mostrar AUD-04: la usan la pantalla de Auditoría y los reportes.
+export function isDemandAuditAvailable(status: Pick<DemandModelStatus, "status" | "coverage"> | null | undefined): boolean {
+  return (status?.coverage?.months ?? 0) >= 36 && ["evaluated", "training_pending"].includes(status?.status ?? "");
+}
+
 export const auditTemplates = Object.keys(auditoriasByYear)
   .sort((a, b) => Number(b) - Number(a))
   .flatMap((year) => auditoriasByYear[year]);
@@ -282,6 +287,7 @@ export function AuditModule() {
   const [selectedAuditId, setSelectedAuditId] = useState(auditTemplates[0]?.id ?? "");
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<AuditStatus | null>(null);
+  const [auditSearch, setAuditSearch] = useState("");
   const [draftStatus, setDraftStatus] = useState<AuditStatus>(auditTemplates[0]?.estado ?? "En curso");
   const [draftPhase, setDraftPhase] = useState<AuditPhase>("Planificación");
   const [draftResponsible, setDraftResponsible] = useState("");
@@ -296,9 +302,7 @@ export function AuditModule() {
   const [uploading, setUploading] = useState(false);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const demandAuditAvailable = (
-    demandModelStatus?.coverage?.months ?? 0
-  ) >= 36 && ["evaluated", "training_pending"].includes(demandModelStatus?.status ?? "");
+  const demandAuditAvailable = isDemandAuditAvailable(demandModelStatus);
   const availableResolutionIds = new Set(datasets.resolutions.map((row) => csvValue(row, "NRO RESOLUCIÓN")).filter(Boolean));
   const availableCaseResolutionIds = new Set(datasets.cases.map((row) => csvValue(row, "RESOLUCION TFA")).filter(Boolean));
   const workflowById = new Map(workflow.map((item) => [item.audit_id, item]));
@@ -319,7 +323,14 @@ export function AuditModule() {
       responsable: saved?.responsible ?? "",
     };
   });
-  const filteredAudits = statusFilter ? audits.filter((audit) => audit.estado === statusFilter) : audits;
+  const normalizedAuditSearch = auditSearch.trim().toLowerCase();
+  const filteredAudits = audits.filter((audit) => (
+    (!statusFilter || audit.estado === statusFilter) &&
+    (!normalizedAuditSearch || [
+      audit.id, audit.tipo, audit.estado, audit.administrado, audit.sector, audit.responsable, audit.fecha, audit.hallazgos,
+      ...audit.resoluciones, ...audit.expedientes,
+    ].some((value) => value?.toLowerCase().includes(normalizedAuditSearch)))
+  ));
   const selectedAudit = filteredAudits.find((audit) => audit.id === selectedAuditId) ?? filteredAudits[0];
   const selectedWorkflow = selectedAudit ? workflowById.get(selectedAudit.id) : undefined;
   const auditIdsKey = audits.map((audit) => audit.id).join("|");
@@ -538,10 +549,7 @@ export function AuditModule() {
     <div className="space-y-5">
       <div>
         <div className="flex flex-wrap items-center gap-2"><h1 className="text-[18px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Auditoría</h1><UserStoryRefs ids={["HU-013", "HU-016", "HU-017"]} /></div>
-        <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>
-          Historial de auditorías · métricas de modelos disponibles en la evaluación técnica
-        </p>
-        <p className="text-[11px] mt-1" style={{ color: "var(--ct-8a8886)" }}>Los cambios de seguimiento y los documentos adjuntos se guardan en PostgreSQL.</p>
+        <p className="text-[13px] mt-0.5" style={{ color: "var(--ct-605e5c)" }}>Seguimiento de auditorías</p>
       </div>
 
       {workflowError && <p role="alert" className="rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{workflowError}</p>}
@@ -602,6 +610,18 @@ export function AuditModule() {
         {/* Audit list */}
         <div className="space-y-3">
           <div className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Historial de Auditorías</div>
+          <input
+            type="search"
+            value={auditSearch}
+            onChange={(event) => setAuditSearch(event.target.value)}
+            placeholder="Buscar por ID, tipo, responsable, resolución…"
+            aria-label="Buscar auditorías"
+            className="w-full rounded border px-3 py-2 text-[13px]"
+            style={{ borderColor: "var(--cs-e1dfdd)" }}
+          />
+          {filteredAudits.length === 0 && (
+            <p role="status" className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay auditorías que coincidan con la búsqueda.</p>
+          )}
           {filteredAudits.map(audit => {
             const s = STATE_STYLES[audit.estado];
             const Icon = s.icon;

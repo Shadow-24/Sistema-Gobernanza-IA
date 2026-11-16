@@ -1281,6 +1281,47 @@ def update_user(
         raise HTTPException(status_code=503, detail="No se pudo actualizar el usuario.") from error
 
 
+@app.delete("/api/users/{username}")
+def delete_user(
+    username: str,
+    current_user: dict[str, Any] = Depends(get_supervisor),
+) -> dict[str, bool]:
+    if username == current_user["username"]:
+        raise HTTPException(status_code=409, detail="No puedes eliminar tu propia cuenta.")
+    try:
+        with database.connection() as conn:
+            conn.execute("SELECT pg_advisory_xact_lock(684257139)")
+            deleted = conn.execute(
+                "DELETE FROM managed_users WHERE username = %s RETURNING username",
+                (username,),
+            ).fetchone()
+            if not deleted:
+                raise HTTPException(status_code=404, detail="No se encontró el usuario.")
+            active_supervisor = conn.execute(
+                """
+                SELECT 1 FROM managed_users
+                WHERE active AND role = 'Supervisor de Cumplimiento'
+                    AND permissions @> '["supervision"]'::jsonb
+                LIMIT 1
+                """
+            ).fetchone()
+            if not active_supervisor:
+                raise HTTPException(status_code=409, detail="Debe permanecer al menos un supervisor activo.")
+            conn.execute(
+                """
+                INSERT INTO access_events (username, role, action, resource, result)
+                VALUES (%s, %s, 'Eliminación de usuario', %s, 'Permitido')
+                """,
+                (current_user["username"], current_user["role"], username),
+            )
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.exception("No se pudo eliminar el usuario.")
+        raise HTTPException(status_code=503, detail="No se pudo eliminar el usuario.") from error
+
+
 @app.get("/api/access-events")
 def get_access_events(user: dict[str, Any] = Depends(get_current_user)) -> list[dict[str, Any]]:
     try:
@@ -2355,6 +2396,9 @@ async def save_generated_report(
     if report_type not in access_policy.REPORT_TYPES_BY_ROLE.get(user["role"], []):
         raise HTTPException(status_code=403, detail="No tienes permiso para generar este tipo de reporte.")
     _require_permission(user, "reportes", "No tienes permiso para generar reportes.")
+    module_permission = access_policy.REPORT_PERMISSION_BY_TYPE.get(report_type)
+    if module_permission is None or not access_policy.has_permission(user, module_permission):
+        raise HTTPException(status_code=403, detail="No tienes permiso sobre el módulo de este reporte.")
     try:
         section_list = json.loads(sections)
         if not isinstance(section_list, list) or not all(isinstance(section, str) for section in section_list):

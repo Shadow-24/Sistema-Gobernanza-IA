@@ -10,7 +10,6 @@ export type ReportConfiguration = {
   endDate: string;
   detailLevel: ReportDetailLevel;
   sections: string[];
-  evidenceSections: string[];
 };
 
 export type ReportSection = { id: string; label: string; source: string; dateFilterable?: boolean };
@@ -23,19 +22,6 @@ export const REPORT_SECTION_GROUPS: ReportSectionGroup[] = [
       { id: "hydrocarbons", label: "Hidrocarburos: producción, canon y supervisiones", source: "Determinación 2026 y supervisiones/PAS (pestaña Dashboard > Hidrocarburos)", dateFilterable: false },
       { id: "sector-operations", label: "Operación sectorial de gas y combustibles", source: "Producción, transporte, exportación, ventas y multas (pestaña Dashboard > Operación sectorial)", dateFilterable: false },
       { id: "inventory", label: "Instalaciones y capacidad registrada", source: "CSV CDCLyOPDH 2017; no incluye existencias actuales", dateFilterable: false },
-    ],
-  },
-  {
-    id: "general-data", label: "Datos generales", sections: [
-      { id: "general", label: "Indicadores generales", source: "CSV históricos y observaciones operativas del periodo" },
-      { id: "risks", label: "Riesgos", source: "Riesgos detectados y seguimiento registrado", dateFilterable: false },
-      { id: "compliance", label: "Cumplimiento normativo", source: "Seguimiento de normativas y controles de gobernanza", dateFilterable: false },
-      { id: "audits", label: "Auditorías", source: "Seguimiento de auditorías registrado", dateFilterable: false },
-      { id: "traceability", label: "Trazabilidad", source: "Modelos y escenarios simulados" },
-      { id: "complaints", label: "Denuncias", source: "CSV SINADA", dateFilterable: true },
-      { id: "cases", label: "Expedientes resueltos", source: "CSV de expedientes", dateFilterable: true },
-      { id: "resolutions", label: "Resoluciones", source: "CSV de resoluciones", dateFilterable: true },
-      { id: "transport", label: "Transporte de gas natural", source: "Volúmenes mensuales observados", dateFilterable: true },
     ],
   },
   {
@@ -70,60 +56,28 @@ export const REPORT_SECTION_GROUPS: ReportSectionGroup[] = [
       { id: "audits-observed", label: "Auditorías observadas", source: "Seguimiento de auditorías", dateFilterable: false },
       { id: "audit-history", label: "Historial de auditorías", source: "Eventos de seguimiento de auditoría", dateFilterable: false },
       { id: "evidence-audit", label: "Evidencias", source: "Documentos adjuntos a auditorías", dateFilterable: false },
-      { id: "related-resolutions", label: "Resoluciones relacionadas", source: "CSV de resoluciones", dateFilterable: true },
-      { id: "access-logs", label: "Registros de acceso", source: "Registro de acceso local", dateFilterable: true },
+      { id: "access-logs", label: "Registros de acceso", source: "Registro de accesos de la plataforma (últimos 200 eventos)", dateFilterable: true },
     ],
   },
   {
     id: "traceability", label: "Trazabilidad", sections: [
       { id: "forecast-summary", label: "Resumen de pronósticos de demanda", source: "Historial de pronósticos guardados (pestaña Trazabilidad)", dateFilterable: false },
       { id: "forecast-history", label: "Historial de pronósticos generados", source: "Pronósticos guardados con modelo, fuente de datos y solicitante", dateFilterable: false },
-      { id: "decision-flow", label: "Flujo de decisión AI TRiSM", source: "Flujo conceptual" },
-      { id: "ai-models", label: "Modelos de IA representados", source: "Modelos simulados" },
-      { id: "inventory-trace", label: "Capacidad de instalaciones", source: "CSV CDCLyOPDH 2017; no incluye existencias actuales", dateFilterable: false },
-      { id: "trends", label: "Tendencias operativas", source: "Series observadas de gas, distribución y ventas", dateFilterable: true },
-      { id: "distribution-routes", label: "Distribución de gas por concesión", source: "Volúmenes y clientes observados por periodo", dateFilterable: true },
-      { id: "supply-history", label: "Histórico de operación y distribución", source: "Series observadas; no incluye existencias de inventario", dateFilterable: true },
-      { id: "traced-decisions", label: "Decisiones trazadas", source: "Recorridos demostrativos sin registros CSV" },
-      { id: "historical-data", label: "Datos históricos", source: "CSV de SINADA, expedientes y resoluciones", dateFilterable: true },
     ],
   },
 ];
 
-export const EVIDENCE_SECTION_GROUP: ReportSectionGroup = {
-  id: "evidences", label: "Evidencias Digitales", sections: [
-    { id: "audit-evidence", label: "Evidencias de auditoría", source: "Documentos adjuntos a auditorías", dateFilterable: false },
-    { id: "trace-evidence", label: "Evidencias de trazabilidad", source: "Modelos representados; evidencia conceptual" },
-    { id: "risk-evidence", label: "Evidencias relacionadas con riesgos", source: "Documentos adjuntos a riesgos detectados", dateFilterable: false },
-    { id: "compliance-evidence", label: "Evidencias de cumplimiento", source: "Archivos adjuntos de cumplimiento y controles", dateFilterable: false },
-    { id: "resolution-evidence", label: "Resoluciones relacionadas", source: "CSV de resoluciones", dateFilterable: true },
-    { id: "case-evidence", label: "Expedientes resueltos", source: "CSV de expedientes", dateFilterable: true },
-    { id: "complaint-evidence", label: "Denuncias SINADA", source: "CSV SINADA", dateFilterable: true },
-  ],
-};
-
 const DASHBOARD_SECTIONS = ["demand", "hydrocarbons", "sector-operations", "inventory"];
 const RISK_SECTIONS = REPORT_SECTION_GROUPS.find((group) => group.id === "risks")!.sections.map((section) => section.id);
 const COMPLIANCE_SECTIONS = REPORT_SECTION_GROUPS.find((group) => group.id === "compliance")!.sections.map((section) => section.id);
-const AUDIT_SECTIONS = REPORT_SECTION_GROUPS.find((group) => group.id === "audit")!.sections.map((section) => section.id).filter((id) => id !== "related-resolutions");
-const TRACE_SECTIONS = REPORT_SECTION_GROUPS.find((group) => group.id === "traceability")!.sections.map((section) => section.id);
-const EVIDENCE_SECTIONS = EVIDENCE_SECTION_GROUP.sections.map((section) => section.id);
-const ALL_SECTIONS = [...DASHBOARD_SECTIONS, ...RISK_SECTIONS, ...COMPLIANCE_SECTIONS, ...AUDIT_SECTIONS, ...TRACE_SECTIONS, ...EVIDENCE_SECTIONS];
+const AUDIT_SECTIONS = REPORT_SECTION_GROUPS.find((group) => group.id === "audit")!.sections.map((section) => section.id);
 
 const REPORT_SECTIONS_BY_TYPE: Record<GeneratedReportType, string[]> = {
   "Dashboard Ejecutivo": DASHBOARD_SECTIONS,
   "Reporte de Riesgos": RISK_SECTIONS,
   "Reporte de Trazabilidad": ["forecast-summary", "forecast-history"],
-  "Reporte Ejecutivo": ["general", "risks", "risk-summary", "compliance", "compliance-indicators", "audits", "audits-completed", "traceability", "decision-flow", "inventory", "transport"],
-  "Reporte de Inventario": ["inventory", "inventory-trace", "supply-history"],
-  "Reporte de Transporte": ["transport", "distribution-routes"],
-  "Reporte de Predicción de Demanda": ["demand", "trends", "ai-models"],
-  "Reportes Analíticos": ["historical-data", "general", "risk-details", "risk-anomalies", "inventory", "inventory-trace", "transport", "distribution-routes", "demand", "trends", "ai-models", "complaints", "cases", "resolutions"],
   "Reporte de Cumplimiento": COMPLIANCE_SECTIONS,
   "Reporte de Auditoría": AUDIT_SECTIONS,
-  "Reporte PDF": ALL_SECTIONS,
-  "Exportación Excel": ALL_SECTIONS,
-  "Evidencias Digitales": [],
 };
 
 const REPORT_SECTIONS_BY_ROLE: Record<UserRole, string[]> = {
@@ -137,7 +91,7 @@ export function getReportSectionGroups(reportType: GeneratedReportType, role: Us
   const reportIds = REPORT_SECTIONS_BY_TYPE[reportType];
   const roleIds = REPORT_SECTIONS_BY_ROLE[role];
   const allowedIds = new Set(reportIds.filter((id) => roleIds.includes(id)));
-  return [...REPORT_SECTION_GROUPS, EVIDENCE_SECTION_GROUP]
+  return REPORT_SECTION_GROUPS
     .map((group) => ({ ...group, sections: group.sections.filter((section) => allowedIds.has(section.id)) }))
     .filter((group) => group.sections.length > 0);
 }

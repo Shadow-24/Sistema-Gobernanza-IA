@@ -1,9 +1,8 @@
 import jsPDF from "jspdf";
-import { simulatedModels, simulatedSupplyChainRisks } from "../../app/governanceScenarios";
 import { canGenerateReportWithSections } from "../../app/reportPermissions";
 import { loadDemandModelStatus, type DemandModelStatus } from "../../app/demandModelApi";
-import { formatCurrency, formatDate, getReportPeriodData, type ReportPeriodData } from "../reportGenerator";
-import { EVIDENCE_SECTION_GROUP, formatPeriodLabel, REPORT_SECTION_GROUPS, type ReportConfiguration, type ReportSection } from "../reportConfiguration";
+import { extractFacilities, type Facility } from "../reportGenerator";
+import { formatPeriodLabel, REPORT_SECTION_GROUPS, type ReportConfiguration, type ReportSection } from "../reportConfiguration";
 import { apiRequest } from "../../app/apiClient";
 import { loadHydrocarbonData } from "../hydrocarbonData";
 import { forecastHistoryContent, forecastSummaryContent, loadForecastBatches } from "./traceabilityReportData";
@@ -35,86 +34,23 @@ async function readAccessEvents(startDate: string, endDate: string): Promise<Sto
   });
 }
 
-function formatCase(item: ReportPeriodData["cases"][number]): string {
-  return `${formatDate(item.fecha)} · ${item.codigo} · ${item.sector} · ${item.departamento} · ${formatCurrency(item.monto ?? "")} · ${item.estado}`;
-}
-
-function formatResolution(item: ReportPeriodData["resolutions"][number]): string {
-  return `${formatDate(item.fecha)} · ${item.id} · ${item.tipo} · ${item.sector} · ${item.departamento} · ${item.descripcion ?? ""}`;
-}
-
-function formatComplaint(item: ReportPeriodData["complaints"][number]): string {
-  return `${formatDate(item.fecha)} · ${item.codigo} · ${item.departamento} · ${item.estado} · ${item.tipoImpacto}`;
-}
-
-function operationsForPeriod(operationalData: OperationalData, startDate: string, endDate: string): string[] {
-  const startPeriod = startDate.slice(0, 7);
-  const endPeriod = endDate.slice(0, 7);
-  const inPeriod = (period: string) => period >= startPeriod && period <= endPeriod;
-  const records = [
-    ...operationalData.naturalGas.transport.filter((row) => inPeriod(row.period)).map((row) =>
-      `${row.period} · Gas natural transportado: ${row.packedVolume.toLocaleString("es-PE")} MMPC empacados; ${row.injectedVolume.toLocaleString("es-PE")} MMPC inyectados`,
-    ),
-    ...operationalData.naturalGas.distribution.filter((row) => inPeriod(row.period)).map((row) =>
-      `${row.period} · Distribución de gas ${row.concession}: ${row.volume.toLocaleString("es-PE")} · ${row.customers.toLocaleString("es-PE")} clientes`,
-    ),
-    ...operationalData.liquidFuels.fuelSales.filter((row) => inPeriod(row.period)).map((row) =>
-      `${row.period} · Venta de ${row.product}: ${row.gallons.toLocaleString("es-PE")} gal`,
-    ),
-    ...operationalData.liquidFuels.glpSales.filter((row) => inPeriod(row.period)).map((row) =>
-      `${row.period} · Venta de GLP ${row.product}: ${row.barrels.toLocaleString("es-PE")} barriles`,
-    ),
-    ...operationalData.liquidFuels.trade.filter((row) => inPeriod(row.period)).map((row) =>
-      `${row.period} · Comercio exterior ${row.direction} de ${row.product}: ${row.volumeMbbl.toLocaleString("es-PE")} Mbbl`,
-    ),
-  ];
-  return records.sort((left, right) => left.localeCompare(right, "es"));
-}
-
-function sectionRows(sectionId: string, data: ReportPeriodData, events: StoredAccessEvent[], scenarios: typeof simulatedSupplyChainRisks, models: typeof simulatedModels, demandModel: DemandModelStatus | null, operationalData: OperationalData | null, startDate: string, endDate: string, governance: GovernanceReportData | null): { records: string[]; simulated: boolean; note?: string } {
-  const operationalRecords = operationalData ? operationsForPeriod(operationalData, startDate, endDate) : [];
+function sectionRows(sectionId: string, facilities: Facility[], events: StoredAccessEvent[], demandModel: DemandModelStatus | null, governance: GovernanceReportData | null): { records: string[]; simulated: boolean; note?: string } {
   switch (sectionId) {
-    case "general": return { records: [`Expedientes resueltos: ${data.cases.length}`, `Resoluciones: ${data.resolutions.length}`, `Denuncias SINADA: ${data.complaints.length}`, `Multas consignadas en expedientes: ${formatCurrency(data.totalFines)}`, ...operationalRecords.slice(-5)], simulated: false };
-    case "complaints": return { records: data.complaints.map(formatComplaint), simulated: false };
-    case "historical-data": return { records: [...data.complaints.map(formatComplaint), ...data.cases.map(formatCase), ...data.resolutions.map(formatResolution)], simulated: false };
-    case "cases":
-    case "case-evidence": return { records: data.cases.map(formatCase), simulated: false };
-    case "complaint-evidence": return { records: data.complaints.map(formatComplaint), simulated: false };
-    case "resolutions":
-    case "related-resolutions":
-    case "resolution-evidence": return { records: data.resolutions.map(formatResolution), simulated: false };
-    case "inventory":
-    case "inventory-trace": return {
-      records: data.facilities.map((facility) => `${facility.nombre} · ${facility.departamento} · capacidad registrada ${facility.capacidad || "no consignada"} gl · existencias actuales no disponibles`),
+    case "inventory": return {
+      records: facilities.map((facility) => `${facility.nombre} · ${facility.departamento} · capacidad registrada ${facility.capacidad || "no consignada"} gl · existencias actuales no disponibles`),
       simulated: false,
       note: "Las instalaciones/capacidades provienen del CSV CDCLyOPDH (2017); no hay datos para calcular existencias o pronosticar inventario.",
     };
-    case "risks":
     case "risk-summary":
     case "risk-distribution":
     case "risk-process":
     case "risk-details":
     case "risk-anomalies":
     case "risk-recommendations":
-    case "risk-sources":
-    case "risk-evidence": return {
+    case "risk-sources": return {
       records: governance ? riskRows(sectionId, governance) : [],
       simulated: false,
       note: "Riesgos detectados con el mismo identificador (RSG), estado, nivel y responsable de la pestaña Riesgos. La fecha es la de registro en la aplicación.",
-    };
-    case "transport": return {
-      records: operationalData?.naturalGas.transport
-        .filter((row) => row.period >= startDate.slice(0, 7) && row.period <= endDate.slice(0, 7))
-        .map((row) => `${row.period} · ${row.packedVolume.toLocaleString("es-PE")} MMPC empacados; ${row.injectedVolume.toLocaleString("es-PE")} MMPC inyectados`) ?? [],
-      simulated: false,
-      note: "Volúmenes mensuales observados de transporte de gas; no equivalen a rutas ni a incidencias de transporte.",
-    };
-    case "distribution-routes": return {
-      records: operationalData?.naturalGas.distribution
-        .filter((row) => row.period >= startDate.slice(0, 7) && row.period <= endDate.slice(0, 7))
-        .map((row) => `${row.period} · ${row.concession}: ${row.volume.toLocaleString("es-PE")} · ${row.customers.toLocaleString("es-PE")} clientes`) ?? [],
-      simulated: false,
-      note: "Volúmenes observados agregados por concesión; no contienen rutas geográficas ni despachos.",
     };
     case "demand": {
       const metrics = demandModel?.metrics?.hybrid ?? demandModel?.metrics?.xgboost;
@@ -143,28 +79,6 @@ function sectionRows(sectionId: string, data: ReportPeriodData, events: StoredAc
           : demandModel?.message ?? "No hay una evaluación de demanda persistida; ejecutar entrenamiento y evaluación para incluir métricas.",
       };
     }
-    case "traceability":
-    case "traced-decisions": return {
-      records: scenarios.map((risk) => `${risk.id} · Datos recibidos → ${risk.model} (simulado) → evaluación conceptual AI TRiSM → riesgo ${risk.level} → evidencia demostrativa → revisión humana pendiente`),
-      simulated: true,
-    };
-    case "ai-models": return {
-      records: models.map((model) => `${model.name} · ${model.version} · proceso ${model.process} · riesgo ${model.risk} · confianza simulada ${model.confidence}% · ${model.status}`),
-      simulated: true,
-    };
-    case "decision-flow": return {
-      records: ["Datos recibidos → Modelo de IA → Evaluación conceptual AI TRiSM → Riesgo identificado → Evidencia generada → Reporte / Resolución"],
-      simulated: true,
-    };
-    case "trends":
-    case "supply-history": return {
-      records: operationalRecords,
-      simulated: false,
-      note: operationalRecords.length
-        ? "Series observadas de gas, distribución, ventas y comercio exterior; no representan existencias actuales de inventario."
-        : "No hay observaciones operativas para el periodo seleccionado; las fuentes pueden tener coberturas diferentes.",
-    };
-    case "compliance":
     case "compliance-indicators":
     case "norms":
     case "controls-done":
@@ -172,81 +86,59 @@ function sectionRows(sectionId: string, data: ReportPeriodData, events: StoredAc
     case "regulatory-risks":
     case "compliance-history":
     case "related-audits":
-    case "evidence-compliance":
-    case "compliance-evidence": return {
+    case "evidence-compliance": return {
       records: governance ? complianceRows(sectionId, governance) : [],
       simulated: false,
       note: "Autoevaluación interna registrada en la pestaña Cumplimiento; las fechas son las de registro en la aplicación.",
     };
-    case "audits":
     case "audit-summary":
     case "audits-pending":
     case "audits-completed":
     case "audits-progress":
     case "audits-observed":
     case "audit-history":
-    case "evidence-audit":
-    case "audit-evidence": return {
+    case "evidence-audit": return {
       records: governance ? auditRows(sectionId, governance) : [],
       simulated: false,
       note: "Auditorías con el estado, etapa y responsable de la pestaña Auditoría; la fecha es la de registro en la aplicación.",
     };
-    case "access-logs": return { records: events.map((event) => `${new Date(event.timestamp).toLocaleString("es-PE")} · ${event.username} · ${event.role} · ${event.action} · ${event.resource.replace("|", " – ")} · ${event.result}`), simulated: false, note: "Registro local de accesos; no equivale a un registro de auditorías operativas." };
-    case "evidence-traceability":
-    case "trace-evidence": return { records: simulatedModels.map((model) => `${model.name} · ${model.version} · artefacto conceptual · confianza simulada ${model.confidence}%`), simulated: true };
+    case "access-logs": return { records: events.map((event) => `${new Date(event.timestamp).toLocaleString("es-PE")} · ${event.username} · ${event.role} · ${event.action} · ${event.resource.replace("|", " – ")} · ${event.result}`), simulated: false, note: "Últimos 200 eventos de acceso de la plataforma dentro del periodo; no equivale a un registro de auditorías operativas." };
     default: return { records: [], simulated: false, note: "No hay contenido disponible para la sección seleccionada." };
   }
 }
 
 function allSections(): ReportSection[] {
-  return [...REPORT_SECTION_GROUPS.flatMap((group) => group.sections), ...EVIDENCE_SECTION_GROUP.sections];
+  return REPORT_SECTION_GROUPS.flatMap((group) => group.sections);
 }
 
 export async function buildConfiguredReportSections(configuration: ReportConfiguration): Promise<ReportContentSection[]> {
-  const selectedIds = configuration.reportType === "Evidencias Digitales" ? configuration.evidenceSections : configuration.sections;
+  const selectedIds = configuration.sections;
   if (!canGenerateReportWithSections(configuration.role, configuration.reportType, selectedIds)) {
     throw new Error("UNAUTHORIZED_REPORT_TYPE");
   }
-  const data = await getReportPeriodData(configuration.startDate, configuration.endDate);
-  const events = await readAccessEvents(configuration.startDate, configuration.endDate);
+  const facilities = selectedIds.includes("inventory") ? await extractFacilities() : [];
+  const events = selectedIds.includes("access-logs") ? await readAccessEvents(configuration.startDate, configuration.endDate) : [];
   const demandModel = selectedIds.includes("demand") ? await loadDemandModelStatus() : null;
-  const needsOperationalData = selectedIds.some((id) => ["general", "trends", "supply-history", "transport", "distribution-routes", "sector-operations"].includes(id));
-  const operationalData = needsOperationalData
+  const operationalData = selectedIds.includes("sector-operations")
     ? await apiRequest<OperationalData>("/api/datasets/operations").catch(() => null)
     : null;
   const hydrocarbonData = selectedIds.includes("hydrocarbons") ? await loadHydrocarbonData().catch(() => null) : null;
   const governanceNeeds = {
-    risks: selectedIds.some((id) => id === "risks" || id.startsWith("risk-")) && !selectedIds.every((id) => id === "risk-evidence"),
-    compliance: selectedIds.some((id) => ["compliance", "compliance-indicators", "norms", "controls-done", "controls-pending", "regulatory-risks", "compliance-history", "evidence-compliance", "compliance-evidence"].includes(id)),
-    audits: selectedIds.some((id) => ["audits", "audit-summary", "audits-pending", "audits-completed", "audits-progress", "audits-observed", "audit-history", "related-audits"].includes(id)),
-    evidence: selectedIds.some((id) => ["risk-evidence", "evidence-audit", "audit-evidence", "evidence-compliance", "compliance-evidence"].includes(id)),
+    risks: selectedIds.some((id) => id.startsWith("risk-")),
+    compliance: selectedIds.some((id) => ["compliance-indicators", "norms", "controls-done", "controls-pending", "regulatory-risks", "compliance-history", "evidence-compliance"].includes(id)),
+    audits: selectedIds.some((id) => ["audit-summary", "audits-pending", "audits-completed", "audits-progress", "audits-observed", "audit-history", "related-audits"].includes(id)),
+    evidence: selectedIds.some((id) => ["evidence-audit", "evidence-compliance"].includes(id)),
   };
   const governance = Object.values(governanceNeeds).some(Boolean) ? await loadGovernanceReportData(governanceNeeds) : null;
-  const transportOnly = configuration.role === "Ingeniero de Campo"
-    || configuration.reportType === "Reporte de Transporte";
-  const inventoryOnly = configuration.reportType === "Reporte de Inventario";
-  const demandOnly = configuration.reportType === "Reporte de Predicción de Demanda";
-  const scenarios = simulatedSupplyChainRisks.filter((risk) => {
-    if (transportOnly) return risk.process === "Transporte";
-    if (inventoryOnly) return risk.process === "Inventario";
-    if (demandOnly) return risk.process === "Demanda";
-    return true;
-  });
-  const models = simulatedModels.filter((model) => {
-    if (transportOnly) return model.process === "Transporte";
-    if (inventoryOnly) return model.process === "Inventario";
-    if (demandOnly) return false;
-    return true;
-  });
   const forecastBatches = selectedIds.some((id) => id === "forecast-summary" || id === "forecast-history") ? await loadForecastBatches() : null;
   const sections = selectedIds.map((id) => {
     const metadata = allSections().find((section) => section.id === id);
-    const content = sectionRows(id, data, events, scenarios, models, demandModel, operationalData, configuration.startDate, configuration.endDate, governance);
+    const content = sectionRows(id, facilities, events, demandModel, governance);
     const dashboard: Partial<DashboardSectionContent> | null =
       id === "hydrocarbons" ? hydrocarbonContent(hydrocarbonData)
       : id === "sector-operations" ? sectorOperationsContent(operationalData)
       : id === "demand" ? demandVisuals(demandModel)
-      : id === "inventory" ? { kpis: inventoryKpis(data.facilities.length) }
+      : id === "inventory" ? { kpis: inventoryKpis(facilities.length) }
       : id === "forecast-summary" ? forecastSummaryContent(forecastBatches)
       : id === "forecast-history" ? forecastHistoryContent(forecastBatches)
       : null;
@@ -283,7 +175,7 @@ export async function buildConfiguredReportSections(configuration: ReportConfigu
   });
 }
 
-const SUMMARY_ONLY_SECTIONS = new Set(["risks", "risk-summary", "risk-distribution", "risk-process", "compliance", "compliance-indicators", "audits", "audit-summary"]);
+const SUMMARY_ONLY_SECTIONS = new Set(["risk-summary", "risk-distribution", "risk-process", "compliance-indicators", "audit-summary"]);
 
 // Resumen: solo gráficos e indicadores (o 4 registros si la sección no tiene gráficos).
 // Detallado: añade los registros (máximo 40). Completo: añade además las notas de la fuente y todos los registros.
@@ -505,5 +397,5 @@ export function reportConfigurationRecordCount(sections: ReportContentSection[])
 
 export function getReportSectionMetadata(configuration: ReportConfiguration): ReportSection[] {
   return allSections()
-    .filter((section) => (configuration.reportType === "Evidencias Digitales" ? configuration.evidenceSections : configuration.sections).includes(section.id));
+    .filter((section) => configuration.sections.includes(section.id));
 }

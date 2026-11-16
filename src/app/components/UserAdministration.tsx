@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock3, LockKeyhole, Plus, Search, ShieldCheck, UserRound, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, LockKeyhole, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useAuth, type ManagedUser, type UserRole } from "../AuthContext";
 import { UserStoryRefs } from "./UserStoryRefs";
 
@@ -50,7 +50,7 @@ function UserRow({ user, selected, onSelect }: { user: ManagedUser; selected: bo
 }
 
 export function UserAdministration() {
-  const { managedUsers, accessEvents, managementError, user, createManagedUser, updateManagedUser } = useAuth();
+  const { managedUsers, accessEvents, managementError, user, createManagedUser, updateManagedUser, deleteManagedUser } = useAuth();
   const [selectedUsername, setSelectedUsername] = useState(managedUsers[0]?.username ?? "");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -62,7 +62,37 @@ export function UserAdministration() {
   const [search, setSearch] = useState("");
   const [resultFilter, setResultFilter] = useState("Todos");
   const [notice, setNotice] = useState("");
+  const [pendingAction, setPendingAction] = useState<"delete" | "password" | "save" | "toggle" | null>(null);
+  const [busy, setBusy] = useState(false);
   const selectedUser = managedUsers.find((account) => account.username === selectedUsername);
+  const [draftName, setDraftName] = useState("");
+  const [draftRole, setDraftRole] = useState<UserRole>("Analista de Datos");
+  const [draftPermissions, setDraftPermissions] = useState<string[]>([]);
+  const permissionsKey = selectedUser?.permissions.join("|") ?? "";
+
+  useEffect(() => {
+    if (!selectedUser) return;
+    setDraftName(selectedUser.name);
+    setDraftRole(selectedUser.role);
+    setDraftPermissions(selectedUser.permissions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser?.username, selectedUser?.name, selectedUser?.role, permissionsKey]);
+
+  const nameChanged = Boolean(selectedUser) && draftName.trim() !== "" && draftName.trim() !== selectedUser?.name;
+  const roleChanged = Boolean(selectedUser) && draftRole !== selectedUser?.role;
+  const permissionsChanged = Boolean(selectedUser) && (
+    draftPermissions.length !== selectedUser?.permissions.length || draftPermissions.some((permission) => !selectedUser?.permissions.includes(permission))
+  );
+  const hasProfileChanges = nameChanged || roleChanged || permissionsChanged;
+  const moduleLabel = (id: string) => modules.find((module) => module.id === id)?.label ?? id;
+  const changeSummary = selectedUser ? [
+    nameChanged ? `Nombre visible: "${selectedUser.name}" → "${draftName.trim()}"` : null,
+    roleChanged ? `Rol: ${selectedUser.role} → ${draftRole}` : null,
+    permissionsChanged ? `Permisos: ${[
+      ...draftPermissions.filter((permission) => !selectedUser.permissions.includes(permission)).map((permission) => `+ ${moduleLabel(permission)}`),
+      ...selectedUser.permissions.filter((permission) => !draftPermissions.includes(permission)).map((permission) => `− ${moduleLabel(permission)}`),
+    ].join(", ")}` : null,
+  ].filter((line): line is string => Boolean(line)) : [];
 
   useEffect(() => {
     if (!selectedUsername && managedUsers[0]) setSelectedUsername(managedUsers[0].username);
@@ -101,6 +131,61 @@ export function UserAdministration() {
     }
   }
 
+  async function handleDeleteUser() {
+    if (!selectedUser) return;
+    if (selectedUser.username === user?.username) {
+      setNotice("No puedes eliminar tu propia cuenta.");
+      return;
+    }
+    try {
+      const deleted = await deleteManagedUser(selectedUser.username);
+      if (deleted) {
+        setNotice(`Cuenta @${selectedUser.username} eliminada.`);
+        setSelectedUsername(managedUsers.find((account) => account.username !== selectedUser.username)?.username ?? "");
+      } else {
+        setNotice("No se pudo eliminar: debe permanecer al menos un supervisor activo.");
+      }
+    } catch (error) {
+      console.error("No se pudo eliminar el usuario:", error);
+      setNotice(error instanceof Error ? error.message : "No se pudo eliminar el usuario.");
+    }
+  }
+
+  async function handleChangePasswordConfirmed() {
+    if (!selectedUser) return;
+    await updateSelected({ password: newPassword }, `Contraseña de @${selectedUser.username} actualizada.`);
+    setNewPassword("");
+    setConfirmPassword("");
+  }
+
+  async function handleSaveProfile() {
+    if (!selectedUser) return;
+    const updates: Parameters<typeof updateManagedUser>[1] = {};
+    if (nameChanged) updates.name = draftName.trim();
+    if (roleChanged) updates.role = draftRole;
+    if (permissionsChanged) updates.permissions = draftPermissions;
+    await updateSelected(updates, `Cambios de @${selectedUser.username} guardados.`);
+  }
+
+  async function handleToggleActive() {
+    if (!selectedUser) return;
+    await updateSelected({ active: !selectedUser.active }, selectedUser.active ? "Cuenta desactivada." : "Cuenta activada.");
+  }
+
+  async function runPendingAction() {
+    const action = pendingAction;
+    setBusy(true);
+    try {
+      if (action === "delete") await handleDeleteUser();
+      else if (action === "password") await handleChangePasswordConfirmed();
+      else if (action === "save") await handleSaveProfile();
+      else if (action === "toggle") await handleToggleActive();
+    } finally {
+      setBusy(false);
+      setPendingAction(null);
+    }
+  }
+
   async function handleChangePassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedUser) return;
@@ -108,14 +193,8 @@ export function UserAdministration() {
       setNotice("Las contraseñas no coinciden.");
       return;
     }
-    if (!window.confirm(`¿Cambiar la contraseña de @${selectedUser.username}? Sus sesiones abiertas se cerrarán.`)) return;
-    await updateSelected({ password: newPassword }, `Contraseña de @${selectedUser.username} actualizada.`);
-    setNewPassword("");
-    setConfirmPassword("");
+    setPendingAction("password");
   }
-
-  const authorizedCount = accessEvents.filter((event) => event.result === "Permitido").length;
-  const deniedCount = accessEvents.filter((event) => event.result === "Denegado").length;
 
   return (
     <div className="space-y-5">
@@ -127,21 +206,6 @@ export function UserAdministration() {
           </div>
           <div className="flex flex-wrap items-center gap-2"><h1 className="text-[19px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Administración de accesos</h1><UserStoryRefs ids={["HU-019", "HU-020"]} /></div>
           <p className="text-[13px] mt-1" style={{ color: "var(--ct-605e5c)" }}>Autenticación, roles, permisos y actividad de usuarios.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-3 flex items-center gap-3" style={panelStyle}>
-          <UserRound className="w-4 h-4" style={{ color: "var(--ct-0f6cbd)" }} />
-          <div><div className="text-[19px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{managedUsers.length}</div><div className="text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Usuarios registrados</div></div>
-        </div>
-        <div className="p-3 flex items-center gap-3" style={panelStyle}>
-          <CheckCircle2 className="w-4 h-4" style={{ color: "var(--ct-107c10)" }} />
-          <div><div className="text-[19px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{authorizedCount}</div><div className="text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Accesos autorizados</div></div>
-        </div>
-        <div className="p-3 flex items-center gap-3" style={panelStyle}>
-          <XCircle className="w-4 h-4" style={{ color: "var(--ct-a4262c)" }} />
-          <div><div className="text-[19px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{deniedCount}</div><div className="text-[12px]" style={{ color: "var(--ct-605e5c)" }}>Accesos denegados</div></div>
         </div>
       </div>
 
@@ -161,20 +225,17 @@ export function UserAdministration() {
             <div className="p-4 space-y-4" style={{ borderTop: "1px solid var(--cs-edebe9)" }}>
               <div className="flex items-center justify-between gap-2">
                 <div><h3 className="text-[13px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Cuenta seleccionada</h3><p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>@{selectedUser.username}</p></div>
-                <button type="button" onClick={() => updateSelected({ active: !selectedUser.active }, selectedUser.active ? "Cuenta desactivada." : "Cuenta activada.")} className="px-2.5 py-1.5 text-[12px] font-medium" style={{ background: selectedUser.active ? "var(--cs-fdf3f4)" : "var(--cs-f1faf1)", color: selectedUser.active ? "var(--ct-a4262c)" : "var(--ct-107c10)", border: "1px solid var(--cs-e1dfdd)" }}>
+                <button type="button" onClick={() => setPendingAction("toggle")} className="px-2.5 py-1.5 text-[12px] font-medium" style={{ background: selectedUser.active ? "var(--cs-fdf3f4)" : "var(--cs-f1faf1)", color: selectedUser.active ? "var(--ct-a4262c)" : "var(--ct-107c10)", border: "1px solid var(--cs-e1dfdd)" }}>
                   {selectedUser.active ? "Desactivar" : "Activar"}
                 </button>
               </div>
               <label className="block text-[12px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                 Nombre visible
-                <input key={selectedUser.username} defaultValue={selectedUser.name} onBlur={(event) => {
-                  const nextName = event.target.value.trim();
-                  if (nextName && nextName !== selectedUser.name) updateSelected({ name: nextName }, "Nombre actualizado.");
-                }} className="mt-1 w-full h-8 px-2 text-[13px] bg-white" style={inputStyle} />
+                <input key={selectedUser.username} value={draftName} onChange={(event) => setDraftName(event.target.value)} className="mt-1 w-full h-8 px-2 text-[13px] bg-white" style={inputStyle} />
               </label>
               <label className="block text-[12px] font-medium" style={{ color: "var(--ct-605e5c)" }}>
                 Rol
-                <select value={selectedUser.role} onChange={(event) => updateSelected({ role: event.target.value as UserRole }, "Rol actualizado.")} className="mt-1 w-full h-8 px-2 text-[13px] bg-white" style={inputStyle}>
+                <select value={draftRole} onChange={(event) => setDraftRole(event.target.value as UserRole)} className="mt-1 w-full h-8 px-2 text-[13px] bg-white" style={inputStyle}>
                   {roles.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
               </label>
@@ -183,11 +244,10 @@ export function UserAdministration() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
                   {modules.map((module) => (
                     <label key={module.id} className="flex items-center gap-2 text-[12px]" style={{ color: "var(--ct-323130)" }}>
-                      <input type="checkbox" checked={selectedUser.permissions.includes(module.id)} onChange={(event) => {
-                        const permissions = event.target.checked
-                          ? [...selectedUser.permissions, module.id]
-                          : selectedUser.permissions.filter((permission) => permission !== module.id);
-                        updateSelected({ permissions }, `Permisos de ${module.label} actualizados.`);
+                      <input type="checkbox" checked={draftPermissions.includes(module.id)} onChange={(event) => {
+                        setDraftPermissions((current) => event.target.checked
+                          ? [...current, module.id]
+                          : current.filter((permission) => permission !== module.id));
                       }} />
                       {module.label}
                     </label>
@@ -195,6 +255,10 @@ export function UserAdministration() {
                 </div>
                 <p className="text-[11px] mt-2" style={{ color: "var(--ct-8a8886)" }}>La administración permanece reservada al rol Supervisor de Cumplimiento.</p>
               </fieldset>
+              <div className="flex items-center justify-end gap-2">
+                {hasProfileChanges && <button type="button" onClick={() => { setDraftName(selectedUser.name); setDraftRole(selectedUser.role); setDraftPermissions(selectedUser.permissions); }} className="px-3 py-1.5 text-[12px] font-medium" style={{ background: "var(--cs-ffffff)", color: "var(--ct-323130)", border: "1px solid var(--cs-c8c6c4)" }}>Descartar</button>}
+                <button type="button" onClick={() => setPendingAction("save")} disabled={!hasProfileChanges} className="px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50" style={{ background: "#0f6cbd" }}>Guardar cambios</button>
+              </div>
               <form onSubmit={handleChangePassword} className="space-y-2 pt-3" style={{ borderTop: "1px solid var(--cs-edebe9)" }}>
                 <h4 className="text-[12px] font-semibold flex items-center gap-1.5" style={{ color: "var(--ct-201f1e)" }}><LockKeyhole className="w-3.5 h-3.5" />Cambiar contraseña</h4>
                 <input required minLength={12} type={showPassword ? "text" : "password"} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Nueva contraseña (mín. 12 caracteres)" className="w-full h-8 px-2 text-[13px] bg-white" style={inputStyle} autoComplete="new-password" aria-label="Nueva contraseña" />
@@ -203,6 +267,11 @@ export function UserAdministration() {
                 {confirmPassword && newPassword !== confirmPassword && <p className="text-[11px]" style={{ color: "var(--ct-a4262c)" }}>Las contraseñas no coinciden.</p>}
                 <button type="submit" disabled={newPassword.length < 12 || newPassword !== confirmPassword} className="px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50" style={{ background: "#0f6cbd" }}>Cambiar contraseña</button>
               </form>
+              <div className="pt-3" style={{ borderTop: "1px solid var(--cs-edebe9)" }}>
+                <button type="button" onClick={() => setPendingAction("delete")} disabled={selectedUser.username === user?.username} title={selectedUser.username === user?.username ? "No puedes eliminar tu propia cuenta" : undefined} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium disabled:opacity-50" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)", border: "1px solid var(--cs-f1b8bb)" }}>
+                  <Trash2 className="w-3.5 h-3.5" />Eliminar cuenta
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -236,7 +305,7 @@ export function UserAdministration() {
 
           <section className="overflow-hidden" style={panelStyle}>
             <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--cs-edebe9)" }}>
-              <div className="flex items-center gap-2"><Clock3 className="w-4 h-4" style={{ color: "var(--ct-605e5c)" }} /><div><h2 className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Registro de accesos</h2><p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Eventos recientes · máximo 200 registros · solo lectura (el registro no se puede borrar)</p></div></div>
+              <div className="flex items-center gap-2"><Clock3 className="w-4 h-4" style={{ color: "var(--ct-605e5c)" }} /><div><h2 className="text-[14px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Registro de accesos</h2><p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Eventos recientes</p></div></div>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="relative flex-1 sm:w-44">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--ct-8a8886)" }} />
@@ -272,6 +341,38 @@ export function UserAdministration() {
           </section>
         </div>
       </div>
+      {pendingAction && selectedUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-user-action-title" onKeyDown={(event) => { if (event.key === "Escape" && !busy) setPendingAction(null); }}>
+          <div className="w-full max-w-md p-5" style={panelStyle}>
+            <div className="flex items-start gap-3">
+              <span className="w-9 h-9 flex items-center justify-center rounded-full flex-shrink-0" style={pendingAction === "delete" || (pendingAction === "toggle" && selectedUser.active) ? { background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" } : { background: "var(--cs-e8f2fb)", color: "var(--ct-0f6cbd)" }}>
+                {pendingAction === "delete" ? <Trash2 className="w-4 h-4" /> : pendingAction === "password" ? <LockKeyhole className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+              </span>
+              <div>
+                <h2 id="confirm-user-action-title" className="text-[15px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>{pendingAction === "delete" ? "Eliminar cuenta" : pendingAction === "password" ? "Cambiar contraseña" : pendingAction === "save" ? "Guardar cambios" : selectedUser.active ? "Desactivar cuenta" : "Activar cuenta"}</h2>
+                <p className="mt-1 text-[13px]" style={{ color: "var(--ct-605e5c)" }}>
+                  {pendingAction === "delete"
+                    ? <>¿Eliminar definitivamente la cuenta <strong style={{ color: "var(--ct-201f1e)" }}>@{selectedUser.username}</strong> ({selectedUser.name})? Esta acción no se puede deshacer y se cerrarán sus sesiones abiertas.</>
+                    : pendingAction === "password"
+                    ? <>¿Cambiar la contraseña de <strong style={{ color: "var(--ct-201f1e)" }}>@{selectedUser.username}</strong>? Sus sesiones abiertas se cerrarán.</>
+                    : pendingAction === "save"
+                    ? <>¿Guardar los siguientes cambios en la cuenta <strong style={{ color: "var(--ct-201f1e)" }}>@{selectedUser.username}</strong>?</>
+                    : selectedUser.active
+                    ? <>¿Desactivar la cuenta <strong style={{ color: "var(--ct-201f1e)" }}>@{selectedUser.username}</strong>? No podrá iniciar sesión y se cerrarán sus sesiones abiertas.</>
+                    : <>¿Activar la cuenta <strong style={{ color: "var(--ct-201f1e)" }}>@{selectedUser.username}</strong>? Podrá volver a iniciar sesión.</>}
+                </p>
+                {pendingAction === "save" && <ul className="mt-2 list-disc space-y-1 pl-4 text-[12px]" style={{ color: "var(--ct-323130)" }}>{changeSummary.map((line) => <li key={line}>{line}</li>)}</ul>}
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" autoFocus onClick={() => setPendingAction(null)} disabled={busy} className="px-3 py-1.5 text-[13px] font-medium disabled:opacity-50" style={{ background: "var(--cs-ffffff)", color: "var(--ct-323130)", border: "1px solid var(--cs-c8c6c4)" }}>Cancelar</button>
+              <button type="button" onClick={() => void runPendingAction()} disabled={busy} className="px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50" style={{ background: pendingAction === "delete" || (pendingAction === "toggle" && selectedUser.active) ? "#a4262c" : "#0f6cbd" }}>
+                {busy ? "Procesando…" : pendingAction === "delete" ? "Eliminar cuenta" : pendingAction === "password" ? "Cambiar contraseña" : pendingAction === "save" ? "Guardar cambios" : selectedUser.active ? "Desactivar" : "Activar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Sesión activa: {user?.name}. Las operaciones de autenticación y autorización se validan en el servidor.</p>
     </div>
   );
