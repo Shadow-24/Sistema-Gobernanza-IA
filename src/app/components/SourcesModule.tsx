@@ -205,7 +205,7 @@ export function SourcesModule() {
 
       {error && <div role="alert" className="rounded px-3 py-2 text-[13px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{error}</div>}
       {loading ? (
-        <div className="flex items-center gap-2 text-[13px]" style={{ color: "var(--ct-605e5c)" }}><LoaderCircle className="w-4 h-4 animate-spin" />Cargando fuentes desde PostgreSQL…</div>
+        <div className="flex items-center gap-2 text-[13px]" style={{ color: "var(--ct-605e5c)" }}><LoaderCircle className="w-4 h-4 animate-spin" />Cargando fuentes…</div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">

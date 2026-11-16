@@ -610,7 +610,7 @@ export function RiskManagement() {
       }, newGovernanceRiskFiles);
       setGovernanceRisks((current) => [created, ...current]);
       setRiskDrafts((current) => ({ ...current, [created.id]: { status: created.status, treatment: created.treatment } }));
-      setGovernanceRiskSaved("Riesgo registrado en PostgreSQL.");
+      setGovernanceRiskSaved("Riesgo registrado.");
       if (selectedAutomaticAlertId) {
         setAutomaticAlerts((current) => current.filter((alert) => alert.id !== selectedAutomaticAlertId));
         setSelectedAutomaticAlertId(null);
@@ -800,7 +800,7 @@ export function RiskManagement() {
           <label className="text-[10px] sm:col-span-3" style={{ color: "var(--ct-605e5c)" }}>Tratamiento propuesto<textarea required minLength={5} maxLength={3000} rows={2} value={newGovernanceRisk.treatment} onChange={(event) => setNewGovernanceRisk((current) => ({ ...current, treatment: event.target.value }))} className="mt-1 w-full rounded border bg-white p-1.5 text-[11px]" placeholder="Acción, responsable y resultado esperado" /></label>
           <div className="flex items-end"><button type="submit" className="w-full rounded px-3 py-2 text-[11px] font-medium text-white" style={{ background: "#0f6cbd" }}>Registrar riesgo</button></div>
         </form>
-        {governanceRiskLoading ? <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Cargando registro desde PostgreSQL…</p> : (
+        {governanceRiskLoading ? <p className="text-[11px]" style={{ color: "var(--ct-8a8886)" }}>Cargando registro…</p> : (
           <div className="space-y-4">
             <section aria-labelledby="active-ai-risks-heading" className="space-y-2">
               <h3 id="active-ai-risks-heading" className="text-[12px] font-semibold" style={{ color: "var(--ct-201f1e)" }}>Riesgos en seguimiento ({activeGovernanceRisks.length})</h3>

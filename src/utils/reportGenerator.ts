@@ -97,7 +97,7 @@ async function loadCSVData(filename: string): Promise<CSVRow[]> {
     throw error;
   }
   const data = datasets[datasetKey];
-  if (!data) throw new Error(`El dataset ${datasetKey} no está disponible en PostgreSQL.`);
+  if (!data) throw new Error(`El dataset ${datasetKey} no está disponible.`);
   dataCache.set(filename, data);
   return data;
 }

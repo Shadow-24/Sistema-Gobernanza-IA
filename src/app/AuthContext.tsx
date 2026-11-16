@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           clearSessionToken();
           return;
         }
-        console.error("No se pudo restaurar la sesión desde PostgreSQL:", error);
+        console.error("No se pudo restaurar la sesión:", error);
       })
       .finally(() => {
         if (active) setIsLoading(false);
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccessEvents(events);
       })
       .catch((error: unknown) => {
-        console.error("No se pudo cargar la administración de usuarios desde PostgreSQL:", error);
+        console.error("No se pudo cargar la administración de usuarios:", error);
         if (active) setManagementError(error instanceof Error ? error.message : "No se pudo cargar la administración de usuarios.");
       });
     return () => { active = false; };

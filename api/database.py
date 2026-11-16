@@ -1908,7 +1908,7 @@ def migrate_legacy_reports() -> None:
                     str(report.get("tipo") or "Reporte histórico"),
                     str(report.get("periodo") or "Sin periodo"),
                     str(report.get("usuario") or "Usuario histórico"),
-                    "Historial anterior a PostgreSQL",
+                    "Historial anterior",
                     Jsonb([]),
                     target_path.stat().st_size,
                     created_at,

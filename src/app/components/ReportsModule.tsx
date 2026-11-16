@@ -272,7 +272,7 @@ export function ReportsModule() {
       })
       .catch((error) => {
         console.error("Error loading generated reports:", error);
-        if (isActive) toast.error("No se pudo cargar el historial de reportes desde PostgreSQL");
+        if (isActive) toast.error("No se pudo cargar el historial de reportes");
       });
     return () => { isActive = false; };
   }, []);

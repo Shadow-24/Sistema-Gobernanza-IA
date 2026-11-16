@@ -84,7 +84,7 @@ export function SectorDataProvider({ children }: { children: React.ReactNode }) 
         });
       })
       .catch((error: unknown) => {
-        console.error("No se pudieron cargar los datos sectoriales desde PostgreSQL:", error);
+        console.error("No se pudieron cargar los datos sectoriales:", error);
         if (active) setDataError(error instanceof Error ? error.message : "No se pudieron cargar los datos sectoriales.");
       })
       .finally(() => {
@@ -93,14 +93,14 @@ export function SectorDataProvider({ children }: { children: React.ReactNode }) 
     apiRequest<HydrocarbonData>("/api/datasets/hydrocarbons")
       .then((data) => { if (active) setHydrocarbonData(data); })
       .catch((error: unknown) => {
-        console.error("No se pudieron cargar los datos de hidrocarburos desde PostgreSQL:", error);
+        console.error("No se pudieron cargar los datos de hidrocarburos:", error);
         if (active) setHydrocarbonError(error instanceof Error ? error.message : "No se pudieron cargar los datos de hidrocarburos.");
       })
       .finally(() => { if (active) setHydrocarbonLoading(false); });
     apiRequest<OperationalData>("/api/datasets/operations")
       .then((data) => { if (active) setOperationalData(data); })
       .catch((error: unknown) => {
-        console.error("No se pudieron cargar los datos operativos desde PostgreSQL:", error);
+        console.error("No se pudieron cargar los datos operativos:", error);
         if (active) setOperationalError(error instanceof Error ? error.message : "No se pudieron cargar los datos operativos.");
       })
       .finally(() => { if (active) setOperationalLoading(false); });

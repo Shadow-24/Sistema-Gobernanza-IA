@@ -116,7 +116,7 @@ export function DashboardLayout() {
           <main className="flex-1 overflow-auto p-3 sm:p-6">
             {dataError && (
               <div role="alert" className="mb-4 rounded px-3 py-2 text-[13px]" style={{ background: "var(--cs-fdf3f4)", border: "1px solid var(--cs-f1b8bb)", color: "var(--ct-a4262c)" }}>
-                No se pudieron cargar los datos sectoriales desde PostgreSQL: {dataError}
+                No se pudieron cargar los datos sectoriales: {dataError}
               </div>
             )}
             <Outlet />

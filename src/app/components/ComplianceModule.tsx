@@ -250,7 +250,7 @@ export function ComplianceModule() {
             },
           };
         });
-        setGovernanceSaved(`Se adjuntó ${saved.file_name}. El archivo quedó guardado en PostgreSQL.`);
+        setGovernanceSaved(`Se adjuntó ${saved.file_name}. El archivo quedó guardado.`);
       }
     } catch (error) {
       setGovernanceError(error instanceof Error ? error.message : "No se pudo adjuntar el archivo.");
@@ -508,7 +508,7 @@ export function ComplianceModule() {
         {governanceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>{governanceError}</p>}
         {governanceEvidenceError && <p role="alert" className="mb-3 rounded px-3 py-2 text-[12px]" style={{ background: "var(--cs-fdf3f4)", color: "var(--ct-a4262c)" }}>No se pudieron cargar las evidencias: {governanceEvidenceError}</p>}
         {governanceSaved && <p role="status" className="mb-3 text-[12px]" style={{ color: "var(--ct-107c10)" }}>{governanceSaved}</p>}
-        {governanceLoading ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Cargando controles desde PostgreSQL…</p> : governanceControls.length === 0 ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay controles inicializados. Verifica la conexión con PostgreSQL.</p> : (
+        {governanceLoading ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>Cargando controles…</p> : governanceControls.length === 0 ? <p className="text-[12px]" style={{ color: "var(--ct-8a8886)" }}>No hay controles inicializados. Verifica la conexión.</p> : (
           <div>
             <div className="mb-3 flex flex-col gap-2 sm:flex-row">
               <input

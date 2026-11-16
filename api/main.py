@@ -149,7 +149,7 @@ def get_current_user(authorization: str | None = Header(default=None)) -> dict[s
         user = database.lookup_session(authorization.removeprefix("Bearer ").strip())
     except Exception as error:
         logger.exception("No se pudo validar la sesión de usuario.")
-        raise HTTPException(status_code=503, detail="No se pudo consultar la sesión en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo consultar la sesión.") from error
     if not user:
         raise HTTPException(status_code=401, detail="La sesión expiró o fue revocada.")
     return user
@@ -668,7 +668,7 @@ def build_forecast(
                 source_name = " + ".join(complaint_sources)
         except Exception as error:
             logger.exception("No se pudieron cargar los datasets para el pronóstico.")
-            raise HTTPException(status_code=503, detail="No se pudieron cargar datos de PostgreSQL para el pronóstico.") from error
+            raise HTTPException(status_code=503, detail="No se pudieron cargar los datos para el pronóstico.") from error
     first_day, daily_counts = _load_daily_counts(datasets.get("complaints", []))
     if len(daily_counts) < MIN_DAILY_POINTS:
         raise HTTPException(
@@ -768,7 +768,7 @@ def build_predictions() -> dict[str, Any]:
         datasets = {key: value["rows"] for key, value in stored.items()}
     except Exception as error:
         logger.exception("No se pudieron cargar los datasets para los pronósticos.")
-        raise HTTPException(status_code=503, detail="No se pudieron cargar datos de PostgreSQL para los pronósticos.") from error
+        raise HTTPException(status_code=503, detail="No se pudieron cargar los datos para los pronósticos.") from error
     complaint_sources = stored.get("complaints", {}).get("sourceFiles", [])
     complaints_source = " + ".join(complaint_sources) if complaint_sources else COMPLAINTS_PATH.name
     complaints = build_forecast(datasets, complaints_source)
@@ -888,7 +888,7 @@ def get_database_health() -> dict[str, str]:
             conn.execute("SELECT 1")
     except Exception as error:
         logger.exception("La comprobación de conexión PostgreSQL falló.")
-        raise HTTPException(status_code=503, detail="PostgreSQL no está disponible.") from error
+        raise HTTPException(status_code=503, detail="El servicio de datos no está disponible.") from error
     return {"status": "ok", "database": "postgresql"}
 
 
@@ -912,7 +912,7 @@ def get_datasets(_: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any
         datasets = database.load_datasets()
     except Exception as error:
         logger.exception("No se pudieron consultar los datasets de PostgreSQL.")
-        raise HTTPException(status_code=503, detail="No se pudieron consultar los datasets de PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los datasets.") from error
     return {key: value["rows"] for key, value in datasets.items()}
 
 
@@ -1388,7 +1388,7 @@ def get_audit_workflow(user: dict[str, Any] = Depends(get_current_user)) -> list
         return database.list_audit_workflow()
     except Exception as error:
         logger.exception("No se pudo consultar el flujo de auditorías.")
-        raise HTTPException(status_code=503, detail="No se pudo consultar el flujo de auditorías en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo consultar el flujo de auditorías.") from error
 
 
 @app.post("/api/audits/registrations")
@@ -1831,7 +1831,7 @@ def get_ai_governance_controls(
         return database.list_ai_governance_controls(scope)
     except Exception as error:
         logger.exception("No se pudieron consultar los controles de gobernanza de IA.")
-        raise HTTPException(status_code=503, detail="No se pudieron consultar los controles en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudieron consultar los controles.") from error
 
 
 @app.patch("/api/ai-governance/controls/{control_id}")
@@ -2091,7 +2091,7 @@ async def upload_ai_governance_evidence(
         raise HTTPException(status_code=422, detail=str(error)) from error
     except Exception as error:
         logger.exception("No se pudo guardar el archivo de evidencia para el control %s.", control_id)
-        raise HTTPException(status_code=503, detail="No se pudo guardar el archivo de evidencia en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo guardar el archivo de evidencia.") from error
     if not saved:
         raise HTTPException(status_code=404, detail="No se encontró el control de gobernanza solicitado.")
     return saved
@@ -2137,7 +2137,7 @@ def _ai_governance_alerts() -> list[dict[str, Any]]:
             "modelName": demand_model_name,
             "category": "Evaluación pendiente",
             "description": "No hay una evaluación persistida del modelo de demanda para revisar su desempeño y controles.",
-            "evidence": "PostgreSQL: demand_model_runs no contiene una evaluación disponible.",
+            "evidence": "No hay una evaluación disponible del modelo de demanda.",
             "likelihood": 3,
             "impact": 3,
             "treatment": "Entrenar y evaluar el modelo con la fuente vigente antes de utilizar pronósticos.",
@@ -2238,7 +2238,7 @@ def get_ai_governance_risks(user: dict[str, Any] = Depends(get_current_user)) ->
         return database.list_ai_governance_risks()
     except Exception as error:
         logger.exception("No se pudo consultar el registro de riesgos de gobernanza de IA.")
-        raise HTTPException(status_code=503, detail="No se pudo consultar el registro en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo consultar el registro.") from error
 
 
 @app.post("/api/ai-governance/risks", status_code=201)
@@ -2277,7 +2277,7 @@ async def create_ai_governance_risk(
         raise HTTPException(status_code=409, detail=str(error)) from error
     except Exception as error:
         logger.exception("No se pudo registrar el riesgo de gobernanza de IA.")
-        raise HTTPException(status_code=503, detail="No se pudo registrar el riesgo en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo registrar el riesgo.") from error
 
 
 @app.get("/api/ai-governance/risk-evidence/{file_id}/download")
@@ -2319,7 +2319,7 @@ def update_ai_governance_risk(
         risk = database.update_ai_governance_risk(risk_id, request.status, request.treatment.strip(), user["username"])
     except Exception as error:
         logger.exception("No se pudo actualizar el riesgo de gobernanza %s.", risk_id)
-        raise HTTPException(status_code=503, detail="No se pudo actualizar el riesgo en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo actualizar el riesgo.") from error
     if not risk:
         raise HTTPException(status_code=404, detail="No se encontró el riesgo solicitado.")
     return risk
@@ -2332,7 +2332,7 @@ def get_risk_assessments(user: dict[str, Any] = Depends(get_current_user)) -> li
         return database.list_risk_assessments()
     except Exception as error:
         logger.exception("No se pudieron consultar las evaluaciones de riesgo.")
-        raise HTTPException(status_code=503, detail="No se pudieron consultar las evaluaciones de riesgo en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudieron consultar las evaluaciones de riesgo.") from error
 
 
 @app.post("/api/risk-assessments/simulations", status_code=201)
@@ -2361,7 +2361,7 @@ def create_risk_simulation(
         return database.save_risk_assessment(assessment)
     except Exception as error:
         logger.exception("No se pudo registrar la simulación de riesgo.")
-        raise HTTPException(status_code=503, detail="No se pudo guardar la evaluación en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo guardar la evaluación.") from error
 
 
 @app.get("/api/risk-model/road-impact")
@@ -2445,7 +2445,7 @@ async def save_generated_report(
     except Exception as error:
         file_path.unlink(missing_ok=True)
         logger.exception("No se pudo persistir el reporte generado.")
-        raise HTTPException(status_code=503, detail="No se pudo guardar el reporte en PostgreSQL.") from error
+        raise HTTPException(status_code=503, detail="No se pudo guardar el reporte.") from error
 
 
 @app.get("/api/generated-reports/{report_id}")
